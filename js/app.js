@@ -818,7 +818,30 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
     if (!receita) {
         return `
             <div class="celula-refeicao receita-removida">
-                <div class="nome-refeicao">Receita removida</div>
+                <div class="conteudo-planejamento">
+                    <div class="nome-refeicao">Receita removida</div>
+                </div>
+                <div class="acoes-planejamento-mini">
+                    <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
+                            class="btn-editar-mini">
+                        Editar
+                    </button>
+                    <button onclick="event.stopPropagation(); removerPlanejamento('${plano.id}')"
+                            class="btn-remover-mini">
+                        Remover
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="celula-refeicao">
+            <div class="conteudo-planejamento">
+                <div class="nome-refeicao">${receita.nome}</div>
+                ${compacto ? '' : `<div class="tipo-refeicao-tabela">${receita.categoria || ''}</div>`}
+            </div>
+            <div class="acoes-planejamento-mini">
                 <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
                         class="btn-editar-mini">
                     Editar
@@ -828,21 +851,6 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
                     Remover
                 </button>
             </div>
-        `;
-    }
-
-    return `
-        <div class="celula-refeicao">
-            <div class="nome-refeicao">${receita.nome}</div>
-            ${compacto ? '' : `<div class="tipo-refeicao-tabela">${receita.categoria || ''}</div>`}
-            <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
-                    class="btn-editar-mini">
-                Editar
-            </button>
-            <button onclick="event.stopPropagation(); removerPlanejamento('${plano.id}')"
-                    class="btn-remover-mini">
-                Remover
-            </button>
         </div>
     `;
 }
@@ -1218,20 +1226,28 @@ function renderizarDiaria() {
                 if (!receita) {
                     return `
                         <div class="item-planejamento-diario">
-                            <p><strong>Receita removida</strong></p>
-                            <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
-                            <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
+                            <div class="conteudo-planejamento">
+                                <p><strong>Receita removida</strong></p>
+                            </div>
+                            <div class="acoes-planejamento">
+                                <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
+                                <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
+                            </div>
                         </div>
                     `;
                 }
 
                 return `
                     <div class="item-planejamento-diario">
-                        <p><strong>${receita.nome}</strong></p>
-                        <p>Categoria: ${receita.categoria || 'N/A'}</p>
-                        <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
-                        <button onclick="marcarComoConsumida('${receita.id}')">Consumida</button>
-                        <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
+                        <div class="conteudo-planejamento">
+                            <p><strong>${receita.nome}</strong></p>
+                            <p>Categoria: ${receita.categoria || 'N/A'}</p>
+                        </div>
+                        <div class="acoes-planejamento">
+                            <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
+                            <button onclick="marcarComoConsumida('${receita.id}')">Consumida</button>
+                            <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -1400,8 +1416,10 @@ function atualizarDetalhesData(data) {
                         return `
                             <div class="linha-planejamento-data">
                                 <span>${receita ? receita.nome : 'Receita removida'}</span>
-                                <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
-                                <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
+                                <div class="acoes-planejamento">
+                                    <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
+                                    <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
+                                </div>
                             </div>
                         `;
                     }).join('')}

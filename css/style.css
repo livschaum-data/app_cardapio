@@ -368,11 +368,10 @@ body {
     border-radius: 6px;
     padding: 8px;
     min-height: 50px;
-    display: flex;
-    flex-direction: column;
+    position: relative;
     justify-content: center;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
     cursor: pointer;
     transition: all 0.3s;
 }
@@ -395,11 +394,54 @@ body {
     font-weight: 600;
     color: var(--cor-primaria);
     font-size: 13px;
+    overflow-wrap: anywhere;
 }
 
 .tipo-refeicao-tabela {
     font-size: 11px;
     color: #999;
+    overflow-wrap: anywhere;
+}
+
+.conteudo-planejamento {
+    min-width: 0;
+}
+
+.celula-refeicao .conteudo-planejamento {
+    text-align: center;
+}
+
+.acoes-planejamento-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 64px;
+}
+
+.acoes-planejamento,
+.acoes-planejamento-mini {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.acoes-planejamento-mini {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%) translateX(4px);
+    z-index: 2;
+}
+
+.celula-refeicao:hover .acoes-planejamento-mini,
+.celula-refeicao:focus-within .acoes-planejamento-mini,
+.item-planejamento-diario:hover .acoes-planejamento,
+.item-planejamento-diario:focus-within .acoes-planejamento,
+.linha-planejamento-data:hover .acoes-planejamento,
+.linha-planejamento-data:focus-within .acoes-planejamento {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(0);
 }
 
 .data-cabecalho {
@@ -418,6 +460,9 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 11px;
+    line-height: 1.2;
+    min-height: 24px;
+    width: 100%;
 }
 
 .btn-editar-mini,
@@ -429,6 +474,8 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 11px;
+    line-height: 1.2;
+    min-height: 24px;
 }
 
 .btn-adicionar-mini {
@@ -456,10 +503,16 @@ body {
 }
 
 .linha-planejamento-data {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
+    min-height: 36px;
+    position: relative;
+}
+
+.linha-planejamento-data span {
+    overflow-wrap: anywhere;
 }
 
 .receita-removida {
@@ -518,6 +571,28 @@ body {
     margin-bottom: 8px;
 }
 
+.item-planejamento-diario {
+    min-height: 58px;
+    position: relative;
+}
+
+.item-planejamento-diario .conteudo-planejamento {
+    padding-right: 0;
+}
+
+.item-planejamento-diario .acoes-planejamento,
+.linha-planejamento-data .acoes-planejamento {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 76px;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%) translateX(4px);
+    z-index: 2;
+}
+
 .card-diario button {
     margin-top: 10px;
     padding: 6px 12px;
@@ -531,6 +606,26 @@ body {
 
 .card-diario button:hover {
     background: var(--cor-primaria);
+}
+
+.card-diario .acoes-planejamento button,
+.detalhes-data .acoes-planejamento button {
+    margin-top: 0;
+}
+
+.btn-acao-remover,
+.card-diario .btn-acao-remover,
+.detalhes-data .btn-acao-remover {
+    background: var(--cor-alerta);
+}
+
+@media (hover: none) {
+    .acoes-planejamento,
+    .acoes-planejamento-mini {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(-50%) translateX(0);
+    }
 }
 
 /* ==================== CALENDRIO ====================
