@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🍽️ Planejador de Cardápio</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=20260803-nuvem-auth">
 </head>
 <body>
     <div id="app">
@@ -12,6 +12,12 @@
              Cabeçalho com título e menu principal -->
         <header class="header">
             <h1>🍽️ Planejador de Cardápio</h1>
+            <div class="status-nuvem" id="status-nuvem">
+                <button type="button" id="btn-conectar-nuvem" class="btn-nuvem-toggle" onclick="alternarPainelNuvem()" aria-expanded="false" aria-controls="painel-nuvem">
+                    <span class="status-indicador status-offline" id="status-nuvem-indicador"></span>
+                    <span id="status-nuvem-texto">Nuvem desconectada</span>
+                </button>
+            </div>
             <nav class="menu-principal">
                 <button class="menu-btn" onclick="abrirModalReceita()">
                     ➕ Nova Receita
@@ -19,11 +25,49 @@
                 <button class="menu-btn" onclick="abrirTiposRefeicao()">
                     ⚙️ Tipos de Refeição
                 </button>
+                <button class="menu-btn" id="btn-categorias" onclick="abrirCategorias()">
+                    Categorias
+                </button>
+                <button class="menu-btn" id="btn-tags" onclick="abrirTags()">
+                    Tags
+                </button>
                 <button class="menu-btn" onclick="abrirHistorico()">
                     📊 Histórico
                 </button>
             </nav>
         </header>
+
+        <aside id="painel-nuvem" class="painel-nuvem" aria-label="Conexao com a nuvem" style="display:none;">
+            <div class="painel-nuvem-header">
+                <div>
+                    <span>Supabase</span>
+                    <h2>Sincronizacao da conta</h2>
+                </div>
+                <button class="btn-fechar" type="button" onclick="fecharPainelNuvem()" aria-label="Fechar conexao com a nuvem">✕</button>
+            </div>
+
+            <div id="nuvem-login" class="nuvem-box">
+                <input type="email" id="nuvem-email" placeholder="Email" autocomplete="email">
+                <input type="password" id="nuvem-senha" placeholder="Senha" autocomplete="current-password">
+                <div class="nuvem-acoes">
+                    <button id="nuvem-entrar" type="button" class="btn-principal">Entrar</button>
+                    <button id="nuvem-criar-conta" type="button" class="btn-secundario">Criar conta</button>
+                </div>
+            </div>
+
+            <div id="nuvem-logado" class="nuvem-box" style="display:none;">
+                <p id="nuvem-usuario" class="texto-ajuda"></p>
+                <p class="texto-ajuda">Receitas, planejamentos, tipos, categorias e tags sao sincronizados na sua conta.</p>
+                <div class="nuvem-acoes">
+                    <button id="nuvem-sincronizar" type="button" class="btn-principal">Sincronizar agora</button>
+                    <button id="nuvem-baixar" type="button" class="btn-secundario">Baixar da nuvem</button>
+                    <button id="nuvem-enviar" type="button" class="btn-secundario">Enviar para nuvem</button>
+                    <button id="nuvem-sair" type="button" class="btn-secundario">Sair</button>
+                </div>
+            </div>
+
+            <p id="nuvem-status" class="texto-ajuda" aria-live="polite">Verificando conexao com a nuvem...</p>
+        </aside>
 
         <!-- ==================== ABAS DE NAVEGAÇÃO ====================
              Botões para alternar entre visualizações -->
@@ -167,22 +211,24 @@
 
                     <div class="form-grupo">
                         <label>Tipo de Refeição *</label>
-                        <select id="tipo-refeicao" required>
+                        <div id="tipo-refeicao" class="lista-checkboxes">
                             <!-- Preenchido dinamicamente -->
-                        </select>
+                        </div>
                     </div>
 
                     <div class="form-grupo">
                         <label>Categoria</label>
                         <select id="categoria-receita">
                             <option value="">Sem categoria</option>
-                            <option value="Doce">Doce</option>
-                            <option value="Salgado">Salgado</option>
-                            <option value="Vegetariano">Vegetariano</option>
-                            <option value="Vegan">Vegan</option>
-                            <option value="Sem Glúten">Sem Glúten</option>
-                            <option value="Sem Lactose">Sem Lactose</option>
+                            <!-- Preenchido dinamicamente -->
                         </select>
+                    </div>
+
+                    <div class="form-grupo">
+                        <label>Tags</label>
+                        <div id="tags-receita" class="lista-checkboxes">
+                            <!-- Preenchido dinamicamente -->
+                        </div>
                     </div>
 
                     <div class="form-grupo">
@@ -246,6 +292,54 @@
             </div>
         </div>
 
+        <!-- ==================== MODAL: CATEGORIAS ====================
+             Gerenciar categorias de receitas -->
+        <div id="modal-categorias" class="modal" style="display:none;">
+            <div class="modal-content">
+                <button class="btn-fechar" onclick="fecharModal('modal-categorias')">✕</button>
+                <h2>Categorias</h2>
+
+                <div class="form-grupo">
+                    <label>Adicionar nova categoria</label>
+                    <div class="linha-form">
+                        <input type="text" id="nova-categoria" placeholder="Ex: Vegetariano">
+                        <button onclick="adicionarCategoria()" class="btn-principal">
+                            Adicionar
+                        </button>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px;">Categorias Atuais</h3>
+                <div id="lista-categorias" class="lista-gerenciavel">
+                    <!-- Categorias preenchidas dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== MODAL: TAGS ====================
+             Gerenciar tags de receitas -->
+        <div id="modal-tags" class="modal" style="display:none;">
+            <div class="modal-content">
+                <button class="btn-fechar" onclick="fecharModal('modal-tags')">✕</button>
+                <h2>Tags</h2>
+
+                <div class="form-grupo">
+                    <label>Adicionar nova tag</label>
+                    <div class="linha-form">
+                        <input type="text" id="nova-tag" placeholder="Ex: bebê">
+                        <button onclick="adicionarTag()" class="btn-principal">
+                            Adicionar
+                        </button>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px;">Tags Atuais</h3>
+                <div id="lista-tags" class="lista-gerenciavel">
+                    <!-- Tags preenchidas dinamicamente -->
+                </div>
+            </div>
+        </div>
+
         <!-- ==================== MODAL: HISTÓRICO ====================
              Ver estatísticas de uso -->
         <div id="modal-historico" class="modal" style="display:none;">
@@ -262,7 +356,9 @@
 
     <!-- ==================== SCRIPTS ====================
          Carrega o JavaScript da app -->
-    <script src="js/app.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/app.js?v=20260803-nuvem-auth"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
 </body>
 </html>
 
