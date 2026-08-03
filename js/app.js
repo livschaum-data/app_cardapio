@@ -1,5 +1,5 @@
-/* ==================== OBJETO PRINCIPAL DA APP ====================
-   Centraliza todo o estado da aplicação */
+﻿/* ==================== OBJETO PRINCIPAL DA APP ====================
+   Centraliza todo o estado da aplicaÃ§Ã£o */
 
 const app = {
     // Array de receitas
@@ -8,21 +8,21 @@ const app = {
     // Array de planejamentos
     planejamentos: [],
 
-    // Array de histórico de consumo
+    // Array de histÃ³rico de consumo
     historico: [],
 
-    // Tipos de refeição customizáveis
-    tiposRefeicao: ['Café da Manhã', 'Almoço', 'Lanche', 'Jantar', 'Ceia'],
+    // Tipos de refeiÃ§Ã£o customizÃ¡veis
+    tiposRefeicao: ['CafÃ© da ManhÃ£', 'AlmoÃ§o', 'Lanche', 'Jantar', 'Ceia'],
 
-    // Categorias customizáveis de receitas
-    categorias: ['Doce', 'Salgado', 'Vegetariano', 'Vegan', 'Sem Glúten', 'Sem Lactose'],
+    // Categorias customizÃ¡veis de receitas
+    categorias: ['Doce', 'Salgado', 'Vegetariano', 'Vegan', 'Sem GlÃºten', 'Sem Lactose'],
 
-    // Tags customizáveis de receitas
-    tags: ['bebê', 'sem glúten', 'sem lactose', 'dia a dia'],
+    // Tags customizÃ¡veis de receitas
+    tags: ['bebÃª', 'sem glÃºten', 'sem lactose', 'dia a dia'],
 
     // Data/semana atual
     dataCurrent: new Date(),
-    semanaAtual: 1,
+    semanaAtual: obterNumeroSemana(new Date()),
     mesAtual: new Date().getMonth(),
     anoAtual: new Date().getFullYear(),
 
@@ -34,13 +34,14 @@ const app = {
     supabaseMensagem: 'Nuvem desconectada',
     salvandoRemoto: false,
     salvarRemotoPendente: false,
+    atualizadoEm: null,
 };
 
-/* ==================== INICIALIZAÇÃO ====================
+/* ==================== INICIALIZAÃ‡ÃƒO ====================
    Carrega dados e renderiza interface */
 
 async function inicializar() {
-    console.log('🍽️ Inicializando app de cardápio...');
+    console.log('ðŸ½ï¸ Inicializando app de cardÃ¡pio...');
 
     configurarEventosNuvem();
 
@@ -49,7 +50,7 @@ async function inicializar() {
     await carregarDados();
     await inicializarSessaoNuvem();
 
-    // Preencher selects com tipos de refeição
+    // Preencher selects com tipos de refeiÃ§Ã£o
     atualizarSelectTipos();
 
     // Preencher selects e filtros de categoria
@@ -59,10 +60,10 @@ async function inicializar() {
     normalizarTags();
     atualizarSelectTags();
 
-    // Renderizar visão inicial
+    // Renderizar visÃ£o inicial
     renderizarSemanal();
 
-    // Configurar evento de envio de formulário
+    // Configurar evento de envio de formulÃ¡rio
     const formReceita = document.getElementById('form-receita');
     if (formReceita) {
         formReceita.addEventListener('submit', salvarReceita);
@@ -78,20 +79,22 @@ async function inicializar() {
         btnTags.addEventListener('click', abrirTags);
     }
 
-    console.log('✅ App inicializada!');
+    console.log('âœ… App inicializada!');
 }
 
 /* ==================== ARMAZENAMENTO ====================
    Salvar e carregar dados do localStorage */
 
 function salvarDadosLegado() {
+    marcarDadosAlterados();
     localStorage.setItem('cardapio_receitas', JSON.stringify(app.receitas));
     localStorage.setItem('cardapio_planejamentos', JSON.stringify(app.planejamentos));
     localStorage.setItem('cardapio_historico', JSON.stringify(app.historico));
     localStorage.setItem('cardapio_tipos', JSON.stringify(app.tiposRefeicao));
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
-    console.log('💾 Dados salvos!');
+    localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
+    console.log('ðŸ’¾ Dados salvos!');
 }
 
 function carregarDadosLegado() {
@@ -101,11 +104,12 @@ function carregarDadosLegado() {
     app.tiposRefeicao = JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao;
     app.categorias = JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias;
     app.tags = JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags;
-    console.log('📂 Dados carregados!');
+    app.atualizadoEm = localStorage.getItem('cardapio_atualizado_em') || app.atualizadoEm;
+    console.log('ðŸ“‚ Dados carregados!');
 }
 
-/* ==================== NAVEGAÇÃO: TROCAR VISÃO ====================
-   Mostrar/esconder visões principais */
+/* ==================== NAVEGAÃ‡ÃƒO: TROCAR VISÃƒO ====================
+   Mostrar/esconder visÃµes principais */
 
 function configurarSupabase() {
     const config = window.CARDAPIO_SUPABASE;
@@ -115,7 +119,7 @@ function configurarSupabase() {
     if (!config || !supabaseUrl || !config.anonKey) {
         app.supabaseOnline = false;
         app.supabaseStatus = 'offline';
-        app.supabaseMensagem = 'Nuvem não configurada';
+        app.supabaseMensagem = 'Nuvem nÃ£o configurada';
         atualizarStatusNuvem();
         console.log('Supabase nao configurado. Usando localStorage.');
         return false;
@@ -365,6 +369,12 @@ async function baixarDadosSupabase({ silencioso = false } = {}) {
         const dadosRemotos = await carregarDadosSupabase();
 
         if (dadosRemotos) {
+            if (dadosLocaisMaisRecentesQueNuvem(dadosRemotos)) {
+                await enviarDadosSupabase({ silencioso: true, mesclarAntes: false });
+                if (!silencioso) atualizarStatusNuvem('online', 'Dados locais eram mais recentes e foram enviados para a nuvem');
+                return true;
+            }
+
             aplicarDados(dadosRemotos);
             salvarDadosLocais();
             renderizarTudoAposSync();
@@ -380,6 +390,21 @@ async function baixarDadosSupabase({ silencioso = false } = {}) {
         console.error('Erro ao baixar do Supabase:', error);
         return false;
     }
+}
+
+function obterTimestamp(valor) {
+    const data = valor ? new Date(valor) : null;
+    return data && !Number.isNaN(data.getTime()) ? data.getTime() : 0;
+}
+
+function dadosLocaisMaisRecentesQueNuvem(dadosRemotos) {
+    const local = obterTimestamp(app.atualizadoEm);
+    const remoto = obterTimestamp(dadosRemotos?.atualizadoEm);
+
+    if (!local) return false;
+    if (!remoto) return true;
+
+    return local > remoto;
 }
 
 async function enviarDadosSupabase({ silencioso = false, mesclarAntes = false } = {}) {
@@ -430,6 +455,7 @@ function aplicarDados(dados) {
     app.tags = Array.isArray(dados.tags) && dados.tags.length > 0
         ? dados.tags
         : app.tags;
+    app.atualizadoEm = dados.atualizadoEm || app.atualizadoEm;
 }
 
 function carregarDadosLocais() {
@@ -440,6 +466,7 @@ function carregarDadosLocais() {
         tiposRefeicao: JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao,
         categorias: JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias,
         tags: JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags,
+        atualizadoEm: localStorage.getItem('cardapio_atualizado_em') || null,
     };
 }
 
@@ -450,6 +477,9 @@ function salvarDadosLocais() {
     localStorage.setItem('cardapio_tipos', JSON.stringify(app.tiposRefeicao));
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
+    if (app.atualizadoEm) {
+        localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
+    }
 }
 
 async function carregarDadosSupabase() {
@@ -458,7 +488,7 @@ async function carregarDadosSupabase() {
     const config = window.CARDAPIO_SUPABASE;
     const { data, error } = await app.supabase
         .from(config.table)
-        .select('receitas, planejamentos, historico, tipos_refeicao, categorias, tags')
+        .select('receitas, planejamentos, historico, tipos_refeicao, categorias, tags, atualizado_em')
         .eq('user_id', app.usuarioSupabase.id)
         .eq('id', config.recordId)
         .maybeSingle();
@@ -473,6 +503,7 @@ async function carregarDadosSupabase() {
         tiposRefeicao: data.tipos_refeicao,
         categorias: data.categorias,
         tags: data.tags,
+        atualizadoEm: data.atualizado_em,
     };
 }
 
@@ -500,7 +531,7 @@ async function salvarDadosSupabase() {
             tipos_refeicao: app.tiposRefeicao,
             categorias: app.categorias,
             tags: app.tags,
-            atualizado_em: new Date().toISOString(),
+            atualizado_em: app.atualizadoEm || new Date().toISOString(),
         }, { onConflict: 'user_id,id' });
 
     app.salvandoRemoto = false;
@@ -521,9 +552,14 @@ async function salvarDadosSupabase() {
 }
 
 function salvarDados() {
+    marcarDadosAlterados();
     salvarDadosLocais();
     salvarDadosSupabase();
     console.log('Dados salvos localmente.');
+}
+
+function marcarDadosAlterados() {
+    app.atualizadoEm = new Date().toISOString();
 }
 
 async function carregarDados() {
@@ -557,26 +593,28 @@ async function carregarDados() {
 }
 
 function mostrarVisao(nomeVisao) {
-    // Esconde todas as visões
+    // Esconde todas as visÃµes
     document.querySelectorAll('.visao').forEach(visao => {
         visao.style.display = 'none';
     });
 
-    // Desativa todos os botões de aba
+    // Desativa todos os botÃµes de aba
     document.querySelectorAll('.aba-btn').forEach(btn => {
         btn.classList.remove('ativo');
     });
 
-    // Mostra a visão selecionada
+    // Mostra a visÃ£o selecionada
     const visao = document.getElementById(`visao-${nomeVisao}`);
     if (visao) {
         visao.style.display = 'block';
     }
 
-    // Marca botão como ativo
-    event.target.classList.add('ativo');
+    const botaoAtivo = event?.target || document.querySelector(`.aba-btn[onclick*="${nomeVisao}"]`);
+    if (botaoAtivo) {
+        botaoAtivo.classList.add('ativo');
+    }
 
-    // Renderiza conteúdo apropriado
+    // Renderiza conteÃºdo apropriado
     if (nomeVisao === 'semanal') {
         renderizarSemanal();
     } else if (nomeVisao === 'mensal') {
@@ -590,44 +628,133 @@ function mostrarVisao(nomeVisao) {
     }
 }
 
-/* ==================== VISÃO SEMANAL ====================
+const DIAS_SEMANA = [
+    { chave: 'domingo', nome: 'Domingo', abrev: 'Dom' },
+    { chave: 'segunda', nome: 'Segunda', abrev: 'Seg' },
+    { chave: 'terca', nome: 'Terca', abrev: 'Ter', aliases: ['terÃƒÂ§a', 'terÃ§a'] },
+    { chave: 'quarta', nome: 'Quarta', abrev: 'Qua' },
+    { chave: 'quinta', nome: 'Quinta', abrev: 'Qui' },
+    { chave: 'sexta', nome: 'Sexta', abrev: 'Sex' },
+    { chave: 'sabado', nome: 'Sabado', abrev: 'Sab', aliases: ['sÃƒÂ¡bado', 'sÃ¡bado'] },
+];
+
+function normalizarDiaSemana(dia) {
+    const valor = String(dia || '').toLowerCase();
+    if (valor.startsWith('ter')) return 'terca';
+    if (valor.startsWith('sab') || valor.includes('bado')) return 'sabado';
+    const item = DIAS_SEMANA.find(d => d.chave === valor || d.aliases?.includes(valor));
+    return item?.chave || valor;
+}
+
+function formatarDataChave(data) {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
+function criarDataLocal(dataStr) {
+    return new Date(`${dataStr}T00:00:00`);
+}
+
+function obterNumeroSemana(data) {
+    const inicioAno = new Date(data.getFullYear(), 0, 1);
+    const inicioPrimeiraSemana = new Date(inicioAno);
+    inicioPrimeiraSemana.setDate(inicioAno.getDate() - inicioAno.getDay());
+    const diferencaDias = Math.floor((data - inicioPrimeiraSemana) / 86400000);
+    return Math.floor(diferencaDias / 7) + 1;
+}
+
+function obterInicioSemana(numeroSemana, ano = app.anoAtual) {
+    const primeiroDiaAno = new Date(ano, 0, 1);
+    const inicio = new Date(primeiroDiaAno);
+    inicio.setDate(primeiroDiaAno.getDate() - primeiroDiaAno.getDay() + ((Number(numeroSemana) - 1) * 7));
+    return inicio;
+}
+
+function obterDataSemanaDia(semana, dia, ano = app.anoAtual) {
+    const inicio = obterInicioSemana(semana, ano);
+    const indiceDia = DIAS_SEMANA.findIndex(d => d.chave === normalizarDiaSemana(dia));
+    const data = new Date(inicio);
+    data.setDate(inicio.getDate() + Math.max(indiceDia, 0));
+    return data;
+}
+
+function obterSemanaDiaPorData(data) {
+    return {
+        semana: obterNumeroSemana(data),
+        dia: DIAS_SEMANA[data.getDay()].chave,
+    };
+}
+
+function buscarPlanejamentoPorData(dataStr, tipo) {
+    const data = criarDataLocal(dataStr);
+    const legado = obterSemanaDiaPorData(data);
+
+    return app.planejamentos.find(p =>
+        p.data === dataStr &&
+        p.refeicao === tipo
+    ) || app.planejamentos.find(p =>
+        Number(p.semana) === legado.semana &&
+        normalizarDiaSemana(p.dia) === legado.dia &&
+        p.refeicao === tipo
+    );
+}
+
+function renderizarResumoReceitaPlano(plano, compacto = false) {
+    const receita = buscarReceita(plano.receitaId);
+
+    if (!receita) {
+        return `
+            <div class="celula-refeicao receita-removida">
+                <div class="nome-refeicao">Receita removida</div>
+                <button onclick="event.stopPropagation(); removerPlanejamento('${plano.id}')"
+                        class="btn-remover-mini">
+                    Remover
+                </button>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="celula-refeicao">
+            <div class="nome-refeicao">${receita.nome}</div>
+            ${compacto ? '' : `<div class="tipo-refeicao-tabela">${receita.categoria || ''}</div>`}
+            <button onclick="event.stopPropagation(); removerPlanejamento('${plano.id}')"
+                    class="btn-remover-mini">
+                Remover
+            </button>
+        </div>
+    `;
+}
+
+/* ==================== VISÃƒO SEMANAL ====================
    Renderiza tabela com 7 dias da semana */
 
 function renderizarSemanal() {
     const tbody = document.getElementById('corpo-tabela-semanal');
     tbody.innerHTML = '';
+    atualizarTituloSemana();
+    atualizarCabecalhoSemanal();
 
-    // Para cada tipo de refeição
     app.tiposRefeicao.forEach(tipo => {
         const tr = document.createElement('tr');
-
-        // Célula com nome da refeição
         let html = `<td class="refeicao-nome" style="font-weight: 600; background: #f0f0f0;">${tipo}</td>`;
 
-        // Para cada dia da semana (segunda a domingo, mais sabado)
-        const diasSemana = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-
-        diasSemana.forEach(dia => {
-            // Buscar planejamento para esse dia/tipo/semana
-            const plano = buscarPlanejamento(app.semanaAtual, dia, tipo);
+        DIAS_SEMANA.forEach(diaInfo => {
+            const data = obterDataSemanaDia(app.semanaAtual, diaInfo.chave);
+            const dataStr = formatarDataChave(data);
+            const plano = buscarPlanejamento(app.semanaAtual, diaInfo.chave, tipo);
 
             if (plano) {
-                const receita = buscarReceita(plano.receitaId);
                 html += `
                     <td onclick="abrirEdicaoPlanejamento('${plano.id}')">
-                        <div class="celula-refeicao">
-                            <div class="nome-refeicao">${receita.nome}</div>
-                            <div class="tipo-refeicao-tabela">${receita.categoria || ''}</div>
-                            <button onclick="event.stopPropagation(); removerPlanejamento('${plano.id}')" 
-                                    style="background: #ff6b6b; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                ✕
-                            </button>
-                        </div>
+                        ${renderizarResumoReceitaPlano(plano)}
                     </td>
                 `;
             } else {
                 html += `
-                    <td class="celula-vazia" onclick="abrirModalPlanejar('${app.semanaAtual}', '${dia}', '${tipo}')">
+                    <td class="celula-vazia" onclick="abrirModalPlanejar('${app.semanaAtual}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
                         + Adicionar
                     </td>
                 `;
@@ -639,25 +766,38 @@ function renderizarSemanal() {
     });
 }
 
-function buscarPlanejamento(semana, dia, tipo) {
-    return app.planejamentos.find(p => 
-        p.semana === semana && 
-        p.dia === dia && 
-        p.refeicao === tipo &&
-        p.tipo === 'semanal'
-    );
+function atualizarCabecalhoSemanal() {
+    const tabela = document.querySelector('#visao-semanal .tabela-semanal thead tr');
+    if (!tabela) return;
+
+    const inicio = obterInicioSemana(app.semanaAtual);
+    tabela.innerHTML = '<th>Refeicao</th>' + DIAS_SEMANA.map((dia, indice) => {
+        const data = new Date(inicio);
+        data.setDate(inicio.getDate() + indice);
+        return `<th>${dia.nome}<br><span class="data-cabecalho">${data.getDate()}/${data.getMonth() + 1}</span></th>`;
+    }).join('');
 }
 
+function buscarPlanejamento(semana, dia, tipo) {
+    const dataStr = formatarDataChave(obterDataSemanaDia(semana, dia));
+
+    return buscarPlanejamentoPorData(dataStr, tipo) || app.planejamentos.find(p =>
+        Number(p.semana) === Number(semana) &&
+        normalizarDiaSemana(p.dia) === normalizarDiaSemana(dia) &&
+        p.refeicao === tipo
+    );
+}
 function buscarReceita(id) {
     return app.receitas.find(r => r.id === id);
 }
 
-function abrirModalPlanejar(semana, dia, tipo) {
+function abrirModalPlanejar(semana, dia, tipo, data = '') {
     // Guardar contexto
     window.contextoPlanejar = {
         modo: 'semanal',
         semana,
-        dia,
+        dia: normalizarDiaSemana(dia),
+        data: data || formatarDataChave(obterDataSemanaDia(semana, dia)),
         refeicao: tipo,
         planejamentoId: null,
     };
@@ -673,8 +813,8 @@ function abrirEdicaoPlanejamento(id) {
     window.contextoPlanejar = {
         modo: plano.tipo || 'semanal',
         semana: plano.semana,
-        dia: plano.dia,
-        data: plano.data,
+        dia: normalizarDiaSemana(plano.dia),
+        data: plano.data || (plano.semana && plano.dia ? formatarDataChave(obterDataSemanaDia(plano.semana, plano.dia)) : ''),
         refeicao: plano.refeicao,
         planejamentoId: id,
     };
@@ -726,6 +866,11 @@ function selecionarReceitaParaPlano(receitaId) {
 
     if (planejamentoExistente) {
         planejamentoExistente.receitaId = receitaId;
+        planejamentoExistente.refeicao = ctx.refeicao;
+        planejamentoExistente.data = ctx.data || planejamentoExistente.data;
+        planejamentoExistente.semana = ctx.semana || planejamentoExistente.semana;
+        planejamentoExistente.dia = ctx.dia || planejamentoExistente.dia;
+        planejamentoExistente.tipo = ctx.modo === 'calendario' ? 'calendario' : 'semanal';
         salvarDados();
         renderizarAposPlanejamento(ctx.modo);
         fecharModal('modal-selecionar-receita');
@@ -740,45 +885,36 @@ function selecionarReceitaParaPlano(receitaId) {
         receitaId: receitaId,
         refeicao: ctx.refeicao,
         tipo: isCalendario ? 'calendario' : 'semanal',
+        data: ctx.data,
+        semana: ctx.semana,
+        dia: ctx.dia,
         dataCriacao: new Date().toISOString(),
     };
-
-    if (isCalendario) {
-        planeamento.data = ctx.data;
-    } else {
-        planeamento.semana = ctx.semana;
-        planeamento.dia = ctx.dia;
-    }
 
     app.planejamentos.push(planeamento);
     salvarDados();
     renderizarAposPlanejamento(ctx.modo);
     fecharModal('modal-selecionar-receita');
 
-    console.log('✅ Refeição planejada:', planeamento);
+    console.log('âœ… RefeiÃ§Ã£o planejada:', planeamento);
 }
 
 function renderizarAposPlanejamento(modo) {
-    if (modo === 'calendario') {
-        renderizarDiaria();
-        renderizarCalendario();
-    } else {
-        renderizarSemanal();
-        renderizarMensal();
-    }
+    renderizarSemanal();
+    renderizarMensal();
+    renderizarDiaria();
+    renderizarCalendario();
 }
 
 function removerPlanejamento(id) {
     if (confirm('Remover este planejamento?')) {
         app.planejamentos = app.planejamentos.filter(p => p.id !== id);
         salvarDados();
-        renderizarSemanal();
-        renderizarDiaria();
-        renderizarCalendario();
+        renderizarTudoAposSync();
     }
 }
 
-/* Navegação de semanas */
+/* NavegaÃ§Ã£o de semanas */
 function semanaAnterior() {
     app.semanaAtual = Math.max(1, app.semanaAtual - 1);
     atualizarTituloSemana();
@@ -798,71 +934,90 @@ function mudarSemana(numero) {
 }
 
 function atualizarTituloSemana() {
-    document.getElementById('titulo-semana').textContent = `Semana ${app.semanaAtual}`;
+    const inicio = obterInicioSemana(app.semanaAtual);
+    const fim = new Date(inicio);
+    fim.setDate(inicio.getDate() + 6);
+    document.getElementById('titulo-semana').textContent =
+        `Semana ${app.semanaAtual} (${inicio.getDate()}/${inicio.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1})`;
     document.getElementById('numero-semana').value = app.semanaAtual;
 }
 
-/* ==================== VISÃO MENSAL ====================
-   Renderiza múltiplas semanas do mês */
+/* ==================== VISÃƒO MENSAL ====================
+   Renderiza mÃºltiplas semanas do mÃªs */
 
 function renderizarMensal() {
     const container = document.getElementById('container-semanas-mensais');
     container.innerHTML = '';
 
-    // Renderizar 4-5 semanas
-    for (let i = 1; i <= 5; i++) {
+    const primeiroDiaMes = new Date(app.anoAtual, app.mesAtual, 1);
+    const ultimoDiaMes = new Date(app.anoAtual, app.mesAtual + 1, 0);
+    const inicio = new Date(primeiroDiaMes);
+    inicio.setDate(primeiroDiaMes.getDate() - primeiroDiaMes.getDay());
+
+    let cursor = new Date(inicio);
+    while (cursor <= ultimoDiaMes || cursor.getDay() !== 0) {
+        const semana = obterNumeroSemana(cursor);
         const semanaDiv = document.createElement('div');
         semanaDiv.className = 'semana-mensal';
-        semanaDiv.innerHTML = `<h3>Semana ${i}</h3>`;
+        semanaDiv.innerHTML = `<h3>Semana ${semana}</h3>`;
 
-        // Criar tabela para cada semana
         const table = document.createElement('table');
         table.className = 'tabela-semanal';
         table.innerHTML = `
             <thead>
                 <tr>
-                    <th>Refeição</th>
-                    <th>Dom</th>
-                    <th>Seg</th>
-                    <th>Ter</th>
-                    <th>Qua</th>
-                    <th>Qui</th>
-                    <th>Sex</th>
-                    <th>Sab</th>
+                    <th>Refeicao</th>
+                    ${DIAS_SEMANA.map((dia, indice) => {
+                        const data = new Date(cursor);
+                        data.setDate(cursor.getDate() + indice);
+                        const foraMes = data.getMonth() !== app.mesAtual ? ' data-fora-mes' : '';
+                        return `<th class="${foraMes}">${dia.abrev}<br><span class="data-cabecalho">${data.getDate()}/${data.getMonth() + 1}</span></th>`;
+                    }).join('')}
                 </tr>
             </thead>
-            <tbody id="corpo-semana-${i}"></tbody>
+            <tbody></tbody>
         `;
-        semanaDiv.appendChild(table);
-        container.appendChild(semanaDiv);
 
-        // Renderizar linhas da tabela
-        const tbody = document.getElementById(`corpo-semana-${i}`);
+        const tbody = table.querySelector('tbody');
         app.tiposRefeicao.forEach(tipo => {
             const tr = document.createElement('tr');
             let html = `<td style="font-weight: 600;">${tipo}</td>`;
 
-            const diasSemana = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-            diasSemana.forEach(dia => {
-                const plano = buscarPlanejamento(i, dia, tipo);
+            DIAS_SEMANA.forEach((diaInfo, indice) => {
+                const data = new Date(cursor);
+                data.setDate(cursor.getDate() + indice);
+                const dataStr = formatarDataChave(data);
+                const plano = buscarPlanejamentoPorData(dataStr, tipo);
+                const classeForaMes = data.getMonth() !== app.mesAtual ? ' data-fora-mes' : '';
+
                 if (plano) {
-                    const receita = buscarReceita(plano.receitaId);
-                    html += `<td><div class="celula-refeicao">${receita.nome}</div></td>`;
+                    html += `
+                        <td class="${classeForaMes}" onclick="abrirEdicaoPlanejamento('${plano.id}')">
+                            ${renderizarResumoReceitaPlano(plano, true)}
+                        </td>
+                    `;
                 } else {
-                    html += `<td class="celula-vazia">-</td>`;
+                    html += `
+                        <td class="celula-vazia${classeForaMes}" onclick="abrirModalPlanejar('${semana}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
+                            +
+                        </td>
+                    `;
                 }
             });
 
             tr.innerHTML = html;
             tbody.appendChild(tr);
         });
+
+        semanaDiv.appendChild(table);
+        container.appendChild(semanaDiv);
+        cursor.setDate(cursor.getDate() + 7);
     }
 
     atualizarTituloMes();
 }
-
 function atualizarTituloMes() {
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    const meses = ['Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho',
                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     document.getElementById('titulo-mes').textContent = 
         `${meses[app.mesAtual]} ${app.anoAtual}`;
@@ -888,8 +1043,8 @@ function proxMes() {
     renderizarMensal();
 }
 
-/* ==================== VISÃO DIÁRIA ====================
-   Refeições de um dia específico */
+/* ==================== VISÃƒO DIÃRIA ====================
+   RefeiÃ§Ãµes de um dia especÃ­fico */
 
 let dataDiaria = new Date();
 
@@ -903,13 +1058,11 @@ function renderizarDiaria() {
     const dataFormatada = dataDiaria.toLocaleDateString('pt-BR', opcoes);
     titulo.textContent = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
 
-    // Buscar refeições planejadas para essa data
+    // Buscar refeiÃ§Ãµes planejadas para essa data
     const dataString = dataDiaria.toISOString().split('T')[0];
 
     app.tiposRefeicao.forEach(tipo => {
-        const plano = app.planejamentos.find(p => 
-            p.data === dataString && p.refeicao === tipo && p.tipo === 'calendario'
-        );
+        const plano = buscarPlanejamentoPorData(dataString, tipo);
 
         const card = document.createElement('div');
         card.className = 'card-diario';
@@ -919,17 +1072,25 @@ function renderizarDiaria() {
 
         if (plano) {
             const receita = buscarReceita(plano.receitaId);
-            card.innerHTML += `
-                <p><strong>${receita.nome}</strong></p>
-                <p>Categoria: ${receita.categoria || 'N/A'}</p>
-                <button onclick="marcarComoConsumida('${receita.id}')">✓ Consumida</button>
-                <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
-            `;
+            if (receita) {
+                card.innerHTML += `
+                    <p><strong>${receita.nome}</strong></p>
+                    <p>Categoria: ${receita.categoria || 'N/A'}</p>
+                    <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
+                    <button onclick="marcarComoConsumida('${receita.id}')">Consumida</button>
+                    <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
+                `;
+            } else {
+                card.innerHTML += `
+                    <p><strong>Receita removida</strong></p>
+                    <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
+                `;
+            }
         } else {
             card.innerHTML += `
-                <p style="color: #999;">Sem refeição planejada</p>
+                <p style="color: #999;">Sem refeiÃ§Ã£o planejada</p>
                 <button onclick="abrirModalPlanejarData('${dataString}', '${tipo}')">
-                    ➕ Adicionar
+                    âž• Adicionar
                 </button>
             `;
         }
@@ -954,9 +1115,12 @@ function mudarDataDiaria(data) {
 }
 
 function abrirModalPlanejarData(data, tipo) {
+    const semanaDia = obterSemanaDiaPorData(criarDataLocal(data));
     window.contextoPlanejar = {
         modo: 'calendario',
         data,
+        semana: semanaDia.semana,
+        dia: semanaDia.dia,
         refeicao: tipo,
         planejamentoId: null,
     };
@@ -969,8 +1133,8 @@ function selecionarReceitaParaPlanoDia(receitaId) {
     selecionarReceitaParaPlano(receitaId);
 }
 
-/* ==================== VISÃO CALENDÁRIO ====================
-   Calendário interativo com datas */
+/* ==================== VISÃƒO CALENDÃRIO ====================
+   CalendÃ¡rio interativo com datas */
 
 let mesCalendario = new Date().getMonth();
 let anoCalendario = new Date().getFullYear();
@@ -980,19 +1144,19 @@ function renderizarCalendario() {
     const container = document.getElementById('calendario');
     container.innerHTML = '';
 
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    const meses = ['Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho',
                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-    // Atualizar título
+    // Atualizar tÃ­tulo
     document.getElementById('titulo-calendario').textContent = 
         `${meses[mesCalendario]} ${anoCalendario}`;
 
-    // Primeiro dia do mês
+    // Primeiro dia do mÃªs
     const primeiro = new Date(anoCalendario, mesCalendario, 1);
     const ultimo = new Date(anoCalendario, mesCalendario + 1, 0);
     const diasAnterior = primeiro.getDay();
 
-    // Dias do mês anterior
+    // Dias do mÃªs anterior
     const diasMesAnterior = new Date(anoCalendario, mesCalendario, 0).getDate();
     for (let i = diasAnterior - 1; i >= 0; i--) {
         const dia = diasMesAnterior - i;
@@ -1000,13 +1164,13 @@ function renderizarCalendario() {
         container.appendChild(div);
     }
 
-    // Dias do mês
+    // Dias do mÃªs
     for (let dia = 1; dia <= ultimo.getDate(); dia++) {
         const div = criarDiaCalendario(dia, false);
         container.appendChild(div);
     }
 
-    // Dias do mês seguinte
+    // Dias do mÃªs seguinte
     const diasRestantes = 42 - (diasAnterior + ultimo.getDate());
     for (let dia = 1; dia <= diasRestantes; dia++) {
         const div = criarDiaCalendario(dia, true);
@@ -1041,9 +1205,9 @@ function criarDiaCalendario(dia, outroMes) {
         div.textContent = dia;
         div.onclick = () => selecionarDataCalendario(data);
 
-        // Verificar se tem refeição
+        // Verificar se tem refeiÃ§Ã£o
         const dataStr = data.toISOString().split('T')[0];
-        if (app.planejamentos.some(p => p.data === dataStr)) {
+        if (app.tiposRefeicao.some(tipo => buscarPlanejamentoPorData(dataStr, tipo))) {
             div.classList.add('com-refeicao');
         }
     }
@@ -1067,9 +1231,7 @@ function atualizarDetalhesData(data) {
     refeicoes.innerHTML = '';
 
     app.tiposRefeicao.forEach(tipo => {
-        const plano = app.planejamentos.find(p => 
-            p.data === dataStr && p.refeicao === tipo && p.tipo === 'calendario'
-        );
+        const plano = buscarPlanejamentoPorData(dataStr, tipo);
 
         const div = document.createElement('div');
         div.className = 'item-refeicao-data';
@@ -1084,7 +1246,7 @@ function atualizarDetalhesData(data) {
                 </button>
                 <button onclick="removerPlanejamento('${plano.id}')" 
                         style="background: #e74c3c; color: white; border: none; margin-left: 10px; padding: 2px 6px; cursor: pointer; border-radius: 3px;">
-                    ✕
+                    âœ•
                 </button>
             `;
         } else {
@@ -1146,7 +1308,7 @@ function proxMesCalendario() {
    Gerenciar receitas */
 
 function abrirModalReceita() {
-    // Limpar formulário
+    // Limpar formulÃ¡rio
     document.getElementById('form-receita').reset();
     document.getElementById('form-receita').dataset.receitaId = '';
     document.querySelector('.modal-content h2').textContent = 'Nova Receita';
@@ -1216,7 +1378,7 @@ function salvarReceita(e) {
 
     const tiposSelecionados = obterTiposSelecionadosReceita();
     if (tiposSelecionados.length === 0) {
-        alert('Selecione pelo menos um tipo de refeição!');
+        alert('Selecione pelo menos um tipo de refeiÃ§Ã£o!');
         return;
     }
 
@@ -1235,7 +1397,7 @@ function salvarReceita(e) {
         dataCriacao: new Date().toISOString(),
     };
 
-    // Verificar se é edi ção ou novo
+    // Verificar se Ã© edi Ã§Ã£o ou novo
     const indice = app.receitas.findIndex(r => r.id === id);
     if (indice >= 0) {
         app.receitas[indice] = receita;
@@ -1250,9 +1412,9 @@ function salvarReceita(e) {
     atualizarFiltroCategoria();
     normalizarTags();
     atualizarSelectTags();
-    renderizarReceitas();
+    renderizarTudoAposSync();
 
-    console.log('✅ Receita salva:', receita);
+    console.log('âœ… Receita salva:', receita);
 }
 
 function renderizarReceitas() {
@@ -1281,8 +1443,8 @@ function renderizarReceitas() {
                     <p><strong>Ingredientes:</strong><br>${receita.ingredientes.slice(0, 3).join('<br>')}</p>
                 ` : ''}
                 <div class="card-receita-actions">
-                    <button class="btn-editar" onclick="editarReceita('${receita.id}')">✏️ Editar</button>
-                    <button class="btn-deletar" onclick="deletarReceita('${receita.id}')">🗑️ Deletar</button>
+                    <button class="btn-editar" onclick="editarReceita('${receita.id}')">âœï¸ Editar</button>
+                    <button class="btn-deletar" onclick="deletarReceita('${receita.id}')">ðŸ—‘ï¸ Deletar</button>
                 </div>
             </div>
         `;
@@ -1312,7 +1474,7 @@ function deletarReceita(id) {
         app.receitas = app.receitas.filter(r => r.id !== id);
         app.planejamentos = app.planejamentos.filter(p => p.receitaId !== id);
         salvarDados();
-        renderizarReceitas();
+        renderizarTudoAposSync();
     }
 }
 
@@ -1416,7 +1578,7 @@ function adicionarTag() {
     }
 
     if (app.tags.some(tag => tag.toLowerCase() === novaTag.toLowerCase())) {
-        alert('Esta tag já existe!');
+        alert('Esta tag jÃ¡ existe!');
         return;
     }
 
@@ -1439,7 +1601,7 @@ function editarTag(tagAtual) {
         tag !== tagAtual &&
         tag.toLowerCase() === tagLimpa.toLowerCase()
     )) {
-        alert('Esta tag já existe!');
+        alert('Esta tag jÃ¡ existe!');
         return;
     }
 
@@ -1458,7 +1620,7 @@ function editarTag(tagAtual) {
 function removerTag(tag) {
     const usada = app.receitas.some(receita => obterTagsReceita(receita).includes(tag));
     const mensagem = usada
-        ? `Remover "${tag}"? Ela também será removida das receitas.`
+        ? `Remover "${tag}"? Ela tambÃ©m serÃ¡ removida das receitas.`
         : `Remover "${tag}"?`;
 
     if (!confirm(mensagem)) return;
@@ -1580,7 +1742,7 @@ function adicionarCategoria() {
     }
 
     if (app.categorias.some(categoria => categoria.toLowerCase() === novaCategoria.toLowerCase())) {
-        alert('Esta categoria já existe!');
+        alert('Esta categoria jÃ¡ existe!');
         return;
     }
 
@@ -1604,7 +1766,7 @@ function editarCategoria(categoriaAtual) {
         categoria !== categoriaAtual &&
         categoria.toLowerCase() === categoriaLimpa.toLowerCase()
     )) {
-        alert('Esta categoria já existe!');
+        alert('Esta categoria jÃ¡ existe!');
         return;
     }
 
@@ -1626,7 +1788,7 @@ function editarCategoria(categoriaAtual) {
 function removerCategoria(categoria) {
     const usada = app.receitas.some(receita => receita.categoria === categoria);
     const mensagem = usada
-        ? `Remover "${categoria}"? As receitas desta categoria ficarão sem categoria.`
+        ? `Remover "${categoria}"? As receitas desta categoria ficarÃ£o sem categoria.`
         : `Remover "${categoria}"?`;
 
     if (!confirm(mensagem)) return;
@@ -1693,7 +1855,7 @@ function renderizarAposAlterarCategorias() {
     renderizarCalendario();
 }
 
-/* ==================== TIPOS DE REFEIÇÃO ====================
+/* ==================== TIPOS DE REFEIÃ‡ÃƒO ====================
    Gerenciar tipos customizados */
 
 function abrirTiposRefeicao() {
@@ -1705,12 +1867,12 @@ function adicionarTipoRefeicao() {
     const novoTipo = document.getElementById('novo-tipo-refeicao').value.trim();
 
     if (!novoTipo) {
-        alert('Digite um tipo de refeição!');
+        alert('Digite um tipo de refeiÃ§Ã£o!');
         return;
     }
 
     if (app.tiposRefeicao.includes(novoTipo)) {
-        alert('Este tipo já existe!');
+        alert('Este tipo jÃ¡ existe!');
         return;
     }
 
@@ -1720,7 +1882,7 @@ function adicionarTipoRefeicao() {
     document.getElementById('novo-tipo-refeicao').value = '';
     renderizarTiposRefeicao();
 
-    console.log('✅ Tipo de refeição adicionado:', novoTipo);
+    console.log('âœ… Tipo de refeiÃ§Ã£o adicionado:', novoTipo);
 }
 
 function removerTipoRefeicao(tipo) {
@@ -1741,7 +1903,7 @@ function renderizarTiposRefeicao() {
         badge.className = 'badge-tipo-removivel';
         badge.innerHTML = `
             ${tipo}
-            <button onclick="removerTipoRefeicao('${tipo}')">✕</button>
+            <button onclick="removerTipoRefeicao('${tipo}')">âœ•</button>
         `;
         container.appendChild(badge);
     });
@@ -1772,7 +1934,7 @@ function atualizarSelectTipos(tiposSelecionados = []) {
     });
 }
 
-/* ==================== HISTÓRICO ====================
+/* ==================== HISTÃ“RICO ====================
    Acompanhar consumo de receitas */
 
 function abrirHistorico() {
@@ -1797,8 +1959,8 @@ function marcarComoConsumida(receitaId) {
     }
 
     salvarDados();
-    console.log('✅ Consumo registrado:', item);
-    alert('Refeição marcada como consumida!');
+    console.log('âœ… Consumo registrado:', item);
+    alert('RefeiÃ§Ã£o marcada como consumida!');
 }
 
 function renderizarHistorico() {
@@ -1806,7 +1968,7 @@ function renderizarHistorico() {
     container.innerHTML = '';
 
     if (app.historico.length === 0) {
-        container.innerHTML = '<div class="sem-resultados">Nenhum histórico registrado ainda.</div>';
+        container.innerHTML = '<div class="sem-resultados">Nenhum histÃ³rico registrado ainda.</div>';
         return;
     }
 
@@ -1829,10 +1991,10 @@ function renderizarHistorico() {
                 </div>
                 <div class="stat-box">
                     <div class="stat-numero">${diferenca}</div>
-                    <div class="stat-label">Dias desde o último uso</div>
+                    <div class="stat-label">Dias desde o Ãºltimo uso</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">Última vez</div>
+                    <div class="stat-label">Ãšltima vez</div>
                     <div class="stat-numero" style="font-size: 12px;">${dataUltimo.toLocaleDateString('pt-BR')}</div>
                 </div>
             </div>
@@ -1889,6 +2051,8 @@ Object.assign(window, {
 });
 
 /* ==================== INICIAR ====================
-   Quando página carrega */
+   Quando pÃ¡gina carrega */
 
 window.addEventListener('DOMContentLoaded', inicializar);
+
+
