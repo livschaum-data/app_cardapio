@@ -1,5 +1,5 @@
-/* ==================== CORES E VARIÁVEIS ====================
-   Inspirado em imagens que você enviou */
+/* ==================== CORES E VARIAVEIS ====================
+   Inspirado em imagens que voc enviou */
 
 :root {
     --cor-primaria: #8B4513;      /* Marrom escuro */
@@ -16,8 +16,8 @@
     --sombra: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* ==================== RESET E PADRÕES ====================
-   Começa limpo */
+/* ==================== RESET E PADROES ====================
+   Comea limpo */
 
 * {
     margin: 0;
@@ -46,7 +46,7 @@ body {
 }
 
 /* ==================== HEADER ====================
-   Cabeçalho com título e menu */
+   Cabealho com ttulo e menu */
 
 .header {
     background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
@@ -246,7 +246,7 @@ body {
 }
 
 /* ==================== ABAS ====================
-   Navegação entre visualizações */
+   Navegao entre visualizaes */
 
 .abas {
     display: flex;
@@ -282,8 +282,8 @@ body {
     border-color: var(--cor-primaria);
 }
 
-/* ==================== VISÕES ====================
-   Conteúdo principal */
+/* ==================== VISES ====================
+   Contedo principal */
 
 .visao {
     flex: 1;
@@ -321,7 +321,7 @@ body {
 }
 
 /* ==================== TABELA SEMANAL ====================
-   Estilo inspirado nas imagens do cardápio */
+   Estilo inspirado nas imagens do cardpio */
 
 .tabela-container {
     overflow-x: auto;
@@ -362,7 +362,7 @@ body {
     background: rgba(139, 69, 19, 0.08);
 }
 
-/* Célula com refeição planejada */
+/* Clula com refeio planejada */
 .celula-refeicao {
     background: rgba(255, 140, 0, 0.1);
     border-radius: 6px;
@@ -420,6 +420,48 @@ body {
     font-size: 11px;
 }
 
+.btn-editar-mini,
+.btn-adicionar-mini {
+    background: var(--cor-secundaria);
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.btn-adicionar-mini {
+    margin-top: 6px;
+    width: 100%;
+}
+
+.lista-planejamentos-refeicao {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.item-planejamento-diario,
+.linha-planejamento-data {
+    border-top: 1px solid var(--cor-borda);
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+.lista-planejamentos-data {
+    display: grid;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.linha-planejamento-data {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
 .receita-removida {
     background: rgba(231, 76, 60, 0.1);
 }
@@ -429,7 +471,7 @@ body {
 }
 
 /* ==================== CONTAINER SEMANAS ====================
-   Múltiplas semanas na visão mensal */
+   Mltiplas semanas na viso mensal */
 
 .container-semanas {
     display: flex;
@@ -449,8 +491,8 @@ body {
     margin-bottom: 15px;
 }
 
-/* ==================== VISÃO DIÁRIA ====================
-   Refeições do dia em cards */
+/* ==================== VISO DIRIA ====================
+   Refeies do dia em cards */
 
 .container-diaria {
     display: grid;
@@ -491,8 +533,8 @@ body {
     background: var(--cor-primaria);
 }
 
-/* ==================== CALENDÁRIO ====================
-   Calendário interativo */
+/* ==================== CALENDRIO ====================
+   Calendrio interativo */
 
 .calendario-container {
     display: grid;
@@ -721,7 +763,7 @@ body {
 }
 
 /* ==================== MODAIS ====================
-   Popups de formulários */
+   Popups de formulrios */
 
 .modal {
     position: fixed;
@@ -769,7 +811,7 @@ body {
     justify-content: center;
 }
 
-/* ==================== FORMULÁRIOS ====================
+/* ==================== FORMULRIOS ====================
    Inputs e campos */
 
 .form-grupo {
@@ -844,8 +886,8 @@ body {
     flex: 1;
 }
 
-/* ==================== BOTÕES ====================
-   Botões principais e secundários */
+/* ==================== BOTES ====================
+   Botes principais e secundrios */
 
 .btn-principal,
 .btn-secundario {
@@ -878,7 +920,7 @@ body {
     background: #d2b48c;
 }
 
-/* ==================== LISTA TIPOS REFEIÇÃO ====================
+/* ==================== LISTA TIPOS REFEIO ====================
    Lista de tipos customizados */
 
 .lista-tipos {
@@ -952,8 +994,8 @@ body {
     padding: 6px 10px;
 }
 
-/* ==================== HISTÓRICO ====================
-   Estatísticas de uso */
+/* ==================== HISTRICO ====================
+   Estatsticas de uso */
 
 .lista-historico {
     display: flex;
@@ -1001,7 +1043,7 @@ body {
 }
 
 /* ==================== RESPONSIVO ====================
-   Adaptações para mobile */
+   Adaptaes para mobile */
 
 @media (max-width: 768px) {
     .header h1 {
@@ -1087,7 +1129,7 @@ body {
     }
 }
 
-/* ==================== UTILITÁRIOS ====================
+/* ==================== UTILITRIOS ====================
    Classes auxiliares */
 
 .oculto {

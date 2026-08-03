@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍽️ Planejador de Cardápio</title>
-    <link rel="stylesheet" href="css/style.css?v=20260803-nuvem-auth">
+    <title>Planejador de Card&aacute;pio</title>
+    <link rel="stylesheet" href="css/style.css?v=20260803-multi-recipes">
 </head>
 <body>
     <div id="app">
-        <!-- ==================== HEADER ====================
-             Cabeçalho com título e menu principal -->
         <header class="header">
-            <h1>🍽️ Planejador de Cardápio</h1>
+            <h1>Planejador de Card&aacute;pio</h1>
             <div class="status-nuvem" id="status-nuvem">
                 <button type="button" id="btn-conectar-nuvem" class="btn-nuvem-toggle" onclick="alternarPainelNuvem()" aria-expanded="false" aria-controls="painel-nuvem">
                     <span class="status-indicador status-offline" id="status-nuvem-indicador"></span>
@@ -19,21 +17,11 @@
                 </button>
             </div>
             <nav class="menu-principal">
-                <button class="menu-btn" onclick="abrirModalReceita()">
-                    ➕ Nova Receita
-                </button>
-                <button class="menu-btn" onclick="abrirTiposRefeicao()">
-                    ⚙️ Tipos de Refeição
-                </button>
-                <button class="menu-btn" id="btn-categorias" onclick="abrirCategorias()">
-                    Categorias
-                </button>
-                <button class="menu-btn" id="btn-tags" onclick="abrirTags()">
-                    Tags
-                </button>
-                <button class="menu-btn" onclick="abrirHistorico()">
-                    📊 Histórico
-                </button>
+                <button class="menu-btn" onclick="abrirModalReceita()">Nova Receita</button>
+                <button class="menu-btn" onclick="abrirTiposRefeicao()">Tipos de Refei&ccedil;&atilde;o</button>
+                <button class="menu-btn" id="btn-categorias" onclick="abrirCategorias()">Categorias</button>
+                <button class="menu-btn" id="btn-tags" onclick="abrirTags()">Tags</button>
+                <button class="menu-btn" onclick="abrirHistorico()">Hist&oacute;rico</button>
             </nav>
         </header>
 
@@ -43,7 +31,7 @@
                     <span>Supabase</span>
                     <h2>Sincronizacao da conta</h2>
                 </div>
-                <button class="btn-fechar" type="button" onclick="fecharPainelNuvem()" aria-label="Fechar conexao com a nuvem">✕</button>
+                <button class="btn-fechar" type="button" onclick="fecharPainelNuvem()" aria-label="Fechar conexao com a nuvem">x</button>
             </div>
 
             <div id="nuvem-login" class="nuvem-box">
@@ -69,322 +57,193 @@
             <p id="nuvem-status" class="texto-ajuda" aria-live="polite">Verificando conexao com a nuvem...</p>
         </aside>
 
-        <!-- ==================== ABAS DE NAVEGAÇÃO ====================
-             Botões para alternar entre visualizações -->
         <div class="abas">
-            <button class="aba-btn ativo" onclick="mostrarVisao('semanal')">
-                📅 Semanal
-            </button>
-            <button class="aba-btn" onclick="mostrarVisao('mensal')">
-                📆 Mensal
-            </button>
-            <button class="aba-btn" onclick="mostrarVisao('diaria')">
-                📊 Diária
-            </button>
-            <button class="aba-btn" onclick="mostrarVisao('calendario')">
-                🗓️ Calendário
-            </button>
-            <button class="aba-btn" onclick="mostrarVisao('receitas')">
-                📚 Receitas
-            </button>
+            <button class="aba-btn ativo" onclick="mostrarVisao('semanal')">Semanal</button>
+            <button class="aba-btn" onclick="mostrarVisao('mensal')">Mensal</button>
+            <button class="aba-btn" onclick="mostrarVisao('diaria')">Di&aacute;ria</button>
+            <button class="aba-btn" onclick="mostrarVisao('calendario')">Calend&aacute;rio</button>
+            <button class="aba-btn" onclick="mostrarVisao('receitas')">Receitas</button>
         </div>
 
-        <!-- ==================== VISÃO SEMANAL ====================
-             Tabela com 7 dias e tipos de refeição -->
         <div id="visao-semanal" class="visao">
             <div class="controles">
-                <button onclick="semanaAnterior()">← Semana Anterior</button>
+                <button onclick="semanaAnterior()">Semana Anterior</button>
                 <h2 id="titulo-semana">Semana 1</h2>
-                <button onclick="proxSemana()">Próxima Semana →</button>
-                <input type="number" id="numero-semana" min="1" max="52" 
-                       onchange="mudarSemana(this.value)" 
-                       style="width: 60px; padding: 8px; margin-left: 20px;">
+                <button onclick="proxSemana()">Proxima Semana</button>
+                <input type="number" id="numero-semana" min="1" max="52" onchange="mudarSemana(this.value)" style="width: 60px; padding: 8px; margin-left: 20px;">
             </div>
 
             <div class="tabela-container">
                 <table class="tabela-semanal">
                     <thead>
                         <tr>
-                            <th>Refeição</th>
-                            <th>Domingo</th>
+                            <th>Refei&ccedil;&atilde;o</th>
                             <th>Segunda</th>
-                            <th>Terça</th>
+                            <th>Ter&ccedil;a</th>
                             <th>Quarta</th>
                             <th>Quinta</th>
                             <th>Sexta</th>
-                            <th>Sábado</th>
+                            <th>S&aacute;bado</th>
+                            <th>Domingo</th>
                         </tr>
                     </thead>
-                    <tbody id="corpo-tabela-semanal">
-                        <!-- Preenchida dinamicamente pelo JS -->
-                    </tbody>
+                    <tbody id="corpo-tabela-semanal"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ==================== VISÃO MENSAL ====================
-             Múltiplas semanas -->
         <div id="visao-mensal" class="visao" style="display:none;">
             <div class="controles">
-                <button onclick="mesAnterior()">← Mês Anterior</button>
+                <button onclick="mesAnterior()">Mes Anterior</button>
                 <h2 id="titulo-mes">Janeiro 2024</h2>
-                <button onclick="proxMes()">Próximo Mês →</button>
+                <button onclick="proxMes()">Proximo Mes</button>
             </div>
-
-            <div id="container-semanas-mensais" class="container-semanas">
-                <!-- Múltiplas tabelas de semanas -->
-            </div>
+            <div id="container-semanas-mensais" class="container-semanas"></div>
         </div>
 
-        <!-- ==================== VISÃO DIÁRIA ====================
-             Refeições do dia -->
         <div id="visao-diaria" class="visao" style="display:none;">
             <div class="controles">
-                <button onclick="diaAnterior()">← Dia Anterior</button>
+                <button onclick="diaAnterior()">Dia Anterior</button>
                 <h2 id="titulo-dia">Segunda, 1 de Janeiro</h2>
-                <button onclick="proximoDia()">Próximo Dia →</button>
-                <input type="date" id="data-diaria" onchange="mudarDataDiaria(this.value)"
-                       style="padding: 8px; margin-left: 20px;">
+                <button onclick="proximoDia()">Proximo Dia</button>
+                <input type="date" id="data-diaria" onchange="mudarDataDiaria(this.value)" style="padding: 8px; margin-left: 20px;">
             </div>
-
-            <div id="container-diaria" class="container-diaria">
-                <!-- Refeições do dia -->
-            </div>
+            <div id="container-diaria" class="container-diaria"></div>
         </div>
 
-        <!-- ==================== VISÃO CALENDÁRIO ====================
-             Calendário interativo -->
         <div id="visao-calendario" class="visao" style="display:none;">
             <div class="controles">
-                <button onclick="mesCalendarioAnterior()">← Anterior</button>
+                <button onclick="mesCalendarioAnterior()">Anterior</button>
                 <h2 id="titulo-calendario">Janeiro 2024</h2>
-                <button onclick="proxMesCalendario()">Próximo →</button>
+                <button onclick="proxMesCalendario()">Proximo</button>
             </div>
 
             <div class="calendario-container">
-                <div id="calendario" class="calendario">
-                    <!-- Dias do calendário -->
-                </div>
-                
+                <div id="calendario" class="calendario"></div>
                 <div id="detalhes-data" class="detalhes-data">
                     <h3>Data Selecionada</h3>
                     <p id="data-selecionada">Nenhuma</p>
-                    <div id="refeicoes-data" class="refeicoes-data">
-                        <!-- Refeições da data -->
-                    </div>
-                    <button onclick="adicionarRefeicaoData()">
-                        ➕ Adicionar Refeição
-                    </button>
+                    <div id="refeicoes-data" class="refeicoes-data"></div>
+                    <button onclick="adicionarRefeicaoData()">Adicionar Refei&ccedil;&atilde;o</button>
                 </div>
             </div>
         </div>
 
-        <!-- ==================== VISÃO RECEITAS ====================
-             Lista de todas as receitas -->
         <div id="visao-receitas" class="visao" style="display:none;">
             <div class="controles">
-                <input type="text" id="busca-receitas" placeholder="🔍 Buscar receita..."
-                       onkeyup="filtrarReceitas()">
+                <input type="text" id="busca-receitas" placeholder="Buscar receita..." onkeyup="filtrarReceitas()">
                 <select id="filtro-categoria" onchange="filtrarReceitas()">
                     <option value="">Todas as categorias</option>
-                    <!-- Opções preenchidas dinamicamente -->
                 </select>
             </div>
-
-            <div id="lista-receitas" class="lista-receitas">
-                <!-- Cards de receitas -->
-            </div>
+            <div id="lista-receitas" class="lista-receitas"></div>
         </div>
 
-        <!-- ==================== MODAL: NOVA RECEITA ====================
-             Formulário para adicionar/editar receita -->
         <div id="modal-receita" class="modal" style="display:none;">
             <div class="modal-content">
-                <button class="btn-fechar" onclick="fecharModal('modal-receita')">✕</button>
+                <button class="btn-fechar" onclick="fecharModal('modal-receita')">x</button>
                 <h2>Nova Receita</h2>
-
                 <form id="form-receita">
                     <div class="form-grupo">
                         <label>Nome da Receita *</label>
                         <input type="text" id="nome-receita" required>
                     </div>
-
                     <div class="form-grupo">
-                        <label>Tipo de Refeição *</label>
-                        <div id="tipo-refeicao" class="lista-checkboxes">
-                            <!-- Preenchido dinamicamente -->
-                        </div>
+                        <label>Tipo de Refei&ccedil;&atilde;o *</label>
+                        <div id="tipo-refeicao" class="lista-checkboxes"></div>
                     </div>
-
                     <div class="form-grupo">
                         <label>Categoria</label>
                         <select id="categoria-receita">
                             <option value="">Sem categoria</option>
-                            <!-- Preenchido dinamicamente -->
                         </select>
                     </div>
-
                     <div class="form-grupo">
                         <label>Tags</label>
-                        <div id="tags-receita" class="lista-checkboxes">
-                            <!-- Preenchido dinamicamente -->
-                        </div>
+                        <div id="tags-receita" class="lista-checkboxes"></div>
                     </div>
-
                     <div class="form-grupo">
                         <label>Ingredientes (um por linha)</label>
-                        <textarea id="ingredientes-receita" placeholder="Cenoura&#10;Batata&#10;Água"></textarea>
+                        <textarea id="ingredientes-receita" placeholder="Cenoura&#10;Batata&#10;&Aacute;gua"></textarea>
                     </div>
-
                     <div class="form-grupo">
                         <label>Modo de Preparo</label>
                         <textarea id="preparo-receita" placeholder="Descreva o modo de preparo..."></textarea>
                     </div>
-
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <button type="button" class="btn-secundario" 
-                                onclick="fecharModal('modal-receita')">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="btn-principal">
-                            Salvar Receita
-                        </button>
+                        <button type="button" class="btn-secundario" onclick="fecharModal('modal-receita')">Cancelar</button>
+                        <button type="submit" class="btn-principal">Salvar Receita</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- ==================== MODAL: SELECIONAR RECEITA ====================
-             Para planejar uma refeição -->
         <div id="modal-selecionar-receita" class="modal" style="display:none;">
             <div class="modal-content">
-                <button class="btn-fechar" onclick="fecharModal('modal-selecionar-receita')">✕</button>
+                <button class="btn-fechar" onclick="fecharModal('modal-selecionar-receita')">x</button>
                 <h2>Selecionar Receita</h2>
-
-                <input type="text" id="busca-selecionar" placeholder="🔍 Buscar receita..."
-                       onkeyup="buscarReceitasModal()" style="width: 100%; padding: 10px; margin-bottom: 20px;">
-
-                <div id="lista-selecionar-receita" class="lista-receitas-modal">
-                    <!-- Receitas para selecionar -->
-                </div>
+                <input type="text" id="busca-selecionar" placeholder="Buscar receita..." onkeyup="buscarReceitasModal()" style="width: 100%; padding: 10px; margin-bottom: 20px;">
+                <div id="lista-selecionar-receita" class="lista-receitas-modal"></div>
             </div>
         </div>
 
-        <!-- ==================== MODAL: TIPOS DE REFEIÇÃO ====================
-             Gerenciar tipos customizados -->
         <div id="modal-tipos-refeicao" class="modal" style="display:none;">
             <div class="modal-content">
-                <button class="btn-fechar" onclick="fecharModal('modal-tipos-refeicao')">✕</button>
-                <h2>Tipos de Refeição</h2>
-
+                <button class="btn-fechar" onclick="fecharModal('modal-tipos-refeicao')">x</button>
+                <h2>Tipos de Refei&ccedil;&atilde;o</h2>
                 <div class="form-grupo">
                     <label>Adicionar novo tipo</label>
-                    <input type="text" id="novo-tipo-refeicao" placeholder="Ex: Café da Manhã">
-                    <button onclick="adicionarTipoRefeicao()" class="btn-principal" style="margin-top: 10px;">
-                        ➕ Adicionar
-                    </button>
+                    <input type="text" id="novo-tipo-refeicao" placeholder="Ex: Caf&eacute; da Manh&atilde;">
+                    <button onclick="adicionarTipoRefeicao()" class="btn-principal" style="margin-top: 10px;">Adicionar</button>
                 </div>
-
                 <h3 style="margin-top: 20px;">Tipos Atuais</h3>
-                <div id="lista-tipos-refeicao" class="lista-tipos">
-                    <!-- Tipos preenchidos dinamicamente -->
-                </div>
+                <div id="lista-tipos-refeicao" class="lista-tipos"></div>
             </div>
         </div>
 
-        <!-- ==================== MODAL: CATEGORIAS ====================
-             Gerenciar categorias de receitas -->
         <div id="modal-categorias" class="modal" style="display:none;">
             <div class="modal-content">
-                <button class="btn-fechar" onclick="fecharModal('modal-categorias')">✕</button>
+                <button class="btn-fechar" onclick="fecharModal('modal-categorias')">x</button>
                 <h2>Categorias</h2>
-
                 <div class="form-grupo">
                     <label>Adicionar nova categoria</label>
                     <div class="linha-form">
                         <input type="text" id="nova-categoria" placeholder="Ex: Vegetariano">
-                        <button onclick="adicionarCategoria()" class="btn-principal">
-                            Adicionar
-                        </button>
+                        <button onclick="adicionarCategoria()" class="btn-principal">Adicionar</button>
                     </div>
                 </div>
-
                 <h3 style="margin-top: 20px;">Categorias Atuais</h3>
-                <div id="lista-categorias" class="lista-gerenciavel">
-                    <!-- Categorias preenchidas dinamicamente -->
-                </div>
+                <div id="lista-categorias" class="lista-gerenciavel"></div>
             </div>
         </div>
 
-        <!-- ==================== MODAL: TAGS ====================
-             Gerenciar tags de receitas -->
         <div id="modal-tags" class="modal" style="display:none;">
             <div class="modal-content">
-                <button class="btn-fechar" onclick="fecharModal('modal-tags')">✕</button>
+                <button class="btn-fechar" onclick="fecharModal('modal-tags')">x</button>
                 <h2>Tags</h2>
-
                 <div class="form-grupo">
                     <label>Adicionar nova tag</label>
                     <div class="linha-form">
-                        <input type="text" id="nova-tag" placeholder="Ex: bebê">
-                        <button onclick="adicionarTag()" class="btn-principal">
-                            Adicionar
-                        </button>
+                        <input type="text" id="nova-tag" placeholder="Ex: beb&ecirc;">
+                        <button onclick="adicionarTag()" class="btn-principal">Adicionar</button>
                     </div>
                 </div>
-
                 <h3 style="margin-top: 20px;">Tags Atuais</h3>
-                <div id="lista-tags" class="lista-gerenciavel">
-                    <!-- Tags preenchidas dinamicamente -->
-                </div>
+                <div id="lista-tags" class="lista-gerenciavel"></div>
             </div>
         </div>
 
-        <!-- ==================== MODAL: HISTÓRICO ====================
-             Ver estatísticas de uso -->
         <div id="modal-historico" class="modal" style="display:none;">
             <div class="modal-content">
-                <button class="btn-fechar" onclick="fecharModal('modal-historico')">✕</button>
-                <h2>Histórico de Consumo</h2>
-
-                <div id="lista-historico" class="lista-historico">
-                    <!-- Estatísticas de cada receita -->
-                </div>
+                <button class="btn-fechar" onclick="fecharModal('modal-historico')">x</button>
+                <h2>Hist&oacute;rico de Consumo</h2>
+                <div id="lista-historico" class="lista-historico"></div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== SCRIPTS ====================
-         Carrega o JavaScript da app -->
     <script src="js/supabase-config.js?v=20260803-supabase-url"></script>
-    <script src="js/app.js?v=20260803-views-sync"></script>
+    <script src="js/app.js?v=20260803-multi-recipes"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
 </body>
 </html>
-
-<!-- 
-    💡 ESTRUTURA HTML:
-
-    1. HEADER
-       - Título
-       - Menu com botões principais
-
-    2. ABAS
-       - 5 botões para trocar de visão
-       - onclick chama mostrarVisao()
-
-    3. VISÕES (5 no total)
-       - Semanal: Tabela 7 dias
-       - Mensal: Múltiplas semanas
-       - Diária: Refeições do dia
-       - Calendário: Data específica
-       - Receitas: Lista de receitas
-
-    4. MODAIS (Popups)
-       - Receita: Adicionar/editar
-       - Selecionar: Escolher receita para planejar
-       - Tipos: Gerenciar tipos de refeição
-       - Histórico: Ver estatísticas
-
-    PRÓXIMO: Abra css/style.css
--->

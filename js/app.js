@@ -1,5 +1,5 @@
-﻿/* ==================== OBJETO PRINCIPAL DA APP ====================
-   Centraliza todo o estado da aplicaÃ§Ã£o */
+/* ==================== OBJETO PRINCIPAL DA APP ====================
+   Centraliza todo o estado da aplicacao */
 
 const app = {
     // Array de receitas
@@ -8,17 +8,17 @@ const app = {
     // Array de planejamentos
     planejamentos: [],
 
-    // Array de histÃ³rico de consumo
+    // Array de historico de consumo
     historico: [],
 
-    // Tipos de refeiÃ§Ã£o customizÃ¡veis
-    tiposRefeicao: ['CafÃ© da ManhÃ£', 'AlmoÃ§o', 'Lanche', 'Jantar', 'Ceia'],
+    // Tipos de refeicao customizaveis
+    tiposRefeicao: ['Café da Manhã', 'Almoço', 'Lanche', 'Jantar', 'Ceia'],
 
-    // Categorias customizÃ¡veis de receitas
-    categorias: ['Doce', 'Salgado', 'Vegetariano', 'Vegan', 'Sem GlÃºten', 'Sem Lactose'],
+    // Categorias customizaveis de receitas
+    categorias: ['Doce', 'Salgado', 'Vegetariano', 'Vegan', 'Sem Glúten', 'Sem Lactose'],
 
-    // Tags customizÃ¡veis de receitas
-    tags: ['bebÃª', 'sem glÃºten', 'sem lactose', 'dia a dia'],
+    // Tags customizaveis de receitas
+    tags: ['bebê', 'sem glúten', 'sem lactose', 'dia a dia'],
 
     // Data/semana atual
     dataCurrent: new Date(),
@@ -37,11 +37,11 @@ const app = {
     atualizadoEm: null,
 };
 
-/* ==================== INICIALIZAÃ‡ÃƒO ====================
+/* ==================== INICIALIZACAO ====================
    Carrega dados e renderiza interface */
 
 async function inicializar() {
-    console.log('ðŸ½ï¸ Inicializando app de cardÃ¡pio...');
+    console.log('Inicializando app de cardapio...');
 
     configurarEventosNuvem();
 
@@ -50,7 +50,7 @@ async function inicializar() {
     await carregarDados();
     await inicializarSessaoNuvem();
 
-    // Preencher selects com tipos de refeiÃ§Ã£o
+    // Preencher selects com tipos de refeicao
     atualizarSelectTipos();
 
     // Preencher selects e filtros de categoria
@@ -60,10 +60,10 @@ async function inicializar() {
     normalizarTags();
     atualizarSelectTags();
 
-    // Renderizar visÃ£o inicial
+    // Renderizar visao inicial
     renderizarSemanal();
 
-    // Configurar evento de envio de formulÃ¡rio
+    // Configurar evento de envio de formulario
     const formReceita = document.getElementById('form-receita');
     if (formReceita) {
         formReceita.addEventListener('submit', salvarReceita);
@@ -79,7 +79,7 @@ async function inicializar() {
         btnTags.addEventListener('click', abrirTags);
     }
 
-    console.log('âœ… App inicializada!');
+    console.log('App inicializada!');
 }
 
 /* ==================== ARMAZENAMENTO ====================
@@ -94,7 +94,7 @@ function salvarDadosLegado() {
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
     localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
-    console.log('ðŸ’¾ Dados salvos!');
+    console.log('Dados salvos!');
 }
 
 function carregarDadosLegado() {
@@ -105,11 +105,11 @@ function carregarDadosLegado() {
     app.categorias = JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias;
     app.tags = JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags;
     app.atualizadoEm = localStorage.getItem('cardapio_atualizado_em') || app.atualizadoEm;
-    console.log('ðŸ“‚ Dados carregados!');
+    console.log('Dados carregados!');
 }
 
-/* ==================== NAVEGAÃ‡ÃƒO: TROCAR VISÃƒO ====================
-   Mostrar/esconder visÃµes principais */
+/* ==================== NAVEGACAO: TROCAR VISAO ====================
+   Mostrar/esconder visoes principais */
 
 function configurarSupabase() {
     const config = window.CARDAPIO_SUPABASE;
@@ -119,7 +119,7 @@ function configurarSupabase() {
     if (!config || !supabaseUrl || !config.anonKey) {
         app.supabaseOnline = false;
         app.supabaseStatus = 'offline';
-        app.supabaseMensagem = 'Nuvem nÃ£o configurada';
+        app.supabaseMensagem = 'Nuvem não configurada';
         atualizarStatusNuvem();
         console.log('Supabase nao configurado. Usando localStorage.');
         return false;
@@ -456,6 +456,108 @@ function aplicarDados(dados) {
         ? dados.tags
         : app.tags;
     app.atualizadoEm = dados.atualizadoEm || app.atualizadoEm;
+
+    if (normalizarEncodingApp()) {
+        marcarDadosAlterados();
+        salvarDadosLocais();
+    }
+}
+
+function normalizarEncodingApp() {
+    const antes = JSON.stringify({
+        receitas: app.receitas,
+        planejamentos: app.planejamentos,
+        historico: app.historico,
+        tiposRefeicao: app.tiposRefeicao,
+        categorias: app.categorias,
+        tags: app.tags,
+    });
+
+    app.receitas = normalizarEncodingValor(app.receitas);
+    app.planejamentos = normalizarEncodingValor(app.planejamentos);
+    app.historico = normalizarEncodingValor(app.historico);
+    app.tiposRefeicao = normalizarEncodingValor(app.tiposRefeicao);
+    app.categorias = normalizarEncodingValor(app.categorias);
+    app.tags = normalizarEncodingValor(app.tags);
+
+    const depois = JSON.stringify({
+        receitas: app.receitas,
+        planejamentos: app.planejamentos,
+        historico: app.historico,
+        tiposRefeicao: app.tiposRefeicao,
+        categorias: app.categorias,
+        tags: app.tags,
+    });
+
+    return antes !== depois;
+}
+
+function normalizarEncodingValor(valor) {
+    if (typeof valor === 'string') {
+        return corrigirTextoEncoding(valor);
+    }
+
+    if (Array.isArray(valor)) {
+        return valor.map(item => normalizarEncodingValor(item));
+    }
+
+    if (valor && typeof valor === 'object') {
+        const corrigido = {};
+        Object.entries(valor).forEach(([chave, item]) => {
+            corrigido[chave] = normalizarEncodingValor(item);
+        });
+        return corrigido;
+    }
+
+    return valor;
+}
+
+function corrigirTextoEncoding(texto) {
+    if (!/[\u00c3\u00c2\u00e2\u00f0\u00ef\uFFFD]/.test(texto)) return texto;
+
+    let atual = texto;
+    for (let i = 0; i < 3; i++) {
+        const corrigido = decodificarWindows1252ComoUtf8(atual);
+        if (corrigido === atual) break;
+        atual = corrigido;
+    }
+
+    return atual
+        .replace(/\uFFFD/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function decodificarWindows1252ComoUtf8(texto) {
+    if (typeof TextDecoder === 'undefined') return texto;
+
+    const mapaWindows1252 = {
+        0x20ac: 0x80, 0x201a: 0x82, 0x0192: 0x83, 0x201e: 0x84,
+        0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87, 0x02c6: 0x88,
+        0x2030: 0x89, 0x0160: 0x8a, 0x2039: 0x8b, 0x0152: 0x8c,
+        0x017d: 0x8e, 0x2018: 0x91, 0x2019: 0x92, 0x201c: 0x93,
+        0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97,
+        0x02dc: 0x98, 0x2122: 0x99, 0x0161: 0x9a, 0x203a: 0x9b,
+        0x0153: 0x9c, 0x017e: 0x9e, 0x0178: 0x9f,
+    };
+
+    const bytes = [];
+    for (const caractere of texto) {
+        const codigo = caractere.codePointAt(0);
+        if (codigo <= 0xff) {
+            bytes.push(codigo);
+        } else if (mapaWindows1252[codigo]) {
+            bytes.push(mapaWindows1252[codigo]);
+        } else {
+            return texto;
+        }
+    }
+
+    try {
+        return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes));
+    } catch {
+        return texto;
+    }
 }
 
 function carregarDadosLocais() {
@@ -593,17 +695,17 @@ async function carregarDados() {
 }
 
 function mostrarVisao(nomeVisao) {
-    // Esconde todas as visÃµes
+    // Esconde todas as visoes
     document.querySelectorAll('.visao').forEach(visao => {
         visao.style.display = 'none';
     });
 
-    // Desativa todos os botÃµes de aba
+    // Desativa todos os botoes de aba
     document.querySelectorAll('.aba-btn').forEach(btn => {
         btn.classList.remove('ativo');
     });
 
-    // Mostra a visÃ£o selecionada
+    // Mostra a visao selecionada
     const visao = document.getElementById(`visao-${nomeVisao}`);
     if (visao) {
         visao.style.display = 'block';
@@ -614,7 +716,7 @@ function mostrarVisao(nomeVisao) {
         botaoAtivo.classList.add('ativo');
     }
 
-    // Renderiza conteÃºdo apropriado
+    // Renderiza conteudo apropriado
     if (nomeVisao === 'semanal') {
         renderizarSemanal();
     } else if (nomeVisao === 'mensal') {
@@ -629,13 +731,13 @@ function mostrarVisao(nomeVisao) {
 }
 
 const DIAS_SEMANA = [
-    { chave: 'domingo', nome: 'Domingo', abrev: 'Dom' },
     { chave: 'segunda', nome: 'Segunda', abrev: 'Seg' },
-    { chave: 'terca', nome: 'Terca', abrev: 'Ter', aliases: ['terÃƒÂ§a', 'terÃ§a'] },
+    { chave: 'terca', nome: 'Terca', abrev: 'Ter', aliases: ['terça', 'terça'] },
     { chave: 'quarta', nome: 'Quarta', abrev: 'Qua' },
     { chave: 'quinta', nome: 'Quinta', abrev: 'Qui' },
     { chave: 'sexta', nome: 'Sexta', abrev: 'Sex' },
-    { chave: 'sabado', nome: 'Sabado', abrev: 'Sab', aliases: ['sÃƒÂ¡bado', 'sÃ¡bado'] },
+    { chave: 'sabado', nome: 'Sabado', abrev: 'Sab', aliases: ['sábado', 'sábado'] },
+    { chave: 'domingo', nome: 'Domingo', abrev: 'Dom' },
 ];
 
 function normalizarDiaSemana(dia) {
@@ -660,15 +762,19 @@ function criarDataLocal(dataStr) {
 function obterNumeroSemana(data) {
     const inicioAno = new Date(data.getFullYear(), 0, 1);
     const inicioPrimeiraSemana = new Date(inicioAno);
-    inicioPrimeiraSemana.setDate(inicioAno.getDate() - inicioAno.getDay());
+    inicioPrimeiraSemana.setDate(inicioAno.getDate() - obterIndiceSemanaSegunda(inicioAno));
     const diferencaDias = Math.floor((data - inicioPrimeiraSemana) / 86400000);
     return Math.floor(diferencaDias / 7) + 1;
+}
+
+function obterIndiceSemanaSegunda(data) {
+    return (data.getDay() + 6) % 7;
 }
 
 function obterInicioSemana(numeroSemana, ano = app.anoAtual) {
     const primeiroDiaAno = new Date(ano, 0, 1);
     const inicio = new Date(primeiroDiaAno);
-    inicio.setDate(primeiroDiaAno.getDate() - primeiroDiaAno.getDay() + ((Number(numeroSemana) - 1) * 7));
+    inicio.setDate(primeiroDiaAno.getDate() - obterIndiceSemanaSegunda(primeiroDiaAno) + ((Number(numeroSemana) - 1) * 7));
     return inicio;
 }
 
@@ -683,22 +789,27 @@ function obterDataSemanaDia(semana, dia, ano = app.anoAtual) {
 function obterSemanaDiaPorData(data) {
     return {
         semana: obterNumeroSemana(data),
-        dia: DIAS_SEMANA[data.getDay()].chave,
+        dia: DIAS_SEMANA[obterIndiceSemanaSegunda(data)].chave,
     };
 }
 
 function buscarPlanejamentoPorData(dataStr, tipo) {
+    return buscarPlanejamentosPorData(dataStr, tipo)[0] || null;
+}
+
+function buscarPlanejamentosPorData(dataStr, tipo) {
     const data = criarDataLocal(dataStr);
     const legado = obterSemanaDiaPorData(data);
 
-    return app.planejamentos.find(p =>
+    return app.planejamentos.filter(p =>
         p.data === dataStr &&
         p.refeicao === tipo
-    ) || app.planejamentos.find(p =>
+    ).concat(app.planejamentos.filter(p =>
+        !p.data &&
         Number(p.semana) === legado.semana &&
         normalizarDiaSemana(p.dia) === legado.dia &&
         p.refeicao === tipo
-    );
+    ));
 }
 
 function renderizarResumoReceitaPlano(plano, compacto = false) {
@@ -708,6 +819,10 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
         return `
             <div class="celula-refeicao receita-removida">
                 <div class="nome-refeicao">Receita removida</div>
+                <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
+                        class="btn-editar-mini">
+                    Editar
+                </button>
                 <button onclick="event.stopPropagation(); removerPlanejamento('${plano.id}')"
                         class="btn-remover-mini">
                     Remover
@@ -720,6 +835,10 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
         <div class="celula-refeicao">
             <div class="nome-refeicao">${receita.nome}</div>
             ${compacto ? '' : `<div class="tipo-refeicao-tabela">${receita.categoria || ''}</div>`}
+            <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
+                    class="btn-editar-mini">
+                Editar
+            </button>
             <button onclick="event.stopPropagation(); removerPlanejamento('${plano.id}')"
                     class="btn-remover-mini">
                 Remover
@@ -728,7 +847,15 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
     `;
 }
 
-/* ==================== VISÃƒO SEMANAL ====================
+function renderizarListaPlanejamentos(planos, compacto = false) {
+    return `
+        <div class="lista-planejamentos-refeicao">
+            ${planos.map(plano => renderizarResumoReceitaPlano(plano, compacto)).join('')}
+        </div>
+    `;
+}
+
+/* ==================== VISAO SEMANAL ====================
    Renderiza tabela com 7 dias da semana */
 
 function renderizarSemanal() {
@@ -744,12 +871,15 @@ function renderizarSemanal() {
         DIAS_SEMANA.forEach(diaInfo => {
             const data = obterDataSemanaDia(app.semanaAtual, diaInfo.chave);
             const dataStr = formatarDataChave(data);
-            const plano = buscarPlanejamento(app.semanaAtual, diaInfo.chave, tipo);
+            const planos = buscarPlanejamentos(app.semanaAtual, diaInfo.chave, tipo);
 
-            if (plano) {
+            if (planos.length > 0) {
                 html += `
-                    <td onclick="abrirEdicaoPlanejamento('${plano.id}')">
-                        ${renderizarResumoReceitaPlano(plano)}
+                    <td>
+                        ${renderizarListaPlanejamentos(planos)}
+                        <button class="btn-adicionar-mini" onclick="abrirModalPlanejar('${app.semanaAtual}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
+                            Adicionar
+                        </button>
                     </td>
                 `;
             } else {
@@ -779,13 +909,22 @@ function atualizarCabecalhoSemanal() {
 }
 
 function buscarPlanejamento(semana, dia, tipo) {
+    return buscarPlanejamentos(semana, dia, tipo)[0] || null;
+}
+
+function buscarPlanejamentos(semana, dia, tipo) {
     const dataStr = formatarDataChave(obterDataSemanaDia(semana, dia));
 
-    return buscarPlanejamentoPorData(dataStr, tipo) || app.planejamentos.find(p =>
+    const planejamentosData = buscarPlanejamentosPorData(dataStr, tipo);
+    const ids = new Set(planejamentosData.map(p => p.id));
+    const planejamentosLegados = app.planejamentos.filter(p =>
         Number(p.semana) === Number(semana) &&
         normalizarDiaSemana(p.dia) === normalizarDiaSemana(dia) &&
-        p.refeicao === tipo
+        p.refeicao === tipo &&
+        !ids.has(p.id)
     );
+
+    return planejamentosData.concat(planejamentosLegados);
 }
 function buscarReceita(id) {
     return app.receitas.find(r => r.id === id);
@@ -896,7 +1035,7 @@ function selecionarReceitaParaPlano(receitaId) {
     renderizarAposPlanejamento(ctx.modo);
     fecharModal('modal-selecionar-receita');
 
-    console.log('âœ… RefeiÃ§Ã£o planejada:', planeamento);
+    console.log('Refeicao planejada:', planeamento);
 }
 
 function renderizarAposPlanejamento(modo) {
@@ -914,7 +1053,7 @@ function removerPlanejamento(id) {
     }
 }
 
-/* NavegaÃ§Ã£o de semanas */
+/* Navegacao de semanas */
 function semanaAnterior() {
     app.semanaAtual = Math.max(1, app.semanaAtual - 1);
     atualizarTituloSemana();
@@ -942,8 +1081,8 @@ function atualizarTituloSemana() {
     document.getElementById('numero-semana').value = app.semanaAtual;
 }
 
-/* ==================== VISÃƒO MENSAL ====================
-   Renderiza mÃºltiplas semanas do mÃªs */
+/* ==================== VISAO MENSAL ====================
+   Renderiza multiplas semanas do mes */
 
 function renderizarMensal() {
     const container = document.getElementById('container-semanas-mensais');
@@ -952,10 +1091,10 @@ function renderizarMensal() {
     const primeiroDiaMes = new Date(app.anoAtual, app.mesAtual, 1);
     const ultimoDiaMes = new Date(app.anoAtual, app.mesAtual + 1, 0);
     const inicio = new Date(primeiroDiaMes);
-    inicio.setDate(primeiroDiaMes.getDate() - primeiroDiaMes.getDay());
+    inicio.setDate(primeiroDiaMes.getDate() - obterIndiceSemanaSegunda(primeiroDiaMes));
 
     let cursor = new Date(inicio);
-    while (cursor <= ultimoDiaMes || cursor.getDay() !== 0) {
+    while (cursor <= ultimoDiaMes) {
         const semana = obterNumeroSemana(cursor);
         const semanaDiv = document.createElement('div');
         semanaDiv.className = 'semana-mensal';
@@ -987,13 +1126,16 @@ function renderizarMensal() {
                 const data = new Date(cursor);
                 data.setDate(cursor.getDate() + indice);
                 const dataStr = formatarDataChave(data);
-                const plano = buscarPlanejamentoPorData(dataStr, tipo);
+                const planos = buscarPlanejamentosPorData(dataStr, tipo);
                 const classeForaMes = data.getMonth() !== app.mesAtual ? ' data-fora-mes' : '';
 
-                if (plano) {
+                if (planos.length > 0) {
                     html += `
-                        <td class="${classeForaMes}" onclick="abrirEdicaoPlanejamento('${plano.id}')">
-                            ${renderizarResumoReceitaPlano(plano, true)}
+                        <td class="${classeForaMes}">
+                            ${renderizarListaPlanejamentos(planos, true)}
+                            <button class="btn-adicionar-mini" onclick="abrirModalPlanejar('${semana}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
+                                +
+                            </button>
                         </td>
                     `;
                 } else {
@@ -1017,7 +1159,7 @@ function renderizarMensal() {
     atualizarTituloMes();
 }
 function atualizarTituloMes() {
-    const meses = ['Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho',
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     document.getElementById('titulo-mes').textContent = 
         `${meses[app.mesAtual]} ${app.anoAtual}`;
@@ -1043,8 +1185,8 @@ function proxMes() {
     renderizarMensal();
 }
 
-/* ==================== VISÃƒO DIÃRIA ====================
-   RefeiÃ§Ãµes de um dia especÃ­fico */
+/* ==================== VISAO DIARIA ====================
+   Refeições de um dia especifico */
 
 let dataDiaria = new Date();
 
@@ -1058,11 +1200,11 @@ function renderizarDiaria() {
     const dataFormatada = dataDiaria.toLocaleDateString('pt-BR', opcoes);
     titulo.textContent = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
 
-    // Buscar refeiÃ§Ãµes planejadas para essa data
+    // Buscar refeicoes planejadas para essa data
     const dataString = dataDiaria.toISOString().split('T')[0];
 
     app.tiposRefeicao.forEach(tipo => {
-        const plano = buscarPlanejamentoPorData(dataString, tipo);
+        const planos = buscarPlanejamentosPorData(dataString, tipo);
 
         const card = document.createElement('div');
         card.className = 'card-diario';
@@ -1070,27 +1212,40 @@ function renderizarDiaria() {
             <h3>${tipo}</h3>
         `;
 
-        if (plano) {
-            const receita = buscarReceita(plano.receitaId);
-            if (receita) {
-                card.innerHTML += `
-                    <p><strong>${receita.nome}</strong></p>
-                    <p>Categoria: ${receita.categoria || 'N/A'}</p>
-                    <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
-                    <button onclick="marcarComoConsumida('${receita.id}')">Consumida</button>
-                    <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
+        if (planos.length > 0) {
+            card.innerHTML += planos.map(plano => {
+                const receita = buscarReceita(plano.receitaId);
+                if (!receita) {
+                    return `
+                        <div class="item-planejamento-diario">
+                            <p><strong>Receita removida</strong></p>
+                            <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
+                            <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="item-planejamento-diario">
+                        <p><strong>${receita.nome}</strong></p>
+                        <p>Categoria: ${receita.categoria || 'N/A'}</p>
+                        <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
+                        <button onclick="marcarComoConsumida('${receita.id}')">Consumida</button>
+                        <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
+                    </div>
                 `;
-            } else {
-                card.innerHTML += `
-                    <p><strong>Receita removida</strong></p>
-                    <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
-                `;
-            }
+            }).join('');
+
+            card.innerHTML += `
+                <button onclick="abrirModalPlanejarData('${dataString}', '${tipo}')">
+                    Adicionar
+                </button>
+            `;
         } else {
             card.innerHTML += `
-                <p style="color: #999;">Sem refeiÃ§Ã£o planejada</p>
+                <p style="color: #999;">Sem refeicao planejada</p>
                 <button onclick="abrirModalPlanejarData('${dataString}', '${tipo}')">
-                    âž• Adicionar
+                    Adicionar
                 </button>
             `;
         }
@@ -1133,8 +1288,8 @@ function selecionarReceitaParaPlanoDia(receitaId) {
     selecionarReceitaParaPlano(receitaId);
 }
 
-/* ==================== VISÃƒO CALENDÃRIO ====================
-   CalendÃ¡rio interativo com datas */
+/* ==================== VISAO CALENDARIO ====================
+   Calendario interativo com datas */
 
 let mesCalendario = new Date().getMonth();
 let anoCalendario = new Date().getFullYear();
@@ -1144,19 +1299,19 @@ function renderizarCalendario() {
     const container = document.getElementById('calendario');
     container.innerHTML = '';
 
-    const meses = ['Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho',
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-    // Atualizar tÃ­tulo
+    // Atualizar titulo
     document.getElementById('titulo-calendario').textContent = 
         `${meses[mesCalendario]} ${anoCalendario}`;
 
-    // Primeiro dia do mÃªs
+    // Primeiro dia do mes
     const primeiro = new Date(anoCalendario, mesCalendario, 1);
     const ultimo = new Date(anoCalendario, mesCalendario + 1, 0);
     const diasAnterior = primeiro.getDay();
 
-    // Dias do mÃªs anterior
+    // Dias do mes anterior
     const diasMesAnterior = new Date(anoCalendario, mesCalendario, 0).getDate();
     for (let i = diasAnterior - 1; i >= 0; i--) {
         const dia = diasMesAnterior - i;
@@ -1164,13 +1319,13 @@ function renderizarCalendario() {
         container.appendChild(div);
     }
 
-    // Dias do mÃªs
+    // Dias do mes
     for (let dia = 1; dia <= ultimo.getDate(); dia++) {
         const div = criarDiaCalendario(dia, false);
         container.appendChild(div);
     }
 
-    // Dias do mÃªs seguinte
+    // Dias do mes seguinte
     const diasRestantes = 42 - (diasAnterior + ultimo.getDate());
     for (let dia = 1; dia <= diasRestantes; dia++) {
         const div = criarDiaCalendario(dia, true);
@@ -1205,9 +1360,9 @@ function criarDiaCalendario(dia, outroMes) {
         div.textContent = dia;
         div.onclick = () => selecionarDataCalendario(data);
 
-        // Verificar se tem refeiÃ§Ã£o
+        // Verificar se tem refeicao
         const dataStr = data.toISOString().split('T')[0];
-        if (app.tiposRefeicao.some(tipo => buscarPlanejamentoPorData(dataStr, tipo))) {
+        if (app.tiposRefeicao.some(tipo => buscarPlanejamentosPorData(dataStr, tipo).length > 0)) {
             div.classList.add('com-refeicao');
         }
     }
@@ -1231,23 +1386,27 @@ function atualizarDetalhesData(data) {
     refeicoes.innerHTML = '';
 
     app.tiposRefeicao.forEach(tipo => {
-        const plano = buscarPlanejamentoPorData(dataStr, tipo);
+        const planos = buscarPlanejamentosPorData(dataStr, tipo);
 
         const div = document.createElement('div');
         div.className = 'item-refeicao-data';
 
-        if (plano) {
-            const receita = buscarReceita(plano.receitaId);
+        if (planos.length > 0) {
             div.innerHTML = `
-                <strong>${tipo}:</strong> ${receita ? receita.nome : 'Receita removida'}
-                <button onclick="abrirEdicaoPlanejamento('${plano.id}')"
-                        style="background: #8B4513; color: white; border: none; margin-left: 10px; padding: 2px 6px; cursor: pointer; border-radius: 3px;">
-                    Trocar
-                </button>
-                <button onclick="removerPlanejamento('${plano.id}')" 
-                        style="background: #e74c3c; color: white; border: none; margin-left: 10px; padding: 2px 6px; cursor: pointer; border-radius: 3px;">
-                    âœ•
-                </button>
+                <strong>${tipo}:</strong>
+                <div class="lista-planejamentos-data">
+                    ${planos.map(plano => {
+                        const receita = buscarReceita(plano.receitaId);
+                        return `
+                            <div class="linha-planejamento-data">
+                                <span>${receita ? receita.nome : 'Receita removida'}</span>
+                                <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
+                                <button onclick="removerPlanejamento('${plano.id}')" style="background: #e74c3c;">Remover</button>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <button onclick="abrirModalPlanejarData('${dataStr}', '${tipo}')">Adicionar</button>
             `;
         } else {
             div.innerHTML = `
@@ -1308,7 +1467,7 @@ function proxMesCalendario() {
    Gerenciar receitas */
 
 function abrirModalReceita() {
-    // Limpar formulÃ¡rio
+    // Limpar formulario
     document.getElementById('form-receita').reset();
     document.getElementById('form-receita').dataset.receitaId = '';
     document.querySelector('.modal-content h2').textContent = 'Nova Receita';
@@ -1378,7 +1537,7 @@ function salvarReceita(e) {
 
     const tiposSelecionados = obterTiposSelecionadosReceita();
     if (tiposSelecionados.length === 0) {
-        alert('Selecione pelo menos um tipo de refeiÃ§Ã£o!');
+        alert('Selecione pelo menos um tipo de refeicao!');
         return;
     }
 
@@ -1397,7 +1556,7 @@ function salvarReceita(e) {
         dataCriacao: new Date().toISOString(),
     };
 
-    // Verificar se Ã© edi Ã§Ã£o ou novo
+    // Verificar se e edicao ou novo
     const indice = app.receitas.findIndex(r => r.id === id);
     if (indice >= 0) {
         app.receitas[indice] = receita;
@@ -1414,7 +1573,7 @@ function salvarReceita(e) {
     atualizarSelectTags();
     renderizarTudoAposSync();
 
-    console.log('âœ… Receita salva:', receita);
+    console.log('Receita salva:', receita);
 }
 
 function renderizarReceitas() {
@@ -1443,8 +1602,8 @@ function renderizarReceitas() {
                     <p><strong>Ingredientes:</strong><br>${receita.ingredientes.slice(0, 3).join('<br>')}</p>
                 ` : ''}
                 <div class="card-receita-actions">
-                    <button class="btn-editar" onclick="editarReceita('${receita.id}')">âœï¸ Editar</button>
-                    <button class="btn-deletar" onclick="deletarReceita('${receita.id}')">ðŸ—‘ï¸ Deletar</button>
+                    <button class="btn-editar" onclick="editarReceita('${receita.id}')">Editar</button>
+                    <button class="btn-deletar" onclick="deletarReceita('${receita.id}')">Deletar</button>
                 </div>
             </div>
         `;
@@ -1578,7 +1737,7 @@ function adicionarTag() {
     }
 
     if (app.tags.some(tag => tag.toLowerCase() === novaTag.toLowerCase())) {
-        alert('Esta tag jÃ¡ existe!');
+        alert('Esta tag já existe!');
         return;
     }
 
@@ -1601,7 +1760,7 @@ function editarTag(tagAtual) {
         tag !== tagAtual &&
         tag.toLowerCase() === tagLimpa.toLowerCase()
     )) {
-        alert('Esta tag jÃ¡ existe!');
+        alert('Esta tag já existe!');
         return;
     }
 
@@ -1620,7 +1779,7 @@ function editarTag(tagAtual) {
 function removerTag(tag) {
     const usada = app.receitas.some(receita => obterTagsReceita(receita).includes(tag));
     const mensagem = usada
-        ? `Remover "${tag}"? Ela tambÃ©m serÃ¡ removida das receitas.`
+        ? `Remover "${tag}"? Ela também será removida das receitas.`
         : `Remover "${tag}"?`;
 
     if (!confirm(mensagem)) return;
@@ -1742,7 +1901,7 @@ function adicionarCategoria() {
     }
 
     if (app.categorias.some(categoria => categoria.toLowerCase() === novaCategoria.toLowerCase())) {
-        alert('Esta categoria jÃ¡ existe!');
+        alert('Esta categoria já existe!');
         return;
     }
 
@@ -1766,7 +1925,7 @@ function editarCategoria(categoriaAtual) {
         categoria !== categoriaAtual &&
         categoria.toLowerCase() === categoriaLimpa.toLowerCase()
     )) {
-        alert('Esta categoria jÃ¡ existe!');
+        alert('Esta categoria já existe!');
         return;
     }
 
@@ -1788,7 +1947,7 @@ function editarCategoria(categoriaAtual) {
 function removerCategoria(categoria) {
     const usada = app.receitas.some(receita => receita.categoria === categoria);
     const mensagem = usada
-        ? `Remover "${categoria}"? As receitas desta categoria ficarÃ£o sem categoria.`
+        ? `Remover "${categoria}"? As receitas desta categoria ficarão sem categoria.`
         : `Remover "${categoria}"?`;
 
     if (!confirm(mensagem)) return;
@@ -1855,7 +2014,7 @@ function renderizarAposAlterarCategorias() {
     renderizarCalendario();
 }
 
-/* ==================== TIPOS DE REFEIÃ‡ÃƒO ====================
+/* ==================== TIPOS DE REFEICAO ====================
    Gerenciar tipos customizados */
 
 function abrirTiposRefeicao() {
@@ -1867,12 +2026,12 @@ function adicionarTipoRefeicao() {
     const novoTipo = document.getElementById('novo-tipo-refeicao').value.trim();
 
     if (!novoTipo) {
-        alert('Digite um tipo de refeiÃ§Ã£o!');
+        alert('Digite um tipo de refeicao!');
         return;
     }
 
     if (app.tiposRefeicao.includes(novoTipo)) {
-        alert('Este tipo jÃ¡ existe!');
+        alert('Este tipo já existe!');
         return;
     }
 
@@ -1882,7 +2041,7 @@ function adicionarTipoRefeicao() {
     document.getElementById('novo-tipo-refeicao').value = '';
     renderizarTiposRefeicao();
 
-    console.log('âœ… Tipo de refeiÃ§Ã£o adicionado:', novoTipo);
+    console.log('? Tipo de refeicao adicionado:', novoTipo);
 }
 
 function removerTipoRefeicao(tipo) {
@@ -1903,7 +2062,7 @@ function renderizarTiposRefeicao() {
         badge.className = 'badge-tipo-removivel';
         badge.innerHTML = `
             ${tipo}
-            <button onclick="removerTipoRefeicao('${tipo}')">âœ•</button>
+            <button onclick="removerTipoRefeicao('${tipo}')">x</button>
         `;
         container.appendChild(badge);
     });
@@ -1934,7 +2093,7 @@ function atualizarSelectTipos(tiposSelecionados = []) {
     });
 }
 
-/* ==================== HISTÃ“RICO ====================
+/* ==================== HISTORICO ====================
    Acompanhar consumo de receitas */
 
 function abrirHistorico() {
@@ -1959,8 +2118,8 @@ function marcarComoConsumida(receitaId) {
     }
 
     salvarDados();
-    console.log('âœ… Consumo registrado:', item);
-    alert('RefeiÃ§Ã£o marcada como consumida!');
+    console.log('Consumo registrado:', item);
+    alert('Refeição marcada como consumida!');
 }
 
 function renderizarHistorico() {
@@ -1968,7 +2127,7 @@ function renderizarHistorico() {
     container.innerHTML = '';
 
     if (app.historico.length === 0) {
-        container.innerHTML = '<div class="sem-resultados">Nenhum histÃ³rico registrado ainda.</div>';
+        container.innerHTML = '<div class="sem-resultados">Nenhum historico registrado ainda.</div>';
         return;
     }
 
@@ -1991,10 +2150,10 @@ function renderizarHistorico() {
                 </div>
                 <div class="stat-box">
                     <div class="stat-numero">${diferenca}</div>
-                    <div class="stat-label">Dias desde o Ãºltimo uso</div>
+                    <div class="stat-label">Dias desde o último uso</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">Ãšltima vez</div>
+                    <div class="stat-label">Última vez</div>
                     <div class="stat-numero" style="font-size: 12px;">${dataUltimo.toLocaleDateString('pt-BR')}</div>
                 </div>
             </div>
@@ -2051,7 +2210,7 @@ Object.assign(window, {
 });
 
 /* ==================== INICIAR ====================
-   Quando pÃ¡gina carrega */
+   Quando pagina carrega */
 
 window.addEventListener('DOMContentLoaded', inicializar);
 
