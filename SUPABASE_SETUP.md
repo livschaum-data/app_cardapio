@@ -81,8 +81,8 @@ Em seguida, configure as URLs do app em:
 
 Use:
 
-- `Site URL`: `https://SEU_USUARIO.github.io/aplicativo-cardapio/`
-- `Redirect URLs`: adicione tambem `https://SEU_USUARIO.github.io/aplicativo-cardapio/`
+- `Site URL`: `https://livschaum-data.github.io/app_cardapio/`
+- `Redirect URLs`: adicione tambem `https://livschaum-data.github.io/app_cardapio/`
 
 Durante testes locais, voce tambem pode adicionar:
 

@@ -110,8 +110,9 @@ function carregarDadosLegado() {
 function configurarSupabase() {
     const config = window.CARDAPIO_SUPABASE;
     const sdkDisponivel = window.supabase && typeof window.supabase.createClient === 'function';
+    const supabaseUrl = limparUrlSupabase(config?.url || '');
 
-    if (!config || !config.url || !config.anonKey) {
+    if (!config || !supabaseUrl || !config.anonKey) {
         app.supabaseOnline = false;
         app.supabaseStatus = 'offline';
         app.supabaseMensagem = 'Nuvem não configurada';
@@ -133,10 +134,17 @@ function configurarSupabase() {
         return true;
     }
 
-    app.supabase = window.supabase.createClient(config.url, config.anonKey);
+    app.supabase = window.supabase.createClient(supabaseUrl, config.anonKey);
     atualizarStatusNuvem('offline', 'Entre na conta para sincronizar');
     console.log('Supabase configurado.');
     return true;
+}
+
+function limparUrlSupabase(url) {
+    return String(url)
+        .trim()
+        .replace(/\/rest\/v1\/?$/i, '')
+        .replace(/\/+$/, '');
 }
 
 function atualizarStatusNuvem(status = app.supabaseStatus, mensagem = app.supabaseMensagem) {
@@ -260,6 +268,10 @@ function obterCredenciaisNuvem() {
     return { email, password };
 }
 
+function obterUrlRedirectNuvem() {
+    return window.location.origin + window.location.pathname;
+}
+
 async function entrarNuvem() {
     if (!configurarSupabase()) return;
 
@@ -288,7 +300,13 @@ async function criarContaNuvem() {
     if (!credenciais) return;
 
     atualizarStatusNuvem('conectando', 'Criando conta...');
-    const { data, error } = await app.supabase.auth.signUp(credenciais);
+    const { data, error } = await app.supabase.auth.signUp({
+        email: credenciais.email,
+        password: credenciais.password,
+        options: {
+            emailRedirectTo: obterUrlRedirectNuvem(),
+        },
+    });
 
     if (error) {
         atualizarStatusNuvem('erro', error.message);
