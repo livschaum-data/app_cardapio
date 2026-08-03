@@ -69,6 +69,8 @@ async function inicializar() {
         formReceita.addEventListener('submit', salvarReceita);
     }
 
+    configurarAcoesPlanejamentoMobile();
+
     const btnCategorias = document.getElementById('btn-categorias');
     if (btnCategorias) {
         btnCategorias.addEventListener('click', abrirCategorias);
@@ -199,6 +201,78 @@ function configurarEventosNuvem() {
         if (!botao || botao.dataset.eventoConfigurado === 'true') return;
         botao.addEventListener('click', acao);
         botao.dataset.eventoConfigurado = 'true';
+    });
+}
+
+function configurarAcoesPlanejamentoMobile() {
+    if (document.body.dataset.acoesPlanejamentoMobile === 'true') return;
+    document.body.dataset.acoesPlanejamentoMobile = 'true';
+
+    const seletorItem = '.celula-refeicao, .item-planejamento-diario, .linha-planejamento-data';
+    let timerPressionar = null;
+    let itemPressionado = null;
+    let inicioX = 0;
+    let inicioY = 0;
+
+    const limparTimer = () => {
+        if (timerPressionar) {
+            clearTimeout(timerPressionar);
+            timerPressionar = null;
+        }
+    };
+
+    const esconderAcoes = (exceto = null) => {
+        document.querySelectorAll(`${seletorItem}.mostrar-acoes`).forEach(item => {
+            if (item !== exceto) item.classList.remove('mostrar-acoes');
+        });
+    };
+
+    document.addEventListener('pointerdown', (evento) => {
+        if (!window.matchMedia('(hover: none)').matches || evento.pointerType === 'mouse') return;
+
+        const item = evento.target.closest(seletorItem);
+        if (!item) {
+            esconderAcoes();
+            return;
+        }
+
+        if (evento.target.closest('button')) return;
+
+        itemPressionado = item;
+        inicioX = evento.clientX;
+        inicioY = evento.clientY;
+        limparTimer();
+
+        timerPressionar = setTimeout(() => {
+            esconderAcoes(itemPressionado);
+            itemPressionado.classList.add('mostrar-acoes');
+            timerPressionar = null;
+        }, 450);
+    });
+
+    document.addEventListener('pointermove', (evento) => {
+        if (!itemPressionado || !timerPressionar) return;
+
+        const distanciaX = Math.abs(evento.clientX - inicioX);
+        const distanciaY = Math.abs(evento.clientY - inicioY);
+        if (distanciaX > 12 || distanciaY > 12) {
+            limparTimer();
+            itemPressionado = null;
+        }
+    });
+
+    ['pointerup', 'pointercancel'].forEach(tipoEvento => {
+        document.addEventListener(tipoEvento, () => {
+            limparTimer();
+            itemPressionado = null;
+        });
+    });
+
+    document.addEventListener('contextmenu', (evento) => {
+        if (!window.matchMedia('(hover: none)').matches) return;
+        if (evento.target.closest(seletorItem)) {
+            evento.preventDefault();
+        }
     });
 }
 

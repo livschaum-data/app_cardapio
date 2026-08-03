@@ -433,15 +433,34 @@ body {
     z-index: 2;
 }
 
-.celula-refeicao:hover .acoes-planejamento-mini,
 .celula-refeicao:focus-within .acoes-planejamento-mini,
-.item-planejamento-diario:hover .acoes-planejamento,
 .item-planejamento-diario:focus-within .acoes-planejamento,
-.linha-planejamento-data:hover .acoes-planejamento,
-.linha-planejamento-data:focus-within .acoes-planejamento {
+.linha-planejamento-data:focus-within .acoes-planejamento,
+.celula-refeicao.mostrar-acoes .acoes-planejamento-mini,
+.item-planejamento-diario.mostrar-acoes .acoes-planejamento,
+.linha-planejamento-data.mostrar-acoes .acoes-planejamento {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(-50%) translateX(0);
+}
+
+@media (hover: hover) {
+    .celula-refeicao:hover .acoes-planejamento-mini,
+    .item-planejamento-diario:hover .acoes-planejamento,
+    .linha-planejamento-data:hover .acoes-planejamento {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+@media (hover: none) {
+    .celula-refeicao,
+    .item-planejamento-diario,
+    .linha-planejamento-data {
+        -webkit-user-select: none;
+        user-select: none;
+    }
 }
 
 .data-cabecalho {
@@ -617,15 +636,6 @@ body {
 .card-diario .btn-acao-remover,
 .detalhes-data .btn-acao-remover {
     background: var(--cor-alerta);
-}
-
-@media (hover: none) {
-    .acoes-planejamento,
-    .acoes-planejamento-mini {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateY(-50%) translateX(0);
-    }
 }
 
 /* ==================== CALENDRIO ====================
