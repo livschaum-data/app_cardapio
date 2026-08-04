@@ -483,7 +483,8 @@ function aplicarEstadoSidebar() {
     const appEl = document.getElementById('app');
     if (!appEl) return;
 
-    const sidebarOculta = localStorage.getItem('cardapio-sidebar-oculta') === 'true';
+    const telaPequena = window.matchMedia('(max-width: 680px)').matches;
+    const sidebarOculta = telaPequena || localStorage.getItem('cardapio-sidebar-oculta') === 'true';
     appEl.classList.toggle('sidebar-oculta', sidebarOculta);
     atualizarBotoesSidebar(sidebarOculta);
 }

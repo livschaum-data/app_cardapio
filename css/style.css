@@ -1891,22 +1891,52 @@ body {
 
 @media (max-width: 680px) {
     #app {
-        display: flex;
-        flex-direction: column;
+        display: block;
+        height: 100dvh;
+        overflow: hidden;
     }
 
     .header.sidebar {
-        height: auto;
-        max-height: 46vh;
+        height: 100dvh;
+        left: 0;
+        max-height: none;
         overflow-y: auto;
+        padding: 22px 18px;
+        position: fixed;
+        top: 0;
+        transform: translateX(0);
+        width: min(320px, 88vw);
+        z-index: 1200;
     }
 
     #app.sidebar-oculta .header.sidebar {
-        display: none;
+        display: flex;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-105%);
     }
 
-    #app.sidebar-oculta .visao {
-        padding-left: 70px;
+    #app:not(.sidebar-oculta)::before {
+        background: rgba(0, 0, 0, 0.28);
+        content: "";
+        inset: 0;
+        position: fixed;
+        z-index: 1100;
+    }
+
+    #app.sidebar-oculta .btn-sidebar-expandir,
+    #app:not(.sidebar-oculta) .btn-sidebar-expandir {
+        display: inline-flex;
+    }
+
+    #app:not(.sidebar-oculta) .btn-sidebar-expandir {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    #app.sidebar-oculta .visao,
+    #app:not(.sidebar-oculta) .visao {
+        padding-left: 14px;
     }
 
     .sidebar-brand {
@@ -1928,9 +1958,10 @@ body {
 
     .app-main,
     .visao {
-        height: auto;
+        height: 100dvh;
         min-height: 0;
-        overflow: visible;
+        overflow: auto;
+        width: 100%;
     }
 
     .painel-nuvem {
