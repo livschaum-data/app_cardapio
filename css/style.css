@@ -915,6 +915,53 @@ body {
     justify-content: center;
 }
 
+.lista-ingredientes {
+    display: grid;
+    gap: 8px;
+}
+
+.linha-ingrediente-receita {
+    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) 90px 100px auto;
+    gap: 8px;
+}
+
+.linha-ingrediente-receita select,
+.linha-ingrediente-receita input {
+    min-width: 0;
+}
+
+.btn-ingrediente {
+    margin-top: 10px;
+}
+
+.btn-remover-ingrediente {
+    background: var(--cor-alerta);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 9px 10px;
+}
+
+.filtros-selecao {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.filtros-selecao input,
+.filtros-selecao select {
+    border: 2px solid var(--cor-borda);
+    border-radius: var(--radius);
+    min-width: 0;
+    padding: 10px;
+}
+
 /* ==================== MODAIS ====================
    Popups de formulrios */
 
@@ -1245,6 +1292,11 @@ body {
 
     .linha-form {
         flex-direction: column;
+    }
+
+    .linha-ingrediente-receita,
+    .filtros-selecao {
+        grid-template-columns: 1fr;
     }
 
     .item-gerenciavel {

@@ -20,6 +20,9 @@ const app = {
     // Categorias customizaveis de receitas
     categorias: ['Doce', 'Salgado', 'Vegetariano', 'Vegan', 'Sem Glúten', 'Sem Lactose'],
 
+    // Categorias customizaveis de alimentos
+    categoriasAlimentos: ['Fruta', 'Legume', 'Verdura', 'Proteina', 'Carboidrato', 'Laticinio', 'Bebida', 'Tempero', 'Grao', 'Oleaginosa'],
+
     // Tags customizaveis de receitas
     tags: ['bebê', 'sem glúten', 'sem lactose', 'dia a dia'],
 
@@ -62,6 +65,8 @@ async function inicializar() {
     atualizarFiltroCategoria();
     normalizarTags();
     atualizarSelectTags();
+    normalizarCategoriasAlimentos();
+    atualizarSelectCategoriasAlimentos();
 
     // Renderizar visao inicial
     renderizarSemanal();
@@ -98,6 +103,7 @@ function salvarDadosLegado() {
     localStorage.setItem('cardapio_historico', JSON.stringify(app.historico));
     localStorage.setItem('cardapio_tipos', JSON.stringify(app.tiposRefeicao));
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
+    localStorage.setItem('cardapio_categorias_alimentos', JSON.stringify(app.categoriasAlimentos));
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
     localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
     console.log('Dados salvos!');
@@ -110,6 +116,7 @@ function carregarDadosLegado() {
     app.historico = JSON.parse(localStorage.getItem('cardapio_historico')) || [];
     app.tiposRefeicao = JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao;
     app.categorias = JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias;
+    app.categoriasAlimentos = JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos;
     app.tags = JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags;
     app.atualizadoEm = localStorage.getItem('cardapio_atualizado_em') || app.atualizadoEm;
     console.log('Dados carregados!');
@@ -512,6 +519,8 @@ function renderizarTudoAposSync() {
     atualizarSelectCategorias();
     atualizarFiltroCategoria();
     atualizarSelectTags();
+    atualizarSelectCategoriasAlimentos();
+    atualizarFiltrosModalSelecao();
     renderizarSemanal();
     renderizarMensal();
     renderizarDiaria();
@@ -534,6 +543,9 @@ function aplicarDados(dados) {
     app.categorias = Array.isArray(dados.categorias) && dados.categorias.length > 0
         ? dados.categorias
         : app.categorias;
+    app.categoriasAlimentos = Array.isArray(dados.categoriasAlimentos) && dados.categoriasAlimentos.length > 0
+        ? dados.categoriasAlimentos
+        : app.categoriasAlimentos;
     app.tags = Array.isArray(dados.tags) && dados.tags.length > 0
         ? dados.tags
         : app.tags;
@@ -556,6 +568,7 @@ function normalizarEncodingApp() {
         historico: app.historico,
         tiposRefeicao: app.tiposRefeicao,
         categorias: app.categorias,
+        categoriasAlimentos: app.categoriasAlimentos,
         tags: app.tags,
     });
 
@@ -565,6 +578,7 @@ function normalizarEncodingApp() {
     app.historico = normalizarEncodingValor(app.historico);
     app.tiposRefeicao = normalizarEncodingValor(app.tiposRefeicao);
     app.categorias = normalizarEncodingValor(app.categorias);
+    app.categoriasAlimentos = normalizarEncodingValor(app.categoriasAlimentos);
     app.tags = normalizarEncodingValor(app.tags);
 
     const depois = JSON.stringify({
@@ -574,6 +588,7 @@ function normalizarEncodingApp() {
         historico: app.historico,
         tiposRefeicao: app.tiposRefeicao,
         categorias: app.categorias,
+        categoriasAlimentos: app.categoriasAlimentos,
         tags: app.tags,
     });
 
@@ -587,6 +602,15 @@ function normalizarNomeAlimento(nome) {
         .toLowerCase()
         .replace(/\s+/g, ' ')
         .trim();
+}
+
+function escaparHtml(valor) {
+    return String(valor || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function criarIdAlimento() {
@@ -653,6 +677,7 @@ function normalizarIngredienteReceita(ingrediente) {
 function normalizarDadosAlimentos() {
     const antes = JSON.stringify({
         alimentos: app.alimentos,
+        categoriasAlimentos: app.categoriasAlimentos,
         receitas: app.receitas,
         planejamentos: app.planejamentos,
     });
@@ -667,6 +692,8 @@ function normalizarDadosAlimentos() {
             dataCriacao: alimento.dataCriacao || new Date().toISOString(),
         }));
 
+    normalizarCategoriasAlimentos();
+
     app.receitas.forEach(receita => {
         receita.ingredientes = Array.isArray(receita.ingredientes)
             ? receita.ingredientes.map(normalizarIngredienteReceita).filter(Boolean)
@@ -680,6 +707,7 @@ function normalizarDadosAlimentos() {
 
     const depois = JSON.stringify({
         alimentos: app.alimentos,
+        categoriasAlimentos: app.categoriasAlimentos,
         receitas: app.receitas,
         planejamentos: app.planejamentos,
     });
@@ -763,6 +791,7 @@ function carregarDadosLocais() {
         historico: JSON.parse(localStorage.getItem('cardapio_historico')) || [],
         tiposRefeicao: JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao,
         categorias: JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias,
+        categoriasAlimentos: JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos,
         tags: JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags,
         atualizadoEm: localStorage.getItem('cardapio_atualizado_em') || null,
     };
@@ -775,6 +804,7 @@ function salvarDadosLocais() {
     localStorage.setItem('cardapio_historico', JSON.stringify(app.historico));
     localStorage.setItem('cardapio_tipos', JSON.stringify(app.tiposRefeicao));
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
+    localStorage.setItem('cardapio_categorias_alimentos', JSON.stringify(app.categoriasAlimentos));
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
     if (app.atualizadoEm) {
         localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
@@ -787,10 +817,21 @@ async function carregarDadosSupabase() {
     const config = window.CARDAPIO_SUPABASE;
     let { data, error } = await app.supabase
         .from(config.table)
-        .select('alimentos, receitas, planejamentos, historico, tipos_refeicao, categorias, tags, atualizado_em')
+        .select('alimentos, receitas, planejamentos, historico, tipos_refeicao, categorias, categorias_alimentos, tags, atualizado_em')
         .eq('user_id', app.usuarioSupabase.id)
         .eq('id', config.recordId)
         .maybeSingle();
+
+    if (error && String(error.message || '').toLowerCase().includes('categorias_alimentos')) {
+        const fallback = await app.supabase
+            .from(config.table)
+            .select('alimentos, receitas, planejamentos, historico, tipos_refeicao, categorias, tags, atualizado_em')
+            .eq('user_id', app.usuarioSupabase.id)
+            .eq('id', config.recordId)
+            .maybeSingle();
+        data = fallback.data;
+        error = fallback.error;
+    }
 
     if (error && String(error.message || '').toLowerCase().includes('alimentos')) {
         const fallback = await app.supabase
@@ -813,6 +854,7 @@ async function carregarDadosSupabase() {
         historico: data.historico,
         tiposRefeicao: data.tipos_refeicao,
         categorias: data.categorias,
+        categoriasAlimentos: data.categorias_alimentos,
         tags: data.tags,
         atualizadoEm: data.atualizado_em,
     };
@@ -831,7 +873,7 @@ async function salvarDadosSupabase() {
     app.salvarRemotoPendente = false;
     atualizarStatusNuvem('salvando', 'Salvando na nuvem...');
 
-    const { error } = await app.supabase
+    let { error } = await app.supabase
         .from(config.table)
         .upsert({
             id: config.recordId,
@@ -842,9 +884,28 @@ async function salvarDadosSupabase() {
             historico: app.historico,
             tipos_refeicao: app.tiposRefeicao,
             categorias: app.categorias,
+            categorias_alimentos: app.categoriasAlimentos,
             tags: app.tags,
             atualizado_em: app.atualizadoEm || new Date().toISOString(),
         }, { onConflict: 'user_id,id' });
+
+    if (error && String(error.message || '').toLowerCase().includes('categorias_alimentos')) {
+        const fallback = await app.supabase
+            .from(config.table)
+            .upsert({
+                id: config.recordId,
+                user_id: app.usuarioSupabase.id,
+                alimentos: app.alimentos,
+                receitas: app.receitas,
+                planejamentos: app.planejamentos,
+                historico: app.historico,
+                tipos_refeicao: app.tiposRefeicao,
+                categorias: app.categorias,
+                tags: app.tags,
+                atualizado_em: app.atualizadoEm || new Date().toISOString(),
+            }, { onConflict: 'user_id,id' });
+        error = fallback.error;
+    }
 
     app.salvandoRemoto = false;
 
@@ -1203,9 +1264,42 @@ function abrirEdicaoPlanejamento(id) {
     abrirModal('modal-selecionar-receita');
 }
 
+function atualizarFiltrosModalSelecao() {
+    const tipoSelect = document.getElementById('filtro-selecao-tipo');
+    const categoriaSelect = document.getElementById('filtro-selecao-categoria');
+    const tagSelect = document.getElementById('filtro-selecao-tag');
+
+    if (tipoSelect) {
+        const valorAtual = tipoSelect.value;
+        tipoSelect.innerHTML = '<option value="">Todos os tipos</option>' +
+            app.tiposRefeicao.map(tipo => `<option value="${escaparHtml(tipo)}">${escaparHtml(tipo)}</option>`).join('');
+        tipoSelect.value = app.tiposRefeicao.includes(valorAtual) ? valorAtual : '';
+    }
+
+    if (categoriaSelect) {
+        const valorAtual = categoriaSelect.value;
+        const categorias = Array.from(new Set([
+            ...app.categorias,
+            ...app.categoriasAlimentos,
+        ])).filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+        categoriaSelect.innerHTML = '<option value="">Todas as categorias</option>' +
+            categorias.map(categoria => `<option value="${escaparHtml(categoria)}">${escaparHtml(categoria)}</option>`).join('');
+        categoriaSelect.value = categorias.includes(valorAtual) ? valorAtual : '';
+    }
+
+    if (tagSelect) {
+        const valorAtual = tagSelect.value;
+        tagSelect.innerHTML = '<option value="">Todas as tags</option>' +
+            app.tags.map(tag => `<option value="${escaparHtml(tag)}">${escaparHtml(tag)}</option>`).join('');
+        tagSelect.value = app.tags.includes(valorAtual) ? valorAtual : '';
+    }
+}
+
 function renderizarReceitasModalSelecao() {
     // Renderizar lista de receitas e alimentos no modal
     const lista = document.getElementById('lista-selecionar-receita');
+    atualizarFiltrosModalSelecao();
     lista.innerHTML = '';
 
     if (app.receitas.length === 0 && app.alimentos.length === 0) {
@@ -1216,6 +1310,11 @@ function renderizarReceitasModalSelecao() {
     app.receitas.forEach(receita => {
         const div = document.createElement('div');
         div.className = 'card-receita item-selecao';
+        div.dataset.itemTipo = 'receita';
+        div.dataset.nome = receita.nome || '';
+        div.dataset.tipos = obterTiposReceita(receita).join('|');
+        div.dataset.categoria = receita.categoria || '';
+        div.dataset.tags = obterTagsReceita(receita).join('|');
         div.innerHTML = `
             <div class="card-receita-header">
                 <div>
@@ -1239,6 +1338,11 @@ function renderizarReceitasModalSelecao() {
     app.alimentos.forEach(alimento => {
         const div = document.createElement('div');
         div.className = 'card-receita item-selecao';
+        div.dataset.itemTipo = 'alimento';
+        div.dataset.nome = alimento.nome || '';
+        div.dataset.tipos = '';
+        div.dataset.categoria = alimento.categoria || '';
+        div.dataset.tags = '';
         div.innerHTML = `
             <div class="card-receita-header header-alimento">
                 <div>
@@ -1256,6 +1360,8 @@ function renderizarReceitasModalSelecao() {
         `;
         lista.appendChild(div);
     });
+
+    buscarReceitasModal();
 }
 
 function selecionarReceitaParaPlano(receitaId) {
@@ -1752,10 +1858,11 @@ function abrirModalReceita() {
     // Limpar formulario
     document.getElementById('form-receita').reset();
     document.getElementById('form-receita').dataset.receitaId = '';
-    document.querySelector('.modal-content h2').textContent = 'Nova Receita';
+    document.querySelector('#modal-receita h2').textContent = 'Nova Receita';
     atualizarSelectTipos();
     atualizarSelectCategorias();
     atualizarSelectTags();
+    renderizarIngredientesReceita();
     abrirModal('modal-receita');
 }
 
@@ -1814,26 +1921,94 @@ function renderizarBadgesTags(receita) {
     `;
 }
 
+function formatarIngredienteReceita(ingrediente) {
+    if (typeof ingrediente === 'string') return ingrediente;
+    const alimento = buscarAlimento(ingrediente.alimentoId);
+    const nome = alimento ? alimento.nome : ingrediente.nome;
+    const quantidade = ingrediente.quantidade ? `${ingrediente.quantidade} ` : '';
+    const unidade = ingrediente.unidade ? `${ingrediente.unidade} ` : '';
+    return nome ? `${quantidade}${unidade}${nome}`.trim() : '';
+}
+
 function obterIngredientesReceita(receita) {
     if (!receita || !Array.isArray(receita.ingredientes)) return [];
 
-    return receita.ingredientes.map(ingrediente => {
-        if (typeof ingrediente === 'string') return ingrediente;
-        const alimento = buscarAlimento(ingrediente.alimentoId);
-        return alimento ? alimento.nome : ingrediente.nome;
-    }).filter(Boolean);
+    return receita.ingredientes.map(formatarIngredienteReceita).filter(Boolean);
 }
 
-function obterTextoIngredientesReceita(receita) {
-    return obterIngredientesReceita(receita).join('\n');
+function criarOpcaoAlimento(alimentoIdSelecionado = '') {
+    return app.alimentos
+        .slice()
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+        .map(alimento => `
+            <option value="${alimento.id}" ${alimento.id === alimentoIdSelecionado ? 'selected' : ''}>
+                ${escaparHtml(alimento.nome)}${alimento.categoria ? ` (${escaparHtml(alimento.categoria)})` : ''}
+            </option>
+        `)
+        .join('');
 }
 
-function criarIngredientesAPartirTexto(texto) {
-    return String(texto || '')
-        .split('\n')
-        .map(item => item.trim())
-        .filter(Boolean)
-        .map(item => normalizarIngredienteReceita(item))
+function renderizarIngredientesReceita(ingredientes = []) {
+    const container = document.getElementById('lista-ingredientes-receita');
+    if (!container) return;
+
+    container.innerHTML = '';
+    ingredientes.forEach(ingrediente => adicionarLinhaIngredienteReceita(ingrediente));
+}
+
+function adicionarLinhaIngredienteReceita(ingrediente = {}) {
+    const container = document.getElementById('lista-ingredientes-receita');
+    if (!container) return;
+
+    if (app.alimentos.length === 0) {
+        container.innerHTML = '<div class="sem-resultados ingredientes-vazio">Cadastre alimentos antes de adicionar ingredientes.</div>';
+        return;
+    }
+
+    container.querySelector('.ingredientes-vazio')?.remove();
+
+    const ingredienteNormalizado = normalizarIngredienteReceita(ingrediente);
+    const alimentoId = ingredienteNormalizado?.alimentoId || app.alimentos[0]?.id || '';
+    const linha = document.createElement('div');
+    linha.className = 'linha-ingrediente-receita';
+    linha.innerHTML = `
+        <select class="ingrediente-alimento" required>
+            <option value="">Selecione um alimento</option>
+            ${criarOpcaoAlimento(alimentoId)}
+        </select>
+        <input class="ingrediente-quantidade" type="text" inputmode="decimal" placeholder="Qtd" value="${escaparHtml(ingredienteNormalizado?.quantidade || '')}">
+        <input class="ingrediente-unidade" type="text" placeholder="Unidade" value="${escaparHtml(ingredienteNormalizado?.unidade || '')}">
+        <button type="button" class="btn-remover-ingrediente" onclick="removerLinhaIngredienteReceita(this)">Remover</button>
+    `;
+    container.appendChild(linha);
+}
+
+function removerLinhaIngredienteReceita(botao) {
+    botao.closest('.linha-ingrediente-receita')?.remove();
+}
+
+function atualizarSelectsIngredientesReceita() {
+    document.querySelectorAll('.linha-ingrediente-receita .ingrediente-alimento').forEach(select => {
+        const valorAtual = select.value;
+        select.innerHTML = '<option value="">Selecione um alimento</option>' + criarOpcaoAlimento(valorAtual);
+        select.value = app.alimentos.some(alimento => alimento.id === valorAtual) ? valorAtual : '';
+    });
+}
+
+function obterIngredientesSelecionadosReceita() {
+    return Array.from(document.querySelectorAll('.linha-ingrediente-receita'))
+        .map(linha => {
+            const alimentoId = linha.querySelector('.ingrediente-alimento')?.value || '';
+            const alimento = buscarAlimento(alimentoId);
+            if (!alimento) return null;
+
+            return {
+                alimentoId,
+                nome: alimento.nome,
+                quantidade: linha.querySelector('.ingrediente-quantidade')?.value.trim() || '',
+                unidade: linha.querySelector('.ingrediente-unidade')?.value.trim() || '',
+            };
+        })
         .filter(Boolean);
 }
 
@@ -1854,7 +2029,7 @@ function salvarReceita(e) {
         tipos: tiposSelecionados,
         categoria: document.getElementById('categoria-receita').value,
         tags: obterTagsSelecionadasReceita(),
-        ingredientes: criarIngredientesAPartirTexto(document.getElementById('ingredientes-receita').value),
+        ingredientes: obterIngredientesSelecionadosReceita(),
         modoPreparo: document.getElementById('preparo-receita').value,
         dataCriacao: new Date().toISOString(),
     };
@@ -1924,9 +2099,9 @@ function editarReceita(id) {
     atualizarSelectCategorias(receita.categoria);
     atualizarSelectTags(obterTagsReceita(receita));
     document.getElementById('categoria-receita').value = receita.categoria;
-    document.getElementById('ingredientes-receita').value = obterTextoIngredientesReceita(receita);
+    renderizarIngredientesReceita(receita.ingredientes || []);
     document.getElementById('preparo-receita').value = receita.modoPreparo;
-    document.querySelector('.modal-content h2').textContent = 'Editar Receita';
+    document.querySelector('#modal-receita h2').textContent = 'Editar Receita';
 
     abrirModal('modal-receita');
 }
@@ -1971,17 +2146,70 @@ function atualizarFiltroCategoria() {
 }
 
 function buscarReceitasModal() {
-    const termo = document.getElementById('busca-selecionar').value.toLowerCase();
+    const termo = document.getElementById('busca-selecionar')?.value.toLowerCase() || '';
+    const itemTipo = document.getElementById('filtro-selecao-item')?.value || '';
+    const tipoRefeicao = document.getElementById('filtro-selecao-tipo')?.value || '';
+    const categoria = document.getElementById('filtro-selecao-categoria')?.value || '';
+    const tag = document.getElementById('filtro-selecao-tag')?.value || '';
     const cards = document.querySelectorAll('.lista-receitas-modal .item-selecao');
 
     cards.forEach(card => {
-        const nome = card.querySelector('h3').textContent.toLowerCase();
-        card.style.display = nome.includes(termo) ? 'block' : 'none';
+        const texto = card.textContent.toLowerCase();
+        const tipos = (card.dataset.tipos || '').split('|').filter(Boolean);
+        const tags = (card.dataset.tags || '').split('|').filter(Boolean);
+
+        const passaBusca = !termo || texto.includes(termo);
+        const passaItem = !itemTipo || card.dataset.itemTipo === itemTipo;
+        const passaTipo = !tipoRefeicao || tipos.includes(tipoRefeicao);
+        const passaCategoria = !categoria || card.dataset.categoria === categoria;
+        const passaTag = !tag || tags.includes(tag);
+
+        card.style.display = passaBusca && passaItem && passaTipo && passaCategoria && passaTag ? 'block' : 'none';
     });
 }
 
 /* ==================== ALIMENTOS ====================
    Gerenciar alimentos avulsos e ingredientes */
+
+function normalizarCategoriasAlimentos() {
+    const categorias = new Set();
+
+    app.categoriasAlimentos.forEach(categoria => {
+        if (categoria && categoria.trim()) categorias.add(categoria.trim());
+    });
+
+    app.alimentos.forEach(alimento => {
+        if (alimento.categoria && alimento.categoria.trim()) {
+            categorias.add(alimento.categoria.trim());
+        }
+    });
+
+    app.categoriasAlimentos = Array.from(categorias).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+function atualizarSelectCategoriasAlimentos(categoriaAtual = '') {
+    normalizarCategoriasAlimentos();
+
+    const datalist = document.getElementById('categorias-alimentos-lista');
+    if (datalist) {
+        datalist.innerHTML = app.categoriasAlimentos
+            .map(categoria => `<option value="${escaparHtml(categoria)}"></option>`)
+            .join('');
+    }
+
+    const filtro = document.getElementById('filtro-categoria-alimento');
+    if (filtro) {
+        const valorAtual = filtro.value;
+        filtro.innerHTML = '<option value="">Todas as categorias</option>' +
+            app.categoriasAlimentos.map(categoria => `<option value="${escaparHtml(categoria)}">${escaparHtml(categoria)}</option>`).join('');
+        filtro.value = app.categoriasAlimentos.includes(valorAtual) ? valorAtual : '';
+    }
+
+    if (categoriaAtual && !app.categoriasAlimentos.includes(categoriaAtual)) {
+        app.categoriasAlimentos.push(categoriaAtual);
+        normalizarCategoriasAlimentos();
+    }
+}
 
 function abrirModalAlimento(id = '') {
     const form = document.getElementById('form-alimento');
@@ -1990,6 +2218,7 @@ function abrirModalAlimento(id = '') {
     form.reset();
     form.dataset.alimentoId = id;
     document.querySelector('#modal-alimento h2').textContent = id ? 'Editar Alimento' : 'Novo Alimento';
+    atualizarSelectCategoriasAlimentos();
 
     if (id) {
         const alimento = buscarAlimento(id);
@@ -2041,8 +2270,11 @@ function salvarAlimento(evento) {
         app.alimentos.push(alimento);
     }
 
+    normalizarCategoriasAlimentos();
     salvarDados();
     fecharModal('modal-alimento');
+    atualizarSelectCategoriasAlimentos();
+    atualizarSelectsIngredientesReceita();
     renderizarTudoAposSync();
 }
 
@@ -2063,6 +2295,7 @@ function renderizarAlimentos() {
         .forEach(alimento => {
             const card = document.createElement('div');
             card.className = 'card-receita card-alimento';
+            card.dataset.categoria = alimento.categoria || '';
             card.innerHTML = `
                 <div class="card-receita-header header-alimento">
                     <div>
@@ -2090,8 +2323,11 @@ function filtrarAlimentos() {
     if (!busca) return;
 
     const termo = busca.value.toLowerCase();
+    const categoria = document.getElementById('filtro-categoria-alimento')?.value || '';
     document.querySelectorAll('#lista-alimentos .card-alimento').forEach(card => {
-        card.style.display = card.textContent.toLowerCase().includes(termo) ? 'block' : 'none';
+        const passaBusca = card.textContent.toLowerCase().includes(termo);
+        const passaCategoria = !categoria || card.dataset.categoria === categoria;
+        card.style.display = passaBusca && passaCategoria ? 'block' : 'none';
     });
 }
 
@@ -2760,6 +2996,8 @@ Object.assign(window, {
     salvarAlimento,
     deletarAlimento,
     filtrarAlimentos,
+    adicionarLinhaIngredienteReceita,
+    removerLinhaIngredienteReceita,
     selecionarItemParaPlano,
     renderizarContagemAlimentos,
     abrirTiposRefeicao,

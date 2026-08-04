@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Card&aacute;pio</title>
-    <link rel="stylesheet" href="css/style.css?v=20260804-foods-count">
+    <link rel="stylesheet" href="css/style.css?v=20260804-structured-ingredients">
 </head>
 <body>
     <div id="app">
@@ -144,6 +144,9 @@
         <div id="visao-alimentos" class="visao" style="display:none;">
             <div class="controles">
                 <input type="text" id="busca-alimentos" placeholder="Buscar alimento..." onkeyup="filtrarAlimentos()">
+                <select id="filtro-categoria-alimento" onchange="filtrarAlimentos()">
+                    <option value="">Todas as categorias</option>
+                </select>
                 <button onclick="abrirModalAlimento()" class="btn-principal">Novo Alimento</button>
             </div>
             <div id="lista-alimentos" class="lista-receitas"></div>
@@ -187,9 +190,9 @@
                         <div id="tags-receita" class="lista-checkboxes"></div>
                     </div>
                     <div class="form-grupo">
-                        <label>Ingredientes (um por linha)</label>
-                        <textarea id="ingredientes-receita" placeholder="Cenoura&#10;Batata&#10;&Aacute;gua"></textarea>
-                        <p class="texto-ajuda">Cada linha sera vinculada a um alimento. Se ainda nao existir, o alimento sera criado automaticamente.</p>
+                        <label>Ingredientes</label>
+                        <div id="lista-ingredientes-receita" class="lista-ingredientes"></div>
+                        <button type="button" class="btn-secundario btn-ingrediente" onclick="adicionarLinhaIngredienteReceita()">Adicionar ingrediente</button>
                     </div>
                     <div class="form-grupo">
                         <label>Modo de Preparo</label>
@@ -207,7 +210,23 @@
             <div class="modal-content">
                 <button class="btn-fechar" onclick="fecharModal('modal-selecionar-receita')">x</button>
                 <h2>Selecionar Item</h2>
-                <input type="text" id="busca-selecionar" placeholder="Buscar receita ou alimento..." onkeyup="buscarReceitasModal()" style="width: 100%; padding: 10px; margin-bottom: 20px;">
+                <div class="filtros-selecao">
+                    <input type="text" id="busca-selecionar" placeholder="Buscar receita ou alimento..." onkeyup="buscarReceitasModal()">
+                    <select id="filtro-selecao-item" onchange="buscarReceitasModal()">
+                        <option value="">Receitas e alimentos</option>
+                        <option value="receita">Receitas</option>
+                        <option value="alimento">Alimentos</option>
+                    </select>
+                    <select id="filtro-selecao-tipo" onchange="buscarReceitasModal()">
+                        <option value="">Todos os tipos</option>
+                    </select>
+                    <select id="filtro-selecao-categoria" onchange="buscarReceitasModal()">
+                        <option value="">Todas as categorias</option>
+                    </select>
+                    <select id="filtro-selecao-tag" onchange="buscarReceitasModal()">
+                        <option value="">Todas as tags</option>
+                    </select>
+                </div>
                 <div id="lista-selecionar-receita" class="lista-receitas-modal"></div>
             </div>
         </div>
@@ -223,7 +242,8 @@
                     </div>
                     <div class="form-grupo">
                         <label>Categoria</label>
-                        <input type="text" id="categoria-alimento" placeholder="Ex: Fruta, Legume, Proteina">
+                        <input type="text" id="categoria-alimento" list="categorias-alimentos-lista" placeholder="Ex: Fruta, Legume, Proteina">
+                        <datalist id="categorias-alimentos-lista"></datalist>
                     </div>
                     <div class="form-grupo">
                         <label>Unidade padrao</label>
@@ -293,7 +313,7 @@
     </div>
 
     <script src="js/supabase-config.js?v=20260803-supabase-url"></script>
-    <script src="js/app.js?v=20260804-foods-count"></script>
+    <script src="js/app.js?v=20260804-structured-ingredients"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
 </body>
 </html>
