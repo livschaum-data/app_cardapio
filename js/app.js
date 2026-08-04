@@ -18,7 +18,7 @@ const app = {
     tiposRefeicao: ['Café da Manhã', 'Almoço', 'Lanche', 'Jantar', 'Ceia'],
 
     // Categorias customizaveis de receitas
-    categorias: ['Doce', 'Salgado', 'Vegetariano', 'Vegan', 'Sem Glúten', 'Sem Lactose'],
+    categorias: ['Proteínas', 'Acompanhamentos', 'Prato Único', 'Legumes', 'Saladas', 'Lanches', 'Cremes e Sopas', 'Caldas e Molhos', 'Doces e Sobremesas', 'Bolos e Tortas', 'Bolachas e Biscoitos', 'Pães e Massas', 'Bebidas'],
 
     // Categorias customizaveis de alimentos
     categoriasAlimentos: ['Fruta', 'Legume', 'Verdura', 'Proteina', 'Carboidrato', 'Laticinio', 'Bebida', 'Tempero', 'Grao', 'Oleaginosa'],
@@ -50,6 +50,7 @@ async function inicializar() {
     console.log('Inicializando app de cardapio...');
 
     configurarEventosNuvem();
+    aplicarEstadoSidebar();
 
     // Carregar dados locais primeiro; a nuvem entra depois se houver conta conectada.
     configurarSupabase();
@@ -478,6 +479,39 @@ async function baixarDadosSupabase({ silencioso = false } = {}) {
     }
 }
 
+function aplicarEstadoSidebar() {
+    const appEl = document.getElementById('app');
+    if (!appEl) return;
+
+    const sidebarOculta = localStorage.getItem('cardapio-sidebar-oculta') === 'true';
+    appEl.classList.toggle('sidebar-oculta', sidebarOculta);
+    atualizarBotoesSidebar(sidebarOculta);
+}
+
+function atualizarBotoesSidebar(sidebarOculta) {
+    const btnOcultar = document.querySelector('.btn-sidebar-toggle');
+    const btnMostrar = document.getElementById('btn-expandir-sidebar');
+
+    if (btnOcultar) {
+        btnOcultar.setAttribute('aria-label', sidebarOculta ? 'Mostrar barra lateral' : 'Ocultar barra lateral');
+        btnOcultar.setAttribute('title', sidebarOculta ? 'Mostrar barra lateral' : 'Ocultar barra lateral');
+    }
+
+    if (btnMostrar) {
+        btnMostrar.setAttribute('aria-expanded', String(!sidebarOculta));
+    }
+}
+
+function alternarSidebar() {
+    const appEl = document.getElementById('app');
+    if (!appEl) return;
+
+    const sidebarOculta = !appEl.classList.contains('sidebar-oculta');
+    appEl.classList.toggle('sidebar-oculta', sidebarOculta);
+    localStorage.setItem('cardapio-sidebar-oculta', String(sidebarOculta));
+    atualizarBotoesSidebar(sidebarOculta);
+}
+
 function obterTimestamp(valor) {
     const data = valor ? new Date(valor) : null;
     return data && !Number.isNaN(data.getTime()) ? data.getTime() : 0;
@@ -527,6 +561,7 @@ function renderizarTudoAposSync() {
     renderizarCalendario();
     renderizarReceitas();
     renderizarAlimentos();
+    renderizarCategoriasAlimentos();
     renderizarContagemAlimentos();
 }
 
@@ -611,6 +646,77 @@ function escaparHtml(valor) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function chaveCategoria(valor) {
+    return normalizarNomeAlimento(valor)
+        .replace(/\s+/g, '-');
+}
+
+const CORES_CATEGORIAS_RECEITA = {
+    proteinas: '#e23d4f',
+    acompanhamentos: '#f7b928',
+    'prato-unico': '#e84949',
+    legumes: '#0d5f25',
+    saladas: '#27c83f',
+    lanches: '#6542f5',
+    'cremes-e-sopas': '#e1d36d',
+    'caldas-e-molhos': '#e996a3',
+    'doces-e-sobremesas': '#ff2b75',
+    'bolos-e-tortas': '#63b9d8',
+    'bolachas-e-biscoitos': '#9a6580',
+    'paes-e-massas': '#3d2a0d',
+    bebidas: '#9b9b9b',
+    doce: '#ff2b75',
+    salgado: '#f7b928',
+    vegetariano: '#27c83f',
+    vegan: '#0d5f25',
+    'sem-gluten': '#63b9d8',
+    'sem-lactose': '#e996a3',
+};
+
+const CORES_CATEGORIAS_ALIMENTO = {
+    fruta: '#ff8a3d',
+    legume: '#16803a',
+    verdura: '#32c766',
+    proteina: '#d94747',
+    proteinas: '#d94747',
+    carboidrato: '#c7852f',
+    laticinio: '#6bb7d6',
+    bebida: '#8fa4b8',
+    tempero: '#7b5bd6',
+    grao: '#9c7a36',
+    oleaginosa: '#7d4f2a',
+};
+
+function gerarCorCategoria(nome, tipo = 'receita') {
+    const chave = chaveCategoria(nome);
+    const paleta = tipo === 'alimento' ? CORES_CATEGORIAS_ALIMENTO : CORES_CATEGORIAS_RECEITA;
+    if (paleta[chave]) return paleta[chave];
+
+    let hash = 0;
+    for (let i = 0; i < chave.length; i++) {
+        hash = ((hash << 5) - hash) + chave.charCodeAt(i);
+        hash |= 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 58%, 44%)`;
+}
+
+function corTextoParaFundo(cor) {
+    if (!cor || !cor.startsWith('#') || cor.length !== 7) return '#ffffff';
+    const r = parseInt(cor.slice(1, 3), 16);
+    const g = parseInt(cor.slice(3, 5), 16);
+    const b = parseInt(cor.slice(5, 7), 16);
+    const luminancia = (0.299 * r + 0.587 * g + 0.114 * b);
+    return luminancia > 150 ? '#262626' : '#ffffff';
+}
+
+function renderizarBadgeCategoria(categoria, tipo = 'receita') {
+    if (!categoria) return '';
+    const cor = gerarCorCategoria(categoria, tipo);
+    const texto = corTextoParaFundo(cor);
+    return `<span class="badge-categoria badge-categoria-colorida" style="--categoria-cor:${cor};--categoria-texto:${texto};">${escaparHtml(categoria)}</span>`;
 }
 
 function criarIdAlimento() {
@@ -1130,7 +1236,7 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
     }
 
     return `
-        <div class="celula-refeicao">
+        <div class="celula-refeicao ${tipo === 'alimento' ? 'celula-alimento' : 'celula-receita'}" style="--categoria-cor:${gerarCorCategoria(item.categoria || tipo, tipo)};">
             <div class="conteudo-planejamento">
                 <div class="nome-refeicao">${item.nome}</div>
                 ${compacto ? '' : `<div class="tipo-refeicao-tabela">${tipo === 'alimento' ? 'Alimento' : (item.categoria || '')}</div>`}
@@ -1165,6 +1271,7 @@ function renderizarSemanal() {
     tbody.innerHTML = '';
     atualizarTituloSemana();
     atualizarCabecalhoSemanal();
+    const hojeStr = formatarDataChave(new Date());
 
     app.tiposRefeicao.forEach(tipo => {
         const tr = document.createElement('tr');
@@ -1174,10 +1281,11 @@ function renderizarSemanal() {
             const data = obterDataSemanaDia(app.semanaAtual, diaInfo.chave);
             const dataStr = formatarDataChave(data);
             const planos = buscarPlanejamentos(app.semanaAtual, diaInfo.chave, tipo);
+            const classeHoje = dataStr === hojeStr ? ' coluna-hoje' : '';
 
             if (planos.length > 0) {
                 html += `
-                    <td>
+                    <td class="${classeHoje}">
                         ${renderizarListaPlanejamentos(planos)}
                         <button class="btn-adicionar-mini" onclick="abrirModalPlanejar('${app.semanaAtual}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
                             Adicionar
@@ -1186,8 +1294,8 @@ function renderizarSemanal() {
                 `;
             } else {
                 html += `
-                    <td class="celula-vazia" onclick="abrirModalPlanejar('${app.semanaAtual}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
-                        + Adicionar
+                    <td class="celula-vazia${classeHoje}" onclick="abrirModalPlanejar('${app.semanaAtual}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
+                        <span class="btn-add-celula">+</span>
                     </td>
                 `;
             }
@@ -1203,10 +1311,12 @@ function atualizarCabecalhoSemanal() {
     if (!tabela) return;
 
     const inicio = obterInicioSemana(app.semanaAtual);
+    const hojeStr = formatarDataChave(new Date());
     tabela.innerHTML = '<th>Refeicao</th>' + DIAS_SEMANA.map((dia, indice) => {
         const data = new Date(inicio);
         data.setDate(inicio.getDate() + indice);
-        return `<th>${dia.nome}<br><span class="data-cabecalho">${data.getDate()}/${data.getMonth() + 1}</span></th>`;
+        const classeHoje = formatarDataChave(data) === hojeStr ? ' class="coluna-hoje"' : '';
+        return `<th${classeHoje}>${dia.nome}<br><span class="data-cabecalho">${data.getDate()}/${data.getMonth() + 1}</span></th>`;
     }).join('');
 }
 
@@ -1296,6 +1406,39 @@ function atualizarFiltrosModalSelecao() {
     }
 }
 
+function selecionarFiltroItemModal(botao) {
+    const input = document.getElementById('filtro-selecao-item');
+    if (!input) return;
+
+    document.querySelectorAll('.segmentos-selecao .segmento').forEach(item => {
+        item.classList.remove('ativo');
+    });
+
+    botao.classList.add('ativo');
+    input.value = botao.dataset.filtroItem || '';
+    buscarReceitasModal();
+}
+
+function limparFiltrosModalSelecao() {
+    const busca = document.getElementById('busca-selecionar');
+    const item = document.getElementById('filtro-selecao-item');
+    const tipo = document.getElementById('filtro-selecao-tipo');
+    const categoria = document.getElementById('filtro-selecao-categoria');
+    const tag = document.getElementById('filtro-selecao-tag');
+
+    if (busca) busca.value = '';
+    if (item) item.value = '';
+    if (tipo) tipo.value = '';
+    if (categoria) categoria.value = '';
+    if (tag) tag.value = '';
+
+    document.querySelectorAll('.segmentos-selecao .segmento').forEach(botao => {
+        botao.classList.toggle('ativo', !botao.dataset.filtroItem);
+    });
+
+    buscarReceitasModal();
+}
+
 function renderizarReceitasModalSelecao() {
     // Renderizar lista de receitas e alimentos no modal
     const lista = document.getElementById('lista-selecionar-receita');
@@ -1319,12 +1462,14 @@ function renderizarReceitasModalSelecao() {
             <div class="card-receita-header">
                 <div>
                     <h3>${receita.nome}</h3>
-                    <div class="badge-tipo">Receita</div>
+                    <div class="badge-item badge-receita">Receita</div>
                     ${renderizarBadgesTipos(receita)}
                 </div>
             </div>
             <div class="card-receita-content">
-                <p>Categoria: ${receita.categoria || 'N/A'}</p>
+                <div class="linha-metadados-card">
+                    ${renderizarBadgeCategoria(receita.categoria, 'receita') || '<span class="badge-neutra">Sem categoria</span>'}
+                </div>
                 ${renderizarBadgesTags(receita)}
                 <button onclick="selecionarItemParaPlano('receita', '${receita.id}')"
                         class="btn-principal" style="width: 100%;">
@@ -1347,11 +1492,13 @@ function renderizarReceitasModalSelecao() {
             <div class="card-receita-header header-alimento">
                 <div>
                     <h3>${alimento.nome}</h3>
-                    <div class="badge-tipo">Alimento</div>
+                    <div class="badge-item badge-alimento">Alimento</div>
                 </div>
             </div>
             <div class="card-receita-content">
-                <p>Categoria: ${alimento.categoria || 'N/A'}</p>
+                <div class="linha-metadados-card">
+                    ${renderizarBadgeCategoria(alimento.categoria, 'alimento') || '<span class="badge-neutra">Sem categoria</span>'}
+                </div>
                 <button onclick="selecionarItemParaPlano('alimento', '${alimento.id}')"
                         class="btn-principal" style="width: 100%;">
                     Selecionar
@@ -1465,6 +1612,7 @@ function atualizarTituloSemana() {
 function renderizarMensal() {
     const container = document.getElementById('container-semanas-mensais');
     container.innerHTML = '';
+    const hojeStr = formatarDataChave(new Date());
 
     const primeiroDiaMes = new Date(app.anoAtual, app.mesAtual, 1);
     const ultimoDiaMes = new Date(app.anoAtual, app.mesAtual + 1, 0);
@@ -1487,8 +1635,11 @@ function renderizarMensal() {
                     ${DIAS_SEMANA.map((dia, indice) => {
                         const data = new Date(cursor);
                         data.setDate(cursor.getDate() + indice);
-                        const foraMes = data.getMonth() !== app.mesAtual ? ' data-fora-mes' : '';
-                        return `<th class="${foraMes}">${dia.abrev}<br><span class="data-cabecalho">${data.getDate()}/${data.getMonth() + 1}</span></th>`;
+                        const classes = [
+                            data.getMonth() !== app.mesAtual ? 'data-fora-mes' : '',
+                            formatarDataChave(data) === hojeStr ? 'coluna-hoje' : ''
+                        ].filter(Boolean).join(' ');
+                        return `<th class="${classes}">${dia.abrev}<br><span class="data-cabecalho">${data.getDate()}/${data.getMonth() + 1}</span></th>`;
                     }).join('')}
                 </tr>
             </thead>
@@ -1505,11 +1656,15 @@ function renderizarMensal() {
                 data.setDate(cursor.getDate() + indice);
                 const dataStr = formatarDataChave(data);
                 const planos = buscarPlanejamentosPorData(dataStr, tipo);
-                const classeForaMes = data.getMonth() !== app.mesAtual ? ' data-fora-mes' : '';
+                const classesDia = [
+                    data.getMonth() !== app.mesAtual ? 'data-fora-mes' : '',
+                    dataStr === hojeStr ? 'coluna-hoje' : ''
+                ].filter(Boolean).join(' ');
+                const classeDia = classesDia ? ` ${classesDia}` : '';
 
                 if (planos.length > 0) {
                     html += `
-                        <td class="${classeForaMes}">
+                        <td class="${classeDia}">
                             ${renderizarListaPlanejamentos(planos, true)}
                             <button class="btn-adicionar-mini" onclick="abrirModalPlanejar('${semana}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
                                 +
@@ -1518,7 +1673,7 @@ function renderizarMensal() {
                     `;
                 } else {
                     html += `
-                        <td class="celula-vazia${classeForaMes}" onclick="abrirModalPlanejar('${semana}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
+                        <td class="celula-vazia${classeDia}" onclick="abrirModalPlanejar('${semana}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
                             +
                         </td>
                     `;
@@ -2074,7 +2229,7 @@ function renderizarReceitas() {
                 </div>
             </div>
             <div class="card-receita-content">
-                ${receita.categoria ? `<span class="badge-categoria">${receita.categoria}</span>` : ''}
+                ${renderizarBadgeCategoria(receita.categoria, 'receita')}
                 ${renderizarBadgesTags(receita)}
                 ${obterIngredientesReceita(receita).length > 0 ? `
                     <p><strong>Ingredientes:</strong><br>${obterIngredientesReceita(receita).slice(0, 3).join('<br>')}</p>
@@ -2152,6 +2307,7 @@ function buscarReceitasModal() {
     const categoria = document.getElementById('filtro-selecao-categoria')?.value || '';
     const tag = document.getElementById('filtro-selecao-tag')?.value || '';
     const cards = document.querySelectorAll('.lista-receitas-modal .item-selecao');
+    let visiveis = 0;
 
     cards.forEach(card => {
         const texto = card.textContent.toLowerCase();
@@ -2164,8 +2320,15 @@ function buscarReceitasModal() {
         const passaCategoria = !categoria || card.dataset.categoria === categoria;
         const passaTag = !tag || tags.includes(tag);
 
-        card.style.display = passaBusca && passaItem && passaTipo && passaCategoria && passaTag ? 'block' : 'none';
+        const visivel = passaBusca && passaItem && passaTipo && passaCategoria && passaTag;
+        card.style.display = visivel ? 'block' : 'none';
+        if (visivel) visiveis++;
     });
+
+    const contador = document.getElementById('resultado-selecao-contador');
+    if (contador) {
+        contador.textContent = `${visiveis} ${visiveis === 1 ? 'item encontrado' : 'itens encontrados'}`;
+    }
 }
 
 /* ==================== ALIMENTOS ====================
@@ -2209,6 +2372,136 @@ function atualizarSelectCategoriasAlimentos(categoriaAtual = '') {
         app.categoriasAlimentos.push(categoriaAtual);
         normalizarCategoriasAlimentos();
     }
+}
+
+function abrirCategoriasAlimentos() {
+    abrirModal('modal-categorias-alimentos');
+    renderizarCategoriasAlimentos();
+}
+
+function adicionarCategoriaAlimento() {
+    const input = document.getElementById('nova-categoria-alimento');
+    const novaCategoria = input.value.trim();
+
+    if (!novaCategoria) {
+        alert('Digite uma categoria!');
+        return;
+    }
+
+    if (app.categoriasAlimentos.some(categoria => categoria.toLowerCase() === novaCategoria.toLowerCase())) {
+        alert('Esta categoria ja existe!');
+        return;
+    }
+
+    app.categoriasAlimentos.push(novaCategoria);
+    normalizarCategoriasAlimentos();
+    salvarDados();
+    atualizarSelectCategoriasAlimentos();
+    atualizarFiltrosModalSelecao();
+    input.value = '';
+    renderizarCategoriasAlimentos();
+}
+
+function editarCategoriaAlimento(categoriaAtual) {
+    const novaCategoria = prompt('Novo nome da categoria:', categoriaAtual);
+    if (!novaCategoria) return;
+
+    const categoriaLimpa = novaCategoria.trim();
+    if (!categoriaLimpa || categoriaLimpa === categoriaAtual) return;
+
+    if (app.categoriasAlimentos.some(categoria =>
+        categoria !== categoriaAtual &&
+        categoria.toLowerCase() === categoriaLimpa.toLowerCase()
+    )) {
+        alert('Esta categoria ja existe!');
+        return;
+    }
+
+    app.categoriasAlimentos = app.categoriasAlimentos.map(categoria =>
+        categoria === categoriaAtual ? categoriaLimpa : categoria
+    );
+
+    app.alimentos.forEach(alimento => {
+        if (alimento.categoria === categoriaAtual) {
+            alimento.categoria = categoriaLimpa;
+        }
+    });
+
+    normalizarCategoriasAlimentos();
+    salvarDados();
+    renderizarAposAlterarCategoriasAlimentos();
+}
+
+function removerCategoriaAlimento(categoria) {
+    const usada = app.alimentos.some(alimento => alimento.categoria === categoria);
+    const mensagem = usada
+        ? `Remover "${categoria}"? Os alimentos desta categoria ficarao sem categoria.`
+        : `Remover "${categoria}"?`;
+
+    if (!confirm(mensagem)) return;
+
+    app.categoriasAlimentos = app.categoriasAlimentos.filter(item => item !== categoria);
+    app.alimentos.forEach(alimento => {
+        if (alimento.categoria === categoria) {
+            alimento.categoria = '';
+        }
+    });
+
+    salvarDados();
+    renderizarAposAlterarCategoriasAlimentos();
+}
+
+function renderizarCategoriasAlimentos() {
+    const container = document.getElementById('lista-categorias-alimentos');
+    if (!container) return;
+
+    container.innerHTML = '';
+    normalizarCategoriasAlimentos();
+
+    if (app.categoriasAlimentos.length === 0) {
+        container.innerHTML = '<div class="sem-resultados">Nenhuma categoria cadastrada.</div>';
+        return;
+    }
+
+    app.categoriasAlimentos.forEach(categoria => {
+        const item = document.createElement('div');
+        item.className = 'item-gerenciavel';
+
+        const nome = document.createElement('span');
+        nome.innerHTML = `${renderizarBadgeCategoria(categoria, 'alimento')} ${escaparHtml(categoria)}`;
+
+        const acoes = document.createElement('div');
+        acoes.className = 'acoes-gerenciavel';
+
+        const btnEditar = document.createElement('button');
+        btnEditar.className = 'btn-editar';
+        btnEditar.textContent = 'Editar';
+        btnEditar.onclick = () => editarCategoriaAlimento(categoria);
+
+        const btnRemover = document.createElement('button');
+        btnRemover.className = 'btn-deletar';
+        btnRemover.textContent = 'Remover';
+        btnRemover.onclick = () => removerCategoriaAlimento(categoria);
+
+        acoes.appendChild(btnEditar);
+        acoes.appendChild(btnRemover);
+        item.appendChild(nome);
+        item.appendChild(acoes);
+        container.appendChild(item);
+    });
+}
+
+function renderizarAposAlterarCategoriasAlimentos() {
+    atualizarSelectCategoriasAlimentos();
+    atualizarFiltrosModalSelecao();
+    renderizarCategoriasAlimentos();
+    renderizarAlimentos();
+    renderizarReceitasModalSelecao();
+    renderizarSemanal();
+    renderizarMensal();
+    renderizarDiaria();
+    renderizarCalendario();
+    renderizarContagemAlimentos();
 }
 
 function abrirModalAlimento(id = '') {
@@ -2304,7 +2597,7 @@ function renderizarAlimentos() {
                     </div>
                 </div>
                 <div class="card-receita-content">
-                    ${alimento.categoria ? `<span class="badge-categoria">${alimento.categoria}</span>` : ''}
+                    ${renderizarBadgeCategoria(alimento.categoria, 'alimento')}
                     ${alimento.unidadePadrao ? `<p>Unidade padrao: ${alimento.unidadePadrao}</p>` : ''}
                     <div class="card-receita-actions">
                         <button class="btn-editar" onclick="abrirModalAlimento('${alimento.id}')">Editar</button>
@@ -2377,6 +2670,19 @@ function configurarPeriodoContagemPadrao() {
     fim.setDate(inicio.getDate() + 6);
     inicioInput.value = formatarDataChave(inicio);
     fimInput.value = formatarDataChave(fim);
+}
+
+function usarSemanaAtualContagem() {
+    const inicioInput = document.getElementById('contagem-inicio');
+    const fimInput = document.getElementById('contagem-fim');
+    if (!inicioInput || !fimInput) return;
+
+    const inicio = obterInicioSemana(app.semanaAtual);
+    const fim = new Date(inicio);
+    fim.setDate(inicio.getDate() + 6);
+    inicioInput.value = formatarDataChave(inicio);
+    fimInput.value = formatarDataChave(fim);
+    renderizarContagemAlimentos();
 }
 
 function obterDataPlano(plano) {
@@ -2457,7 +2763,7 @@ function renderizarContagemAlimentos() {
         <div class="linha-contagem">
             <div>
                 <strong>${item.nome}</strong>
-                ${item.categoria ? `<span>${item.categoria}</span>` : ''}
+                ${item.categoria ? renderizarBadgeCategoria(item.categoria, 'alimento') : ''}
             </div>
             <div class="numero-contagem">${item.vezes}</div>
         </div>
@@ -2766,7 +3072,7 @@ function renderizarCategorias() {
         item.className = 'item-gerenciavel';
 
         const nome = document.createElement('span');
-        nome.textContent = categoria;
+        nome.innerHTML = `${renderizarBadgeCategoria(categoria, 'receita')} ${escaparHtml(categoria)}`;
 
         const acoes = document.createElement('div');
         acoes.className = 'acoes-gerenciavel';
@@ -2983,6 +3289,7 @@ Object.assign(window, {
     editarTag,
     removerTag,
     conectarNuvem,
+    alternarSidebar,
     alternarPainelNuvem,
     fecharPainelNuvem,
     entrarNuvem,
@@ -3000,6 +3307,13 @@ Object.assign(window, {
     removerLinhaIngredienteReceita,
     selecionarItemParaPlano,
     renderizarContagemAlimentos,
+    usarSemanaAtualContagem,
+    selecionarFiltroItemModal,
+    limparFiltrosModalSelecao,
+    abrirCategoriasAlimentos,
+    adicionarCategoriaAlimento,
+    editarCategoriaAlimento,
+    removerCategoriaAlimento,
     abrirTiposRefeicao,
     abrirHistorico,
 });

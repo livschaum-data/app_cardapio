@@ -4,22 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Card&aacute;pio</title>
-    <link rel="stylesheet" href="css/style.css?v=20260804-structured-ingredients">
+    <link rel="stylesheet" href="css/style.css?v=20260804-sidebar-toggle">
 </head>
 <body>
     <div id="app">
-        <header class="header">
-            <h1>Planejador de Card&aacute;pio</h1>
+        <header class="header sidebar">
+            <div class="sidebar-brand">
+                <div>
+                    <span>Card&aacute;pio</span>
+                    <h1>Planejador</h1>
+                </div>
+                <button type="button" class="btn-sidebar-toggle" onclick="alternarSidebar()" aria-label="Ocultar barra lateral" title="Ocultar barra lateral">&lsaquo;</button>
+            </div>
             <div class="status-nuvem" id="status-nuvem">
                 <button type="button" id="btn-conectar-nuvem" class="btn-nuvem-toggle" onclick="alternarPainelNuvem()" aria-expanded="false" aria-controls="painel-nuvem">
                     <span class="status-indicador status-offline" id="status-nuvem-indicador"></span>
                     <span id="status-nuvem-texto">Nuvem desconectada</span>
                 </button>
             </div>
-            <nav class="menu-principal">
+            <nav class="abas" aria-label="Navegacao principal">
+                <span class="sidebar-label">Planejamento</span>
+                <button class="aba-btn ativo" onclick="mostrarVisao('semanal')">Semanal</button>
+                <button class="aba-btn" onclick="mostrarVisao('mensal')">Mensal</button>
+                <button class="aba-btn" onclick="mostrarVisao('diaria')">Di&aacute;ria</button>
+                <button class="aba-btn" onclick="mostrarVisao('calendario')">Calend&aacute;rio</button>
+                <span class="sidebar-label">Cadastros</span>
+                <button class="aba-btn" onclick="mostrarVisao('receitas')">Receitas</button>
+                <button class="aba-btn" onclick="mostrarVisao('alimentos')">Alimentos</button>
+                <span class="sidebar-label">Relat&oacute;rios</span>
+                <button class="aba-btn" onclick="mostrarVisao('contagem')">Contagem</button>
+            </nav>
+            <nav class="menu-principal" aria-label="Configuracoes">
+                <span class="sidebar-label">Configura&ccedil;&otilde;es</span>
                 <button class="menu-btn" onclick="abrirModalReceita()">Nova Receita</button>
+                <button class="menu-btn" onclick="abrirModalAlimento()">Novo Alimento</button>
                 <button class="menu-btn" onclick="abrirTiposRefeicao()">Tipos de Refei&ccedil;&atilde;o</button>
-                <button class="menu-btn" id="btn-categorias" onclick="abrirCategorias()">Categorias</button>
+                <button class="menu-btn" id="btn-categorias" onclick="abrirCategorias()">Categorias de Receitas</button>
+                <button class="menu-btn" onclick="abrirCategoriasAlimentos()">Categorias de Alimentos</button>
                 <button class="menu-btn" id="btn-tags" onclick="abrirTags()">Tags</button>
                 <button class="menu-btn" onclick="abrirHistorico()">Hist&oacute;rico</button>
             </nav>
@@ -57,15 +78,8 @@
             <p id="nuvem-status" class="texto-ajuda" aria-live="polite">Verificando conexao com a nuvem...</p>
         </aside>
 
-        <div class="abas">
-            <button class="aba-btn ativo" onclick="mostrarVisao('semanal')">Semanal</button>
-            <button class="aba-btn" onclick="mostrarVisao('mensal')">Mensal</button>
-            <button class="aba-btn" onclick="mostrarVisao('diaria')">Di&aacute;ria</button>
-            <button class="aba-btn" onclick="mostrarVisao('calendario')">Calend&aacute;rio</button>
-            <button class="aba-btn" onclick="mostrarVisao('receitas')">Receitas</button>
-            <button class="aba-btn" onclick="mostrarVisao('alimentos')">Alimentos</button>
-            <button class="aba-btn" onclick="mostrarVisao('contagem')">Contagem</button>
-        </div>
+        <main class="app-main">
+        <button type="button" id="btn-expandir-sidebar" class="btn-sidebar-expandir" onclick="alternarSidebar()" aria-label="Mostrar barra lateral" title="Mostrar barra lateral">Menu</button>
 
         <div id="visao-semanal" class="visao">
             <div class="controles">
@@ -132,6 +146,13 @@
         </div>
 
         <div id="visao-receitas" class="visao" style="display:none;">
+            <div class="visao-header">
+                <div>
+                    <span>Cadastros</span>
+                    <h2>Receitas</h2>
+                </div>
+                <button onclick="abrirModalReceita()" class="btn-principal">Nova Receita</button>
+            </div>
             <div class="controles">
                 <input type="text" id="busca-receitas" placeholder="Buscar receita..." onkeyup="filtrarReceitas()">
                 <select id="filtro-categoria" onchange="filtrarReceitas()">
@@ -142,17 +163,30 @@
         </div>
 
         <div id="visao-alimentos" class="visao" style="display:none;">
+            <div class="visao-header">
+                <div>
+                    <span>Cadastros</span>
+                    <h2>Alimentos</h2>
+                </div>
+                <button onclick="abrirModalAlimento()" class="btn-principal">Novo Alimento</button>
+            </div>
             <div class="controles">
                 <input type="text" id="busca-alimentos" placeholder="Buscar alimento..." onkeyup="filtrarAlimentos()">
                 <select id="filtro-categoria-alimento" onchange="filtrarAlimentos()">
                     <option value="">Todas as categorias</option>
                 </select>
-                <button onclick="abrirModalAlimento()" class="btn-principal">Novo Alimento</button>
             </div>
             <div id="lista-alimentos" class="lista-receitas"></div>
         </div>
 
         <div id="visao-contagem" class="visao" style="display:none;">
+            <div class="visao-header">
+                <div>
+                    <span>Relat&oacute;rios</span>
+                    <h2>Contagem de Alimentos</h2>
+                </div>
+                <button onclick="usarSemanaAtualContagem()" class="btn-principal">Usar semana atual</button>
+            </div>
             <div class="controles controles-contagem">
                 <label>
                     Inicio
@@ -167,38 +201,48 @@
         </div>
 
         <div id="modal-receita" class="modal" style="display:none;">
-            <div class="modal-content">
+            <div class="modal-content modal-receita-content">
                 <button class="btn-fechar" onclick="fecharModal('modal-receita')">x</button>
                 <h2>Nova Receita</h2>
                 <form id="form-receita">
-                    <div class="form-grupo">
-                        <label>Nome da Receita *</label>
-                        <input type="text" id="nome-receita" required>
+                    <div class="modal-scroll">
+                        <section class="form-secao">
+                            <h3>Dados</h3>
+                            <div class="form-grid duas-colunas">
+                                <div class="form-grupo campo-largo">
+                                    <label>Nome da Receita *</label>
+                                    <input type="text" id="nome-receita" required>
+                                </div>
+                                <div class="form-grupo">
+                                    <label>Categoria</label>
+                                    <select id="categoria-receita">
+                                        <option value="">Sem categoria</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-grupo">
+                                <label>Tipo de Refei&ccedil;&atilde;o *</label>
+                                <div id="tipo-refeicao" class="lista-checkboxes lista-checkboxes-compacta"></div>
+                            </div>
+                            <div class="form-grupo">
+                                <label>Tags</label>
+                                <div id="tags-receita" class="lista-checkboxes lista-checkboxes-compacta"></div>
+                            </div>
+                        </section>
+                        <section class="form-secao">
+                            <h3>Ingredientes</h3>
+                            <div id="lista-ingredientes-receita" class="lista-ingredientes"></div>
+                            <button type="button" class="btn-secundario btn-ingrediente" onclick="adicionarLinhaIngredienteReceita()">Adicionar ingrediente</button>
+                        </section>
+                        <section class="form-secao">
+                            <h3>Preparo</h3>
+                            <div class="form-grupo">
+                                <label>Modo de Preparo</label>
+                                <textarea id="preparo-receita" placeholder="Descreva o modo de preparo..."></textarea>
+                            </div>
+                        </section>
                     </div>
-                    <div class="form-grupo">
-                        <label>Tipo de Refei&ccedil;&atilde;o *</label>
-                        <div id="tipo-refeicao" class="lista-checkboxes"></div>
-                    </div>
-                    <div class="form-grupo">
-                        <label>Categoria</label>
-                        <select id="categoria-receita">
-                            <option value="">Sem categoria</option>
-                        </select>
-                    </div>
-                    <div class="form-grupo">
-                        <label>Tags</label>
-                        <div id="tags-receita" class="lista-checkboxes"></div>
-                    </div>
-                    <div class="form-grupo">
-                        <label>Ingredientes</label>
-                        <div id="lista-ingredientes-receita" class="lista-ingredientes"></div>
-                        <button type="button" class="btn-secundario btn-ingrediente" onclick="adicionarLinhaIngredienteReceita()">Adicionar ingrediente</button>
-                    </div>
-                    <div class="form-grupo">
-                        <label>Modo de Preparo</label>
-                        <textarea id="preparo-receita" placeholder="Descreva o modo de preparo..."></textarea>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <div class="modal-footer">
                         <button type="button" class="btn-secundario" onclick="fecharModal('modal-receita')">Cancelar</button>
                         <button type="submit" class="btn-principal">Salvar Receita</button>
                     </div>
@@ -207,25 +251,33 @@
         </div>
 
         <div id="modal-selecionar-receita" class="modal" style="display:none;">
-            <div class="modal-content">
+            <div class="modal-content modal-selecao-content">
                 <button class="btn-fechar" onclick="fecharModal('modal-selecionar-receita')">x</button>
                 <h2>Selecionar Item</h2>
                 <div class="filtros-selecao">
                     <input type="text" id="busca-selecionar" placeholder="Buscar receita ou alimento..." onkeyup="buscarReceitasModal()">
-                    <select id="filtro-selecao-item" onchange="buscarReceitasModal()">
-                        <option value="">Receitas e alimentos</option>
-                        <option value="receita">Receitas</option>
-                        <option value="alimento">Alimentos</option>
-                    </select>
-                    <select id="filtro-selecao-tipo" onchange="buscarReceitasModal()">
-                        <option value="">Todos os tipos</option>
-                    </select>
-                    <select id="filtro-selecao-categoria" onchange="buscarReceitasModal()">
-                        <option value="">Todas as categorias</option>
-                    </select>
-                    <select id="filtro-selecao-tag" onchange="buscarReceitasModal()">
-                        <option value="">Todas as tags</option>
-                    </select>
+                    <div class="segmentos-selecao" role="group" aria-label="Tipo de item">
+                        <button type="button" class="segmento ativo" data-filtro-item="" onclick="selecionarFiltroItemModal(this)">Todos</button>
+                        <button type="button" class="segmento" data-filtro-item="receita" onclick="selecionarFiltroItemModal(this)">Receitas</button>
+                        <button type="button" class="segmento" data-filtro-item="alimento" onclick="selecionarFiltroItemModal(this)">Alimentos</button>
+                    </div>
+                    <input type="hidden" id="filtro-selecao-item" value="">
+                    <details class="filtros-avancados">
+                        <summary>Filtros avan&ccedil;ados</summary>
+                        <div class="filtros-avancados-grid">
+                            <select id="filtro-selecao-tipo" onchange="buscarReceitasModal()">
+                                <option value="">Todos os tipos</option>
+                            </select>
+                            <select id="filtro-selecao-categoria" onchange="buscarReceitasModal()">
+                                <option value="">Todas as categorias</option>
+                            </select>
+                            <select id="filtro-selecao-tag" onchange="buscarReceitasModal()">
+                                <option value="">Todas as tags</option>
+                            </select>
+                            <button type="button" class="btn-secundario" onclick="limparFiltrosModalSelecao()">Limpar filtros</button>
+                        </div>
+                    </details>
+                    <div id="resultado-selecao-contador" class="texto-ajuda"></div>
                 </div>
                 <div id="lista-selecionar-receita" class="lista-receitas-modal"></div>
             </div>
@@ -274,7 +326,7 @@
         <div id="modal-categorias" class="modal" style="display:none;">
             <div class="modal-content">
                 <button class="btn-fechar" onclick="fecharModal('modal-categorias')">x</button>
-                <h2>Categorias</h2>
+                <h2>Categorias de Receitas</h2>
                 <div class="form-grupo">
                     <label>Adicionar nova categoria</label>
                     <div class="linha-form">
@@ -284,6 +336,22 @@
                 </div>
                 <h3 style="margin-top: 20px;">Categorias Atuais</h3>
                 <div id="lista-categorias" class="lista-gerenciavel"></div>
+            </div>
+        </div>
+
+        <div id="modal-categorias-alimentos" class="modal" style="display:none;">
+            <div class="modal-content">
+                <button class="btn-fechar" onclick="fecharModal('modal-categorias-alimentos')">x</button>
+                <h2>Categorias de Alimentos</h2>
+                <div class="form-grupo">
+                    <label>Adicionar nova categoria</label>
+                    <div class="linha-form">
+                        <input type="text" id="nova-categoria-alimento" placeholder="Ex: Fruta">
+                        <button onclick="adicionarCategoriaAlimento()" class="btn-principal">Adicionar</button>
+                    </div>
+                </div>
+                <h3 style="margin-top: 20px;">Categorias Atuais</h3>
+                <div id="lista-categorias-alimentos" class="lista-gerenciavel"></div>
             </div>
         </div>
 
@@ -310,10 +378,11 @@
                 <div id="lista-historico" class="lista-historico"></div>
             </div>
         </div>
+        </main>
     </div>
 
     <script src="js/supabase-config.js?v=20260803-supabase-url"></script>
-    <script src="js/app.js?v=20260804-structured-ingredients"></script>
+    <script src="js/app.js?v=20260804-sidebar-toggle"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
 </body>
 </html>
