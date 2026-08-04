@@ -2,6 +2,9 @@
    Centraliza todo o estado da aplicacao */
 
 const app = {
+    // Array de alimentos
+    alimentos: [],
+
     // Array de receitas
     receitas: [],
 
@@ -89,6 +92,7 @@ async function inicializar() {
 
 function salvarDadosLegado() {
     marcarDadosAlterados();
+    localStorage.setItem('cardapio_alimentos', JSON.stringify(app.alimentos));
     localStorage.setItem('cardapio_receitas', JSON.stringify(app.receitas));
     localStorage.setItem('cardapio_planejamentos', JSON.stringify(app.planejamentos));
     localStorage.setItem('cardapio_historico', JSON.stringify(app.historico));
@@ -100,6 +104,7 @@ function salvarDadosLegado() {
 }
 
 function carregarDadosLegado() {
+    app.alimentos = JSON.parse(localStorage.getItem('cardapio_alimentos')) || [];
     app.receitas = JSON.parse(localStorage.getItem('cardapio_receitas')) || [];
     app.planejamentos = JSON.parse(localStorage.getItem('cardapio_planejamentos')) || [];
     app.historico = JSON.parse(localStorage.getItem('cardapio_historico')) || [];
@@ -512,11 +517,14 @@ function renderizarTudoAposSync() {
     renderizarDiaria();
     renderizarCalendario();
     renderizarReceitas();
+    renderizarAlimentos();
+    renderizarContagemAlimentos();
 }
 
 function aplicarDados(dados) {
     if (!dados) return;
 
+    app.alimentos = Array.isArray(dados.alimentos) ? dados.alimentos : [];
     app.receitas = Array.isArray(dados.receitas) ? dados.receitas : [];
     app.planejamentos = Array.isArray(dados.planejamentos) ? dados.planejamentos : [];
     app.historico = Array.isArray(dados.historico) ? dados.historico : [];
@@ -531,7 +539,10 @@ function aplicarDados(dados) {
         : app.tags;
     app.atualizadoEm = dados.atualizadoEm || app.atualizadoEm;
 
-    if (normalizarEncodingApp()) {
+    const normalizou = normalizarEncodingApp();
+    const migrou = normalizarDadosAlimentos();
+
+    if (normalizou || migrou) {
         marcarDadosAlterados();
         salvarDadosLocais();
     }
@@ -539,6 +550,7 @@ function aplicarDados(dados) {
 
 function normalizarEncodingApp() {
     const antes = JSON.stringify({
+        alimentos: app.alimentos,
         receitas: app.receitas,
         planejamentos: app.planejamentos,
         historico: app.historico,
@@ -547,6 +559,7 @@ function normalizarEncodingApp() {
         tags: app.tags,
     });
 
+    app.alimentos = normalizarEncodingValor(app.alimentos);
     app.receitas = normalizarEncodingValor(app.receitas);
     app.planejamentos = normalizarEncodingValor(app.planejamentos);
     app.historico = normalizarEncodingValor(app.historico);
@@ -555,12 +568,120 @@ function normalizarEncodingApp() {
     app.tags = normalizarEncodingValor(app.tags);
 
     const depois = JSON.stringify({
+        alimentos: app.alimentos,
         receitas: app.receitas,
         planejamentos: app.planejamentos,
         historico: app.historico,
         tiposRefeicao: app.tiposRefeicao,
         categorias: app.categorias,
         tags: app.tags,
+    });
+
+    return antes !== depois;
+}
+
+function normalizarNomeAlimento(nome) {
+    return String(nome || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function criarIdAlimento() {
+    return `alimento_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function buscarAlimento(id) {
+    return app.alimentos.find(alimento => alimento.id === id);
+}
+
+function buscarAlimentoPorNome(nome) {
+    const chave = normalizarNomeAlimento(nome);
+    if (!chave) return null;
+    return app.alimentos.find(alimento => normalizarNomeAlimento(alimento.nome) === chave) || null;
+}
+
+function obterOuCriarAlimento(nome, categoria = '') {
+    const nomeLimpo = String(nome || '').trim();
+    if (!nomeLimpo) return null;
+
+    const existente = buscarAlimentoPorNome(nomeLimpo);
+    if (existente) return existente;
+
+    const alimento = {
+        id: criarIdAlimento(),
+        nome: nomeLimpo,
+        categoria: categoria || '',
+        unidadePadrao: '',
+        dataCriacao: new Date().toISOString(),
+    };
+
+    app.alimentos.push(alimento);
+    return alimento;
+}
+
+function normalizarIngredienteReceita(ingrediente) {
+    if (typeof ingrediente === 'string') {
+        const alimento = obterOuCriarAlimento(ingrediente);
+        return alimento ? {
+            alimentoId: alimento.id,
+            nome: alimento.nome,
+            quantidade: '',
+            unidade: '',
+        } : null;
+    }
+
+    if (ingrediente && typeof ingrediente === 'object') {
+        let alimento = ingrediente.alimentoId ? buscarAlimento(ingrediente.alimentoId) : null;
+        if (!alimento && ingrediente.nome) {
+            alimento = obterOuCriarAlimento(ingrediente.nome);
+        }
+
+        return alimento ? {
+            alimentoId: alimento.id,
+            nome: alimento.nome,
+            quantidade: ingrediente.quantidade || '',
+            unidade: ingrediente.unidade || '',
+        } : null;
+    }
+
+    return null;
+}
+
+function normalizarDadosAlimentos() {
+    const antes = JSON.stringify({
+        alimentos: app.alimentos,
+        receitas: app.receitas,
+        planejamentos: app.planejamentos,
+    });
+
+    app.alimentos = app.alimentos
+        .filter(alimento => alimento && alimento.nome && String(alimento.nome).trim())
+        .map(alimento => ({
+            id: alimento.id || criarIdAlimento(),
+            nome: String(alimento.nome).trim(),
+            categoria: alimento.categoria || '',
+            unidadePadrao: alimento.unidadePadrao || alimento.unidade || '',
+            dataCriacao: alimento.dataCriacao || new Date().toISOString(),
+        }));
+
+    app.receitas.forEach(receita => {
+        receita.ingredientes = Array.isArray(receita.ingredientes)
+            ? receita.ingredientes.map(normalizarIngredienteReceita).filter(Boolean)
+            : [];
+    });
+
+    app.planejamentos.forEach(plano => {
+        if (!plano.itemTipo) plano.itemTipo = 'receita';
+        if (!plano.itemId && plano.receitaId) plano.itemId = plano.receitaId;
+    });
+
+    const depois = JSON.stringify({
+        alimentos: app.alimentos,
+        receitas: app.receitas,
+        planejamentos: app.planejamentos,
     });
 
     return antes !== depois;
@@ -636,6 +757,7 @@ function decodificarWindows1252ComoUtf8(texto) {
 
 function carregarDadosLocais() {
     return {
+        alimentos: JSON.parse(localStorage.getItem('cardapio_alimentos')) || [],
         receitas: JSON.parse(localStorage.getItem('cardapio_receitas')) || [],
         planejamentos: JSON.parse(localStorage.getItem('cardapio_planejamentos')) || [],
         historico: JSON.parse(localStorage.getItem('cardapio_historico')) || [],
@@ -647,6 +769,7 @@ function carregarDadosLocais() {
 }
 
 function salvarDadosLocais() {
+    localStorage.setItem('cardapio_alimentos', JSON.stringify(app.alimentos));
     localStorage.setItem('cardapio_receitas', JSON.stringify(app.receitas));
     localStorage.setItem('cardapio_planejamentos', JSON.stringify(app.planejamentos));
     localStorage.setItem('cardapio_historico', JSON.stringify(app.historico));
@@ -662,17 +785,29 @@ async function carregarDadosSupabase() {
     if (!app.usuarioSupabase) return null;
 
     const config = window.CARDAPIO_SUPABASE;
-    const { data, error } = await app.supabase
+    let { data, error } = await app.supabase
         .from(config.table)
-        .select('receitas, planejamentos, historico, tipos_refeicao, categorias, tags, atualizado_em')
+        .select('alimentos, receitas, planejamentos, historico, tipos_refeicao, categorias, tags, atualizado_em')
         .eq('user_id', app.usuarioSupabase.id)
         .eq('id', config.recordId)
         .maybeSingle();
+
+    if (error && String(error.message || '').toLowerCase().includes('alimentos')) {
+        const fallback = await app.supabase
+            .from(config.table)
+            .select('receitas, planejamentos, historico, tipos_refeicao, categorias, tags, atualizado_em')
+            .eq('user_id', app.usuarioSupabase.id)
+            .eq('id', config.recordId)
+            .maybeSingle();
+        data = fallback.data;
+        error = fallback.error;
+    }
 
     if (error) throw error;
     if (!data) return null;
 
     return {
+        alimentos: data.alimentos,
         receitas: data.receitas,
         planejamentos: data.planejamentos,
         historico: data.historico,
@@ -701,6 +836,7 @@ async function salvarDadosSupabase() {
         .upsert({
             id: config.recordId,
             user_id: app.usuarioSupabase.id,
+            alimentos: app.alimentos,
             receitas: app.receitas,
             planejamentos: app.planejamentos,
             historico: app.historico,
@@ -757,7 +893,7 @@ async function carregarDados() {
             return;
         }
 
-        if (app.receitas.length || app.planejamentos.length || app.historico.length) {
+        if (app.alimentos.length || app.receitas.length || app.planejamentos.length || app.historico.length) {
             await salvarDadosSupabase();
             console.log('Dados locais enviados ao Supabase.');
         }
@@ -801,6 +937,10 @@ function mostrarVisao(nomeVisao) {
         renderizarCalendario();
     } else if (nomeVisao === 'receitas') {
         renderizarReceitas();
+    } else if (nomeVisao === 'alimentos') {
+        renderizarAlimentos();
+    } else if (nomeVisao === 'contagem') {
+        renderizarContagemAlimentos();
     }
 }
 
@@ -886,14 +1026,33 @@ function buscarPlanejamentosPorData(dataStr, tipo) {
     ));
 }
 
-function renderizarResumoReceitaPlano(plano, compacto = false) {
-    const receita = buscarReceita(plano.receitaId);
+function obterTipoItemPlano(plano) {
+    return plano.itemTipo || 'receita';
+}
 
-    if (!receita) {
+function obterItemIdPlano(plano) {
+    return plano.itemId || plano.receitaId;
+}
+
+function buscarItemPlanejamento(plano) {
+    const itemTipo = obterTipoItemPlano(plano);
+    const itemId = obterItemIdPlano(plano);
+
+    if (itemTipo === 'alimento') {
+        return { tipo: 'alimento', item: buscarAlimento(itemId) };
+    }
+
+    return { tipo: 'receita', item: buscarReceita(itemId) };
+}
+
+function renderizarResumoReceitaPlano(plano, compacto = false) {
+    const { tipo, item } = buscarItemPlanejamento(plano);
+
+    if (!item) {
         return `
             <div class="celula-refeicao receita-removida">
                 <div class="conteudo-planejamento">
-                    <div class="nome-refeicao">Receita removida</div>
+                    <div class="nome-refeicao">Item removido</div>
                 </div>
                 <div class="acoes-planejamento-mini">
                     <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
@@ -912,8 +1071,8 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
     return `
         <div class="celula-refeicao">
             <div class="conteudo-planejamento">
-                <div class="nome-refeicao">${receita.nome}</div>
-                ${compacto ? '' : `<div class="tipo-refeicao-tabela">${receita.categoria || ''}</div>`}
+                <div class="nome-refeicao">${item.nome}</div>
+                ${compacto ? '' : `<div class="tipo-refeicao-tabela">${tipo === 'alimento' ? 'Alimento' : (item.categoria || '')}</div>`}
             </div>
             <div class="acoes-planejamento-mini">
                 <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
@@ -1045,29 +1204,51 @@ function abrirEdicaoPlanejamento(id) {
 }
 
 function renderizarReceitasModalSelecao() {
-    // Renderizar lista de receitas no modal
+    // Renderizar lista de receitas e alimentos no modal
     const lista = document.getElementById('lista-selecionar-receita');
     lista.innerHTML = '';
 
-    if (app.receitas.length === 0) {
-        lista.innerHTML = '<div class="sem-resultados">Nenhuma receita cadastrada ainda.</div>';
+    if (app.receitas.length === 0 && app.alimentos.length === 0) {
+        lista.innerHTML = '<div class="sem-resultados">Nenhuma receita ou alimento cadastrado ainda.</div>';
         return;
     }
 
     app.receitas.forEach(receita => {
         const div = document.createElement('div');
-        div.className = 'card-receita';
+        div.className = 'card-receita item-selecao';
         div.innerHTML = `
             <div class="card-receita-header">
                 <div>
                     <h3>${receita.nome}</h3>
+                    <div class="badge-tipo">Receita</div>
                     ${renderizarBadgesTipos(receita)}
                 </div>
             </div>
             <div class="card-receita-content">
                 <p>Categoria: ${receita.categoria || 'N/A'}</p>
                 ${renderizarBadgesTags(receita)}
-                <button onclick="selecionarReceitaParaPlano('${receita.id}')" 
+                <button onclick="selecionarItemParaPlano('receita', '${receita.id}')"
+                        class="btn-principal" style="width: 100%;">
+                    Selecionar
+                </button>
+            </div>
+        `;
+        lista.appendChild(div);
+    });
+
+    app.alimentos.forEach(alimento => {
+        const div = document.createElement('div');
+        div.className = 'card-receita item-selecao';
+        div.innerHTML = `
+            <div class="card-receita-header header-alimento">
+                <div>
+                    <h3>${alimento.nome}</h3>
+                    <div class="badge-tipo">Alimento</div>
+                </div>
+            </div>
+            <div class="card-receita-content">
+                <p>Categoria: ${alimento.categoria || 'N/A'}</p>
+                <button onclick="selecionarItemParaPlano('alimento', '${alimento.id}')"
                         class="btn-principal" style="width: 100%;">
                     Selecionar
                 </button>
@@ -1078,6 +1259,10 @@ function renderizarReceitasModalSelecao() {
 }
 
 function selecionarReceitaParaPlano(receitaId) {
+    selecionarItemParaPlano('receita', receitaId);
+}
+
+function selecionarItemParaPlano(itemTipo, itemId) {
     const ctx = window.contextoPlanejar;
     if (!ctx) return;
 
@@ -1086,7 +1271,9 @@ function selecionarReceitaParaPlano(receitaId) {
         : null;
 
     if (planejamentoExistente) {
-        planejamentoExistente.receitaId = receitaId;
+        planejamentoExistente.itemTipo = itemTipo;
+        planejamentoExistente.itemId = itemId;
+        planejamentoExistente.receitaId = itemTipo === 'receita' ? itemId : '';
         planejamentoExistente.refeicao = ctx.refeicao;
         planejamentoExistente.data = ctx.data || planejamentoExistente.data;
         planejamentoExistente.semana = ctx.semana || planejamentoExistente.semana;
@@ -1103,7 +1290,9 @@ function selecionarReceitaParaPlano(receitaId) {
 
     const planeamento = {
         id: 'plan_' + Date.now(),
-        receitaId: receitaId,
+        itemTipo,
+        itemId,
+        receitaId: itemTipo === 'receita' ? itemId : '',
         refeicao: ctx.refeicao,
         tipo: isCalendario ? 'calendario' : 'semanal',
         data: ctx.data,
@@ -1125,6 +1314,7 @@ function renderizarAposPlanejamento(modo) {
     renderizarMensal();
     renderizarDiaria();
     renderizarCalendario();
+    renderizarContagemAlimentos();
 }
 
 function removerPlanejamento(id) {
@@ -1283,7 +1473,7 @@ function renderizarDiaria() {
     titulo.textContent = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
 
     // Buscar refeicoes planejadas para essa data
-    const dataString = dataDiaria.toISOString().split('T')[0];
+    const dataString = formatarDataChave(dataDiaria);
 
     app.tiposRefeicao.forEach(tipo => {
         const planos = buscarPlanejamentosPorData(dataString, tipo);
@@ -1296,12 +1486,12 @@ function renderizarDiaria() {
 
         if (planos.length > 0) {
             card.innerHTML += planos.map(plano => {
-                const receita = buscarReceita(plano.receitaId);
-                if (!receita) {
+                const { tipo: tipoItem, item } = buscarItemPlanejamento(plano);
+                if (!item) {
                     return `
                         <div class="item-planejamento-diario">
                             <div class="conteudo-planejamento">
-                                <p><strong>Receita removida</strong></p>
+                                <p><strong>Item removido</strong></p>
                             </div>
                             <div class="acoes-planejamento">
                                 <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
@@ -1314,12 +1504,12 @@ function renderizarDiaria() {
                 return `
                     <div class="item-planejamento-diario">
                         <div class="conteudo-planejamento">
-                            <p><strong>${receita.nome}</strong></p>
-                            <p>Categoria: ${receita.categoria || 'N/A'}</p>
+                            <p><strong>${item.nome}</strong></p>
+                            <p>${tipoItem === 'alimento' ? 'Alimento' : `Categoria: ${item.categoria || 'N/A'}`}</p>
                         </div>
                         <div class="acoes-planejamento">
                             <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
-                            <button onclick="marcarComoConsumida('${receita.id}')">Consumida</button>
+                            ${tipoItem === 'receita' ? `<button onclick="marcarComoConsumida('${item.id}')">Consumida</button>` : ''}
                             <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
                         </div>
                     </div>
@@ -1451,7 +1641,7 @@ function criarDiaCalendario(dia, outroMes) {
         div.onclick = () => selecionarDataCalendario(data);
 
         // Verificar se tem refeicao
-        const dataStr = data.toISOString().split('T')[0];
+        const dataStr = formatarDataChave(data);
         if (app.tiposRefeicao.some(tipo => buscarPlanejamentosPorData(dataStr, tipo).length > 0)) {
             div.classList.add('com-refeicao');
         }
@@ -1466,7 +1656,7 @@ function selecionarDataCalendario(data) {
 }
 
 function atualizarDetalhesData(data) {
-    const dataStr = data.toISOString().split('T')[0];
+    const dataStr = formatarDataChave(data);
     const opcoes = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('data-selecionada').textContent = 
         data.toLocaleDateString('pt-BR', opcoes).charAt(0).toUpperCase() +
@@ -1486,10 +1676,10 @@ function atualizarDetalhesData(data) {
                 <strong>${tipo}:</strong>
                 <div class="lista-planejamentos-data">
                     ${planos.map(plano => {
-                        const receita = buscarReceita(plano.receitaId);
+                        const { item } = buscarItemPlanejamento(plano);
                         return `
                             <div class="linha-planejamento-data">
-                                <span>${receita ? receita.nome : 'Receita removida'}</span>
+                                <span>${item ? item.nome : 'Item removido'}</span>
                                 <div class="acoes-planejamento">
                                     <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
                                     <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
@@ -1531,7 +1721,7 @@ function adicionarRefeicaoData() {
         return;
     }
 
-    const dataStr = dataSelecionada.toISOString().split('T')[0];
+    const dataStr = formatarDataChave(dataSelecionada);
     abrirModalPlanejarData(dataStr, tipo);
 }
 
@@ -1624,6 +1814,29 @@ function renderizarBadgesTags(receita) {
     `;
 }
 
+function obterIngredientesReceita(receita) {
+    if (!receita || !Array.isArray(receita.ingredientes)) return [];
+
+    return receita.ingredientes.map(ingrediente => {
+        if (typeof ingrediente === 'string') return ingrediente;
+        const alimento = buscarAlimento(ingrediente.alimentoId);
+        return alimento ? alimento.nome : ingrediente.nome;
+    }).filter(Boolean);
+}
+
+function obterTextoIngredientesReceita(receita) {
+    return obterIngredientesReceita(receita).join('\n');
+}
+
+function criarIngredientesAPartirTexto(texto) {
+    return String(texto || '')
+        .split('\n')
+        .map(item => item.trim())
+        .filter(Boolean)
+        .map(item => normalizarIngredienteReceita(item))
+        .filter(Boolean);
+}
+
 function salvarReceita(e) {
     e.preventDefault();
 
@@ -1641,9 +1854,7 @@ function salvarReceita(e) {
         tipos: tiposSelecionados,
         categoria: document.getElementById('categoria-receita').value,
         tags: obterTagsSelecionadasReceita(),
-        ingredientes: document.getElementById('ingredientes-receita').value
-            .split('\n')
-            .filter(i => i.trim()),
+        ingredientes: criarIngredientesAPartirTexto(document.getElementById('ingredientes-receita').value),
         modoPreparo: document.getElementById('preparo-receita').value,
         dataCriacao: new Date().toISOString(),
     };
@@ -1690,8 +1901,8 @@ function renderizarReceitas() {
             <div class="card-receita-content">
                 ${receita.categoria ? `<span class="badge-categoria">${receita.categoria}</span>` : ''}
                 ${renderizarBadgesTags(receita)}
-                ${receita.ingredientes.length > 0 ? `
-                    <p><strong>Ingredientes:</strong><br>${receita.ingredientes.slice(0, 3).join('<br>')}</p>
+                ${obterIngredientesReceita(receita).length > 0 ? `
+                    <p><strong>Ingredientes:</strong><br>${obterIngredientesReceita(receita).slice(0, 3).join('<br>')}</p>
                 ` : ''}
                 <div class="card-receita-actions">
                     <button class="btn-editar" onclick="editarReceita('${receita.id}')">Editar</button>
@@ -1713,7 +1924,7 @@ function editarReceita(id) {
     atualizarSelectCategorias(receita.categoria);
     atualizarSelectTags(obterTagsReceita(receita));
     document.getElementById('categoria-receita').value = receita.categoria;
-    document.getElementById('ingredientes-receita').value = receita.ingredientes.join('\n');
+    document.getElementById('ingredientes-receita').value = obterTextoIngredientesReceita(receita);
     document.getElementById('preparo-receita').value = receita.modoPreparo;
     document.querySelector('.modal-content h2').textContent = 'Editar Receita';
 
@@ -1723,7 +1934,7 @@ function editarReceita(id) {
 function deletarReceita(id) {
     if (confirm('Deletar esta receita?')) {
         app.receitas = app.receitas.filter(r => r.id !== id);
-        app.planejamentos = app.planejamentos.filter(p => p.receitaId !== id);
+        app.planejamentos = app.planejamentos.filter(p => !(obterTipoItemPlano(p) === 'receita' && obterItemIdPlano(p) === id));
         salvarDados();
         renderizarTudoAposSync();
     }
@@ -1761,12 +1972,260 @@ function atualizarFiltroCategoria() {
 
 function buscarReceitasModal() {
     const termo = document.getElementById('busca-selecionar').value.toLowerCase();
-    const cards = document.querySelectorAll('.lista-receitas-modal .card-receita');
+    const cards = document.querySelectorAll('.lista-receitas-modal .item-selecao');
 
     cards.forEach(card => {
         const nome = card.querySelector('h3').textContent.toLowerCase();
         card.style.display = nome.includes(termo) ? 'block' : 'none';
     });
+}
+
+/* ==================== ALIMENTOS ====================
+   Gerenciar alimentos avulsos e ingredientes */
+
+function abrirModalAlimento(id = '') {
+    const form = document.getElementById('form-alimento');
+    if (!form) return;
+
+    form.reset();
+    form.dataset.alimentoId = id;
+    document.querySelector('#modal-alimento h2').textContent = id ? 'Editar Alimento' : 'Novo Alimento';
+
+    if (id) {
+        const alimento = buscarAlimento(id);
+        if (!alimento) return;
+        document.getElementById('nome-alimento').value = alimento.nome;
+        document.getElementById('categoria-alimento').value = alimento.categoria || '';
+        document.getElementById('unidade-alimento').value = alimento.unidadePadrao || '';
+    }
+
+    abrirModal('modal-alimento');
+}
+
+function salvarAlimento(evento) {
+    evento.preventDefault();
+
+    const form = document.getElementById('form-alimento');
+    const id = form.dataset.alimentoId || criarIdAlimento();
+    const nome = document.getElementById('nome-alimento').value.trim();
+    const categoria = document.getElementById('categoria-alimento').value.trim();
+    const unidadePadrao = document.getElementById('unidade-alimento').value.trim();
+
+    if (!nome) {
+        alert('Digite o nome do alimento.');
+        return;
+    }
+
+    const duplicado = app.alimentos.some(alimento =>
+        alimento.id !== id &&
+        normalizarNomeAlimento(alimento.nome) === normalizarNomeAlimento(nome)
+    );
+
+    if (duplicado) {
+        alert('Este alimento ja existe.');
+        return;
+    }
+
+    const alimento = {
+        id,
+        nome,
+        categoria,
+        unidadePadrao,
+        dataCriacao: new Date().toISOString(),
+    };
+
+    const indice = app.alimentos.findIndex(item => item.id === id);
+    if (indice >= 0) {
+        app.alimentos[indice] = { ...app.alimentos[indice], ...alimento };
+    } else {
+        app.alimentos.push(alimento);
+    }
+
+    salvarDados();
+    fecharModal('modal-alimento');
+    renderizarTudoAposSync();
+}
+
+function renderizarAlimentos() {
+    const container = document.getElementById('lista-alimentos');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (app.alimentos.length === 0) {
+        container.innerHTML = '<div class="sem-resultados">Nenhum alimento cadastrado.</div>';
+        return;
+    }
+
+    app.alimentos
+        .slice()
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+        .forEach(alimento => {
+            const card = document.createElement('div');
+            card.className = 'card-receita card-alimento';
+            card.innerHTML = `
+                <div class="card-receita-header header-alimento">
+                    <div>
+                        <h3>${alimento.nome}</h3>
+                        <div class="badge-tipo">Alimento</div>
+                    </div>
+                </div>
+                <div class="card-receita-content">
+                    ${alimento.categoria ? `<span class="badge-categoria">${alimento.categoria}</span>` : ''}
+                    ${alimento.unidadePadrao ? `<p>Unidade padrao: ${alimento.unidadePadrao}</p>` : ''}
+                    <div class="card-receita-actions">
+                        <button class="btn-editar" onclick="abrirModalAlimento('${alimento.id}')">Editar</button>
+                        <button class="btn-deletar" onclick="deletarAlimento('${alimento.id}')">Deletar</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+    filtrarAlimentos();
+}
+
+function filtrarAlimentos() {
+    const busca = document.getElementById('busca-alimentos');
+    if (!busca) return;
+
+    const termo = busca.value.toLowerCase();
+    document.querySelectorAll('#lista-alimentos .card-alimento').forEach(card => {
+        card.style.display = card.textContent.toLowerCase().includes(termo) ? 'block' : 'none';
+    });
+}
+
+function deletarAlimento(id) {
+    const alimento = buscarAlimento(id);
+    if (!alimento) return;
+
+    const usadoEmReceita = app.receitas.some(receita =>
+        Array.isArray(receita.ingredientes) &&
+        receita.ingredientes.some(ingrediente => ingrediente.alimentoId === id)
+    );
+    const usadoEmPlanejamento = app.planejamentos.some(plano =>
+        obterTipoItemPlano(plano) === 'alimento' &&
+        obterItemIdPlano(plano) === id
+    );
+
+    const mensagem = usadoEmReceita || usadoEmPlanejamento
+        ? `Deletar "${alimento.nome}"? Ele sera removido das receitas e planejamentos onde aparece.`
+        : `Deletar "${alimento.nome}"?`;
+
+    if (!confirm(mensagem)) return;
+
+    app.alimentos = app.alimentos.filter(item => item.id !== id);
+    app.receitas.forEach(receita => {
+        if (Array.isArray(receita.ingredientes)) {
+            receita.ingredientes = receita.ingredientes.filter(ingrediente => ingrediente.alimentoId !== id);
+        }
+    });
+    app.planejamentos = app.planejamentos.filter(plano =>
+        !(obterTipoItemPlano(plano) === 'alimento' && obterItemIdPlano(plano) === id)
+    );
+
+    salvarDados();
+    renderizarTudoAposSync();
+}
+
+/* ==================== CONTAGEM DE ALIMENTOS ====================
+   Conta alimentos diretos e ingredientes das receitas planejadas */
+
+function configurarPeriodoContagemPadrao() {
+    const inicioInput = document.getElementById('contagem-inicio');
+    const fimInput = document.getElementById('contagem-fim');
+    if (!inicioInput || !fimInput || (inicioInput.value && fimInput.value)) return;
+
+    const inicio = obterInicioSemana(app.semanaAtual);
+    const fim = new Date(inicio);
+    fim.setDate(inicio.getDate() + 6);
+    inicioInput.value = formatarDataChave(inicio);
+    fimInput.value = formatarDataChave(fim);
+}
+
+function obterDataPlano(plano) {
+    if (plano.data) return plano.data;
+    if (plano.semana && plano.dia) return formatarDataChave(obterDataSemanaDia(plano.semana, plano.dia));
+    return '';
+}
+
+function contarAlimentosNoPeriodo(dataInicio, dataFim) {
+    const contagem = new Map();
+
+    const somar = alimentoId => {
+        if (!alimentoId) return;
+        const atual = contagem.get(alimentoId) || 0;
+        contagem.set(alimentoId, atual + 1);
+    };
+
+    app.planejamentos
+        .filter(plano => {
+            const data = obterDataPlano(plano);
+            return data && data >= dataInicio && data <= dataFim;
+        })
+        .forEach(plano => {
+            const tipoItem = obterTipoItemPlano(plano);
+            const itemId = obterItemIdPlano(plano);
+
+            if (tipoItem === 'alimento') {
+                somar(itemId);
+                return;
+            }
+
+            const receita = buscarReceita(itemId);
+            if (!receita || !Array.isArray(receita.ingredientes)) return;
+
+            receita.ingredientes.forEach(ingrediente => {
+                if (typeof ingrediente === 'string') {
+                    const alimento = buscarAlimentoPorNome(ingrediente);
+                    somar(alimento?.id);
+                    return;
+                }
+                somar(ingrediente.alimentoId);
+            });
+        });
+
+    return Array.from(contagem.entries())
+        .map(([alimentoId, vezes]) => {
+            const alimento = buscarAlimento(alimentoId);
+            return {
+                alimentoId,
+                nome: alimento ? alimento.nome : 'Alimento removido',
+                categoria: alimento?.categoria || '',
+                vezes,
+            };
+        })
+        .sort((a, b) => b.vezes - a.vezes || a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+function renderizarContagemAlimentos() {
+    const container = document.getElementById('lista-contagem-alimentos');
+    if (!container) return;
+
+    configurarPeriodoContagemPadrao();
+    const inicio = document.getElementById('contagem-inicio')?.value;
+    const fim = document.getElementById('contagem-fim')?.value;
+
+    if (!inicio || !fim) {
+        container.innerHTML = '<div class="sem-resultados">Selecione um periodo.</div>';
+        return;
+    }
+
+    const itens = contarAlimentosNoPeriodo(inicio, fim);
+    if (itens.length === 0) {
+        container.innerHTML = '<div class="sem-resultados">Nenhum alimento listado neste periodo.</div>';
+        return;
+    }
+
+    container.innerHTML = itens.map(item => `
+        <div class="linha-contagem">
+            <div>
+                <strong>${item.nome}</strong>
+                ${item.categoria ? `<span>${item.categoria}</span>` : ''}
+            </div>
+            <div class="numero-contagem">${item.vezes}</div>
+        </div>
+    `).join('');
 }
 
 /* ==================== TAGS ====================
@@ -2297,6 +2756,12 @@ Object.assign(window, {
     baixarDadosSupabase,
     enviarDadosSupabase,
     abrirModalReceita,
+    abrirModalAlimento,
+    salvarAlimento,
+    deletarAlimento,
+    filtrarAlimentos,
+    selecionarItemParaPlano,
+    renderizarContagemAlimentos,
     abrirTiposRefeicao,
     abrirHistorico,
 });

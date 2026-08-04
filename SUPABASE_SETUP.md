@@ -14,6 +14,7 @@ Cole e execute:
 create table if not exists public.cardapio_dados (
   user_id uuid not null references auth.users(id) on delete cascade,
   id text not null default 'principal',
+  alimentos jsonb not null default '[]'::jsonb,
   receitas jsonb not null default '[]'::jsonb,
   planejamentos jsonb not null default '[]'::jsonb,
   historico jsonb not null default '[]'::jsonb,
@@ -23,6 +24,10 @@ create table if not exists public.cardapio_dados (
   atualizado_em timestamptz not null default now(),
   primary key (user_id, id)
 );
+
+-- Se a tabela ja existia antes da lista de alimentos:
+alter table public.cardapio_dados
+add column if not exists alimentos jsonb not null default '[]'::jsonb;
 
 alter table public.cardapio_dados enable row level security;
 
@@ -114,7 +119,7 @@ Use a chave `anon`/`public`. Nunca coloque a `service_role` no navegador.
 - Voce pode criar conta ou entrar com email e senha.
 - Ao entrar, o app baixa os dados da nuvem.
 - Se a nuvem ainda estiver vazia, o app envia os dados locais.
-- Ao salvar receitas, planejamentos, historico, tipos, categorias ou tags, o app salva localmente e tenta enviar para a nuvem quando houver conta conectada.
+- Ao salvar alimentos, receitas, planejamentos, historico, tipos, categorias ou tags, o app salva localmente e tenta enviar para a nuvem quando houver conta conectada.
 - Os botoes `Sincronizar agora`, `Baixar da nuvem` e `Enviar para nuvem` permitem controle manual.
 
 ## 5. GitHub Pages

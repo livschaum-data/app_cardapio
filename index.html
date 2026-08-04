@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Card&aacute;pio</title>
-    <link rel="stylesheet" href="css/style.css?v=20260803-multi-recipes">
+    <link rel="stylesheet" href="css/style.css?v=20260804-foods-count">
 </head>
 <body>
     <div id="app">
@@ -45,7 +45,7 @@
 
             <div id="nuvem-logado" class="nuvem-box" style="display:none;">
                 <p id="nuvem-usuario" class="texto-ajuda"></p>
-                <p class="texto-ajuda">Receitas, planejamentos, tipos, categorias e tags sao sincronizados na sua conta.</p>
+                <p class="texto-ajuda">Alimentos, receitas, planejamentos, tipos, categorias e tags sao sincronizados na sua conta.</p>
                 <div class="nuvem-acoes">
                     <button id="nuvem-sincronizar" type="button" class="btn-principal">Sincronizar agora</button>
                     <button id="nuvem-baixar" type="button" class="btn-secundario">Baixar da nuvem</button>
@@ -63,6 +63,8 @@
             <button class="aba-btn" onclick="mostrarVisao('diaria')">Di&aacute;ria</button>
             <button class="aba-btn" onclick="mostrarVisao('calendario')">Calend&aacute;rio</button>
             <button class="aba-btn" onclick="mostrarVisao('receitas')">Receitas</button>
+            <button class="aba-btn" onclick="mostrarVisao('alimentos')">Alimentos</button>
+            <button class="aba-btn" onclick="mostrarVisao('contagem')">Contagem</button>
         </div>
 
         <div id="visao-semanal" class="visao">
@@ -139,6 +141,28 @@
             <div id="lista-receitas" class="lista-receitas"></div>
         </div>
 
+        <div id="visao-alimentos" class="visao" style="display:none;">
+            <div class="controles">
+                <input type="text" id="busca-alimentos" placeholder="Buscar alimento..." onkeyup="filtrarAlimentos()">
+                <button onclick="abrirModalAlimento()" class="btn-principal">Novo Alimento</button>
+            </div>
+            <div id="lista-alimentos" class="lista-receitas"></div>
+        </div>
+
+        <div id="visao-contagem" class="visao" style="display:none;">
+            <div class="controles controles-contagem">
+                <label>
+                    Inicio
+                    <input type="date" id="contagem-inicio" onchange="renderizarContagemAlimentos()">
+                </label>
+                <label>
+                    Fim
+                    <input type="date" id="contagem-fim" onchange="renderizarContagemAlimentos()">
+                </label>
+            </div>
+            <div id="lista-contagem-alimentos" class="lista-contagem"></div>
+        </div>
+
         <div id="modal-receita" class="modal" style="display:none;">
             <div class="modal-content">
                 <button class="btn-fechar" onclick="fecharModal('modal-receita')">x</button>
@@ -165,6 +189,7 @@
                     <div class="form-grupo">
                         <label>Ingredientes (um por linha)</label>
                         <textarea id="ingredientes-receita" placeholder="Cenoura&#10;Batata&#10;&Aacute;gua"></textarea>
+                        <p class="texto-ajuda">Cada linha sera vinculada a um alimento. Se ainda nao existir, o alimento sera criado automaticamente.</p>
                     </div>
                     <div class="form-grupo">
                         <label>Modo de Preparo</label>
@@ -181,9 +206,34 @@
         <div id="modal-selecionar-receita" class="modal" style="display:none;">
             <div class="modal-content">
                 <button class="btn-fechar" onclick="fecharModal('modal-selecionar-receita')">x</button>
-                <h2>Selecionar Receita</h2>
-                <input type="text" id="busca-selecionar" placeholder="Buscar receita..." onkeyup="buscarReceitasModal()" style="width: 100%; padding: 10px; margin-bottom: 20px;">
+                <h2>Selecionar Item</h2>
+                <input type="text" id="busca-selecionar" placeholder="Buscar receita ou alimento..." onkeyup="buscarReceitasModal()" style="width: 100%; padding: 10px; margin-bottom: 20px;">
                 <div id="lista-selecionar-receita" class="lista-receitas-modal"></div>
+            </div>
+        </div>
+
+        <div id="modal-alimento" class="modal" style="display:none;">
+            <div class="modal-content">
+                <button class="btn-fechar" onclick="fecharModal('modal-alimento')">x</button>
+                <h2>Novo Alimento</h2>
+                <form id="form-alimento" onsubmit="salvarAlimento(event)">
+                    <div class="form-grupo">
+                        <label>Nome do Alimento *</label>
+                        <input type="text" id="nome-alimento" required>
+                    </div>
+                    <div class="form-grupo">
+                        <label>Categoria</label>
+                        <input type="text" id="categoria-alimento" placeholder="Ex: Fruta, Legume, Proteina">
+                    </div>
+                    <div class="form-grupo">
+                        <label>Unidade padrao</label>
+                        <input type="text" id="unidade-alimento" placeholder="Ex: un, g, ml">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn-secundario" onclick="fecharModal('modal-alimento')">Cancelar</button>
+                        <button type="submit" class="btn-principal">Salvar Alimento</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -243,7 +293,7 @@
     </div>
 
     <script src="js/supabase-config.js?v=20260803-supabase-url"></script>
-    <script src="js/app.js?v=20260803-multi-recipes"></script>
+    <script src="js/app.js?v=20260804-foods-count"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
 </body>
 </html>

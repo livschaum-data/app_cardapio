@@ -778,6 +778,10 @@ body {
     align-items: start;
 }
 
+.card-receita-header.header-alimento {
+    background: linear-gradient(135deg, #2f6f5e, #6f9f8f);
+}
+
 .card-receita h3 {
     margin: 0;
     font-size: 16px;
@@ -865,6 +869,50 @@ body {
 
 .btn-editar:hover, .btn-deletar:hover {
     opacity: 0.8;
+}
+
+.controles-contagem label {
+    color: var(--cor-texto);
+    display: grid;
+    font-size: 13px;
+    font-weight: 600;
+    gap: 4px;
+}
+
+.lista-contagem {
+    display: grid;
+    gap: 10px;
+}
+
+.linha-contagem {
+    align-items: center;
+    background: white;
+    border-left: 4px solid #2f6f5e;
+    border-radius: var(--radius);
+    box-shadow: var(--sombra);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 56px;
+    gap: 12px;
+    padding: 12px 14px;
+}
+
+.linha-contagem span {
+    color: var(--cor-texto-cinza);
+    display: block;
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.numero-contagem {
+    align-items: center;
+    background: rgba(47, 111, 94, 0.12);
+    border-radius: 6px;
+    color: #2f6f5e;
+    display: flex;
+    font-size: 20px;
+    font-weight: 700;
+    height: 44px;
+    justify-content: center;
 }
 
 /* ==================== MODAIS ====================
