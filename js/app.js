@@ -453,19 +453,17 @@ async function baixarDadosSupabase({ silencioso = false } = {}) {
     if (!silencioso) atualizarStatusNuvem('conectando', 'Baixando dados da nuvem...');
 
     try {
+        const dadosLocais = obterSnapshotDadosApp();
         const dadosRemotos = await carregarDadosSupabase();
 
         if (dadosRemotos) {
-            if (dadosLocaisMaisRecentesQueNuvem(dadosRemotos)) {
-                await enviarDadosSupabase({ silencioso: true, mesclarAntes: false });
-                if (!silencioso) atualizarStatusNuvem('online', 'Dados locais eram mais recentes e foram enviados para a nuvem');
-                return true;
-            }
-
-            aplicarDados(dadosRemotos);
+            const dadosMesclados = mesclarDadosCardapio(dadosLocais, dadosRemotos);
+            aplicarDados(dadosMesclados);
+            marcarDadosAlterados();
             salvarDadosLocais();
             renderizarTudoAposSync();
-            if (!silencioso) atualizarStatusNuvem('online', 'Dados baixados da nuvem');
+            await enviarDadosSupabase({ silencioso: true, mesclarAntes: false });
+            if (!silencioso) atualizarStatusNuvem('online', 'Dados mesclados com a nuvem');
             return true;
         }
 
@@ -526,6 +524,116 @@ function dadosLocaisMaisRecentesQueNuvem(dadosRemotos) {
     if (!remoto) return true;
 
     return local > remoto;
+}
+
+function obterSnapshotDadosApp() {
+    return {
+        alimentos: app.alimentos,
+        receitas: app.receitas,
+        planejamentos: app.planejamentos,
+        historico: app.historico,
+        tiposRefeicao: app.tiposRefeicao,
+        categorias: app.categorias,
+        categoriasAlimentos: app.categoriasAlimentos,
+        tags: app.tags,
+        atualizadoEm: app.atualizadoEm,
+    };
+}
+
+function obterTimestampItem(item) {
+    return Math.max(
+        obterTimestamp(item?.dataAtualizacao),
+        obterTimestamp(item?.atualizadoEm),
+        obterTimestamp(item?.dataCriacao),
+        obterTimestamp(item?.dataUltimo)
+    );
+}
+
+function escolherItemMesclado(local, remoto) {
+    if (!local) return remoto;
+    if (!remoto) return local;
+
+    const timestampLocal = obterTimestampItem(local);
+    const timestampRemoto = obterTimestampItem(remoto);
+
+    if (timestampRemoto > timestampLocal) {
+        return { ...local, ...remoto };
+    }
+
+    return { ...remoto, ...local };
+}
+
+function mesclarListaPorChave(listaLocal, listaRemota, obterChave) {
+    const mapa = new Map();
+
+    [...(Array.isArray(listaRemota) ? listaRemota : []), ...(Array.isArray(listaLocal) ? listaLocal : [])]
+        .filter(Boolean)
+        .forEach(item => {
+            const chave = obterChave(item);
+            if (!chave) return;
+            mapa.set(chave, escolherItemMesclado(mapa.get(chave), item));
+        });
+
+    return Array.from(mapa.values());
+}
+
+function mesclarListaTexto(listaLocal, listaRemota) {
+    const mapa = new Map();
+
+    [...(Array.isArray(listaLocal) ? listaLocal : []), ...(Array.isArray(listaRemota) ? listaRemota : [])]
+        .map(item => String(item || '').trim())
+        .filter(Boolean)
+        .forEach(item => {
+            const chave = normalizarNomeAlimento(item);
+            if (!mapa.has(chave)) mapa.set(chave, item);
+        });
+
+    return Array.from(mapa.values());
+}
+
+function chaveAlimento(alimento) {
+    return alimento?.id || `nome:${normalizarNomeAlimento(alimento?.nome)}`;
+}
+
+function chaveReceita(receita) {
+    return receita?.id || `nome:${normalizarNomeAlimento(receita?.nome)}`;
+}
+
+function chavePlanejamento(plano) {
+    return plano?.id || [
+        plano?.data || '',
+        plano?.semana || '',
+        plano?.dia || '',
+        plano?.refeicao || '',
+        plano?.itemTipo || (plano?.receitaId ? 'receita' : ''),
+        plano?.itemId || plano?.receitaId || '',
+    ].join('|');
+}
+
+function chaveHistorico(item) {
+    return item?.id || [
+        item?.itemTipo || (item?.receitaId ? 'receita' : ''),
+        item?.itemId || item?.receitaId || '',
+    ].join('|');
+}
+
+function mesclarDadosCardapio(dadosLocais, dadosRemotos) {
+    const local = dadosLocais || {};
+    const remoto = dadosRemotos || {};
+    const atualizadoLocal = obterTimestamp(local.atualizadoEm);
+    const atualizadoRemoto = obterTimestamp(remoto.atualizadoEm);
+
+    return {
+        alimentos: mesclarListaPorChave(local.alimentos, remoto.alimentos, chaveAlimento),
+        receitas: mesclarListaPorChave(local.receitas, remoto.receitas, chaveReceita),
+        planejamentos: mesclarListaPorChave(local.planejamentos, remoto.planejamentos, chavePlanejamento),
+        historico: mesclarListaPorChave(local.historico, remoto.historico, chaveHistorico),
+        tiposRefeicao: mesclarListaTexto(local.tiposRefeicao, remoto.tiposRefeicao),
+        categorias: mesclarListaTexto(local.categorias, remoto.categorias),
+        categoriasAlimentos: mesclarListaTexto(local.categoriasAlimentos, remoto.categoriasAlimentos),
+        tags: mesclarListaTexto(local.tags, remoto.tags),
+        atualizadoEm: atualizadoLocal > atualizadoRemoto ? local.atualizadoEm : remoto.atualizadoEm,
+    };
 }
 
 async function enviarDadosSupabase({ silencioso = false, mesclarAntes = false } = {}) {
@@ -1055,8 +1163,10 @@ async function carregarDados() {
         const dadosRemotos = await carregarDadosSupabase();
 
         if (dadosRemotos) {
-            aplicarDados(dadosRemotos);
+            aplicarDados(mesclarDadosCardapio(dadosLocais, dadosRemotos));
+            marcarDadosAlterados();
             salvarDadosLocais();
+            await salvarDadosSupabase();
             console.log('Dados carregados do Supabase.');
             return;
         }
