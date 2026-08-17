@@ -310,6 +310,16 @@
                             <button type="button" class="btn-secundario" onclick="limparFiltrosModalSelecao()">Limpar filtros</button>
                         </div>
                     </details>
+                    <div class="novo-item-planejamento">
+                        <button type="button" class="btn-secundario btn-novo-item-planejamento" onclick="alternarNovoItemPlanejamento()">
+                            Adicionar novo item
+                        </button>
+                        <div id="opcoes-novo-item-planejamento" class="opcoes-novo-item-planejamento" style="display:none;">
+                            <button type="button" onclick="criarItemParaPlanejamento('receita')">Receita</button>
+                            <button type="button" onclick="criarItemParaPlanejamento('refeicao')">Refei&ccedil;&atilde;o</button>
+                            <button type="button" onclick="criarItemParaPlanejamento('alimento')">Alimento</button>
+                        </div>
+                    </div>
                     <div id="resultado-selecao-contador" class="texto-ajuda"></div>
                 </div>
                 <div id="lista-selecionar-receita" class="lista-receitas-modal"></div>

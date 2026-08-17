@@ -1996,6 +1996,44 @@ body {
     margin-top: 10px;
 }
 
+.novo-item-planejamento {
+    align-items: stretch;
+    display: grid;
+    gap: 8px;
+}
+
+.btn-novo-item-planejamento {
+    width: 100%;
+}
+
+.opcoes-novo-item-planejamento {
+    background: #f8f4ee;
+    border: 1px solid rgba(139, 69, 19, 0.16);
+    border-radius: 8px;
+    gap: 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 6px;
+}
+
+.opcoes-novo-item-planejamento button {
+    background: white;
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    color: var(--cor-primaria);
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    min-height: 34px;
+    padding: 6px 8px;
+}
+
+.opcoes-novo-item-planejamento button:hover {
+    background: var(--cor-primaria);
+    border-color: var(--cor-primaria);
+    color: white;
+}
+
 /* ==================== RESPONSIVO ====================
    Adaptaes para mobile */
 

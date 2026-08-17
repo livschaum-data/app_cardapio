@@ -1731,6 +1731,40 @@ function limparFiltrosModalSelecao() {
     buscarReceitasModal();
 }
 
+function alternarNovoItemPlanejamento(forcarAbrir = null) {
+    const painel = document.getElementById('opcoes-novo-item-planejamento');
+    if (!painel) return;
+
+    const abrir = forcarAbrir === null ? painel.style.display === 'none' : Boolean(forcarAbrir);
+    painel.style.display = abrir ? 'grid' : 'none';
+}
+
+function criarItemParaPlanejamento(itemTipo) {
+    window.reabrirSelecaoAposCadastro = true;
+    alternarNovoItemPlanejamento(false);
+    fecharModal('modal-selecionar-receita');
+
+    if (itemTipo === 'alimento') {
+        abrirModalAlimento();
+        return;
+    }
+
+    if (itemTipo === 'refeicao') {
+        abrirModalRefeicao();
+        return;
+    }
+
+    abrirModalReceita();
+}
+
+function reabrirSelecaoPlanejamentoAposCadastro() {
+    if (!window.reabrirSelecaoAposCadastro || !window.contextoPlanejar) return;
+
+    window.reabrirSelecaoAposCadastro = false;
+    renderizarReceitasModalSelecao();
+    abrirModal('modal-selecionar-receita');
+}
+
 function renderizarReceitasModalSelecao() {
     const lista = document.getElementById('lista-selecionar-receita');
     atualizarFiltrosModalSelecao();
@@ -2575,6 +2609,7 @@ function salvarReceita(e) {
     renderizarTudoAposSync();
 
     console.log('Receita salva:', receita);
+    reabrirSelecaoPlanejamentoAposCadastro();
 }
 
 function renderizarReceitas() {
@@ -2954,6 +2989,7 @@ function salvarRefeicao(evento) {
     normalizarCategorias();
     normalizarTags();
     renderizarTudoAposSync();
+    reabrirSelecaoPlanejamentoAposCadastro();
 }
 
 function renderizarRefeicoes() {
@@ -3279,6 +3315,7 @@ function salvarAlimento(evento) {
     atualizarSelectsIngredientesReceita();
     atualizarSelectsItensRefeicao();
     renderizarTudoAposSync();
+    reabrirSelecaoPlanejamentoAposCadastro();
 }
 
 function renderizarAlimentos() {
@@ -4075,6 +4112,8 @@ Object.assign(window, {
     alternarSidebar,
     selecionarPlanejamentoAtivo,
     alternarPlanejamentoAtivo,
+    alternarNovoItemPlanejamento,
+    criarItemParaPlanejamento,
     alternarPainelNuvem,
     fecharPainelNuvem,
     entrarNuvem,
