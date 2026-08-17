@@ -3525,6 +3525,30 @@ function obterRotuloTipoContagem(itemTipo) {
     return 'Receita';
 }
 
+function atualizarFiltrosContagem(itensBase = obterItensBaseContagem()) {
+    const filtroCategoria = document.getElementById('contagem-filtro-categoria');
+    const filtroTipo = document.getElementById('contagem-filtro-tipo')?.value || '';
+    if (!filtroCategoria) return;
+
+    const valorAtual = filtroCategoria.value;
+    const itensFiltradosPorTipo = filtroTipo
+        ? itensBase.filter(item => item.itemTipo === filtroTipo)
+        : itensBase;
+    const categorias = Array.from(new Set(
+        itensFiltradosPorTipo
+            .map(item => item.categoria)
+            .filter(categoria => categoria && categoria.trim())
+    )).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const temSemCategoria = itensFiltradosPorTipo.some(item => !item.categoria);
+
+    filtroCategoria.innerHTML = '<option value="">Todas as categorias</option>' +
+        (temSemCategoria ? '<option value="__sem_categoria">Sem categoria</option>' : '') +
+        categorias.map(categoria => `<option value="${escaparHtml(categoria)}">${escaparHtml(categoria)}</option>`).join('');
+    filtroCategoria.value = categorias.includes(valorAtual) || (valorAtual === '__sem_categoria' && temSemCategoria)
+        ? valorAtual
+        : '';
+}
+
 function contarItensNoPeriodo(dataInicio, dataFim, modo = 'direta') {
     const contagem = new Map();
 
@@ -3578,15 +3602,23 @@ function renderizarContagemAlimentos() {
     const inicio = document.getElementById('contagem-inicio')?.value;
     const fim = document.getElementById('contagem-fim')?.value;
     const modo = document.getElementById('contagem-modo')?.value || 'direta';
+    atualizarFiltrosContagem();
+    const filtroTipo = document.getElementById('contagem-filtro-tipo')?.value || '';
+    const filtroCategoria = document.getElementById('contagem-filtro-categoria')?.value || '';
 
     if (!inicio || !fim) {
         container.innerHTML = '<div class="sem-resultados">Selecione um periodo.</div>';
         return;
     }
 
-    const itens = contarItensNoPeriodo(inicio, fim, modo);
+    const itens = contarItensNoPeriodo(inicio, fim, modo)
+        .filter(item =>
+            (!filtroTipo || item.itemTipo === filtroTipo) &&
+            (!filtroCategoria ||
+                (filtroCategoria === '__sem_categoria' ? !item.categoria : item.categoria === filtroCategoria))
+        );
     if (itens.length === 0) {
-        container.innerHTML = '<div class="sem-resultados">Nenhum alimento, receita ou refeicao cadastrado.</div>';
+        container.innerHTML = '<div class="sem-resultados">Nenhum item encontrado para os filtros selecionados.</div>';
         return;
     }
 

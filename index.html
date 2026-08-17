@@ -233,6 +233,21 @@
                         <option value="indireta">Indireta com receitas e refei&ccedil;&otilde;es</option>
                     </select>
                 </label>
+                <label>
+                    Tipo de item
+                    <select id="contagem-filtro-tipo" onchange="renderizarContagemAlimentos()">
+                        <option value="">Todos os tipos</option>
+                        <option value="alimento">Alimentos</option>
+                        <option value="receita">Receitas</option>
+                        <option value="refeicao">Refei&ccedil;&otilde;es</option>
+                    </select>
+                </label>
+                <label>
+                    Categoria
+                    <select id="contagem-filtro-categoria" onchange="renderizarContagemAlimentos()">
+                        <option value="">Todas as categorias</option>
+                    </select>
+                </label>
             </div>
             <div id="lista-contagem-alimentos" class="lista-contagem"></div>
         </div>
