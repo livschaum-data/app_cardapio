@@ -3420,7 +3420,7 @@ function configurarPeriodoContagemPadrao() {
     const fimInput = document.getElementById('contagem-fim');
     if (!inicioInput || !fimInput || (inicioInput.value && fimInput.value)) return;
 
-    const inicio = obterInicioSemana(app.semanaAtual);
+    const inicio = obterInicioSemana(obterNumeroSemana(new Date()), new Date().getFullYear());
     const fim = new Date(inicio);
     fim.setDate(inicio.getDate() + 6);
     inicioInput.value = formatarDataChave(inicio);
@@ -3432,9 +3432,23 @@ function usarSemanaAtualContagem() {
     const fimInput = document.getElementById('contagem-fim');
     if (!inicioInput || !fimInput) return;
 
-    const inicio = obterInicioSemana(app.semanaAtual);
+    const hoje = new Date();
+    const inicio = obterInicioSemana(obterNumeroSemana(hoje), hoje.getFullYear());
     const fim = new Date(inicio);
     fim.setDate(inicio.getDate() + 6);
+    inicioInput.value = formatarDataChave(inicio);
+    fimInput.value = formatarDataChave(fim);
+    renderizarContagemAlimentos();
+}
+
+function usarMesAtualContagem() {
+    const inicioInput = document.getElementById('contagem-inicio');
+    const fimInput = document.getElementById('contagem-fim');
+    if (!inicioInput || !fimInput) return;
+
+    const hoje = new Date();
+    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
     inicioInput.value = formatarDataChave(inicio);
     fimInput.value = formatarDataChave(fim);
     renderizarContagemAlimentos();
@@ -3452,10 +3466,10 @@ function somarAlimentosReceita(receita, somar) {
     receita.ingredientes.forEach(ingrediente => {
         if (typeof ingrediente === 'string') {
             const alimento = buscarAlimentoPorNome(ingrediente);
-            somar(alimento?.id);
+            somar('alimento', alimento?.id);
             return;
         }
-        somar(ingrediente.alimentoId);
+        somar('alimento', ingrediente.alimentoId);
     });
 }
 
@@ -3464,21 +3478,61 @@ function somarAlimentosRefeicao(refeicao, somar) {
 
     refeicao.itens.forEach(item => {
         if (item.itemTipo === 'alimento') {
-            somar(item.itemId);
+            somar('alimento', item.itemId);
             return;
         }
 
-        somarAlimentosReceita(buscarReceita(item.itemId), somar);
+        if (item.itemTipo === 'receita') {
+            somar('receita', item.itemId);
+            somarAlimentosReceita(buscarReceita(item.itemId), somar);
+        }
     });
 }
 
-function contarAlimentosNoPeriodo(dataInicio, dataFim) {
+function criarChaveContagem(itemTipo, itemId) {
+    return `${itemTipo}:${itemId}`;
+}
+
+function obterItensBaseContagem() {
+    return [
+        ...app.alimentos.map(alimento => ({
+            itemTipo: 'alimento',
+            itemId: alimento.id,
+            nome: alimento.nome,
+            categoria: alimento.categoria || '',
+            tags: obterTagsReceita(alimento),
+        })),
+        ...app.receitas.map(receita => ({
+            itemTipo: 'receita',
+            itemId: receita.id,
+            nome: receita.nome,
+            categoria: receita.categoria || '',
+            tags: obterTagsReceita(receita),
+        })),
+        ...app.refeicoes.map(refeicao => ({
+            itemTipo: 'refeicao',
+            itemId: refeicao.id,
+            nome: refeicao.nome,
+            categoria: refeicao.categoria || '',
+            tags: obterTagsReceita(refeicao),
+        })),
+    ];
+}
+
+function obterRotuloTipoContagem(itemTipo) {
+    if (itemTipo === 'alimento') return 'Alimento';
+    if (itemTipo === 'refeicao') return 'Refeicao';
+    return 'Receita';
+}
+
+function contarItensNoPeriodo(dataInicio, dataFim, modo = 'direta') {
     const contagem = new Map();
 
-    const somar = alimentoId => {
-        if (!alimentoId) return;
-        const atual = contagem.get(alimentoId) || 0;
-        contagem.set(alimentoId, atual + 1);
+    const somar = (itemTipo, itemId) => {
+        if (!itemTipo || !itemId) return;
+        const chave = criarChaveContagem(itemTipo, itemId);
+        const atual = contagem.get(chave) || 0;
+        contagem.set(chave, atual + 1);
     };
 
     app.planejamentos
@@ -3490,30 +3544,30 @@ function contarAlimentosNoPeriodo(dataInicio, dataFim) {
             const tipoItem = obterTipoItemPlano(plano);
             const itemId = obterItemIdPlano(plano);
 
-            if (tipoItem === 'alimento') {
-                somar(itemId);
+            somar(tipoItem, itemId);
+            if (modo !== 'indireta') return;
+
+            if (tipoItem === 'receita') {
+                somarAlimentosReceita(buscarReceita(itemId), somar);
                 return;
             }
 
             if (tipoItem === 'refeicao') {
                 somarAlimentosRefeicao(buscarRefeicao(itemId), somar);
-                return;
             }
-
-            somarAlimentosReceita(buscarReceita(itemId), somar);
         });
 
-    return Array.from(contagem.entries())
-        .map(([alimentoId, vezes]) => {
-            const alimento = buscarAlimento(alimentoId);
-            return {
-                alimentoId,
-                nome: alimento ? alimento.nome : 'Alimento removido',
-                categoria: alimento?.categoria || '',
-                vezes,
-            };
-        })
-        .sort((a, b) => b.vezes - a.vezes || a.nome.localeCompare(b.nome, 'pt-BR'));
+    const pesoTipo = { alimento: 1, receita: 2, refeicao: 3 };
+    return obterItensBaseContagem()
+        .map(item => ({
+            ...item,
+            vezes: contagem.get(criarChaveContagem(item.itemTipo, item.itemId)) || 0,
+        }))
+        .sort((a, b) =>
+            b.vezes - a.vezes ||
+            (pesoTipo[a.itemTipo] - pesoTipo[b.itemTipo]) ||
+            a.nome.localeCompare(b.nome, 'pt-BR')
+        );
 }
 
 function renderizarContagemAlimentos() {
@@ -3523,23 +3577,28 @@ function renderizarContagemAlimentos() {
     configurarPeriodoContagemPadrao();
     const inicio = document.getElementById('contagem-inicio')?.value;
     const fim = document.getElementById('contagem-fim')?.value;
+    const modo = document.getElementById('contagem-modo')?.value || 'direta';
 
     if (!inicio || !fim) {
         container.innerHTML = '<div class="sem-resultados">Selecione um periodo.</div>';
         return;
     }
 
-    const itens = contarAlimentosNoPeriodo(inicio, fim);
+    const itens = contarItensNoPeriodo(inicio, fim, modo);
     if (itens.length === 0) {
-        container.innerHTML = '<div class="sem-resultados">Nenhum alimento listado neste periodo.</div>';
+        container.innerHTML = '<div class="sem-resultados">Nenhum alimento, receita ou refeicao cadastrado.</div>';
         return;
     }
 
     container.innerHTML = itens.map(item => `
-        <div class="linha-contagem">
+        <div class="linha-contagem linha-contagem-${item.itemTipo}">
             <div>
                 <strong>${item.nome}</strong>
-                ${item.categoria ? renderizarBadgeCategoria(item.categoria, 'alimento') : ''}
+                <div class="linha-metadados-card">
+                    <span class="badge-item badge-${item.itemTipo}">${obterRotuloTipoContagem(item.itemTipo)}</span>
+                    ${item.categoria ? renderizarBadgeCategoria(item.categoria, item.itemTipo) : '<span class="badge-neutra">Sem categoria</span>'}
+                    ${item.tags.map(tag => renderizarBadgeTag(tag)).join('')}
+                </div>
             </div>
             <div class="numero-contagem">${item.vezes}</div>
         </div>
@@ -4139,6 +4198,7 @@ Object.assign(window, {
     selecionarItemParaPlano,
     renderizarContagemAlimentos,
     usarSemanaAtualContagem,
+    usarMesAtualContagem,
     selecionarFiltroItemModal,
     limparFiltrosModalSelecao,
     abrirCategoriasAlimentos,

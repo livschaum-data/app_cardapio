@@ -210,11 +210,14 @@
             <div class="visao-header">
                 <div>
                     <span>Relat&oacute;rios</span>
-                    <h2>Contagem de Alimentos</h2>
+                    <h2>Contagem de Itens</h2>
                 </div>
-                <button onclick="usarSemanaAtualContagem()" class="btn-principal">Usar semana atual</button>
             </div>
             <div class="controles controles-contagem">
+                <div class="atalhos-contagem">
+                    <button type="button" onclick="usarSemanaAtualContagem()">Semana atual</button>
+                    <button type="button" onclick="usarMesAtualContagem()">M&ecirc;s atual</button>
+                </div>
                 <label>
                     Inicio
                     <input type="date" id="contagem-inicio" onchange="renderizarContagemAlimentos()">
@@ -222,6 +225,13 @@
                 <label>
                     Fim
                     <input type="date" id="contagem-fim" onchange="renderizarContagemAlimentos()">
+                </label>
+                <label>
+                    Tipo de contagem
+                    <select id="contagem-modo" onchange="renderizarContagemAlimentos()">
+                        <option value="direta">Direta no planejamento</option>
+                        <option value="indireta">Indireta com receitas e refei&ccedil;&otilde;es</option>
+                    </select>
                 </label>
             </div>
             <div id="lista-contagem-alimentos" class="lista-contagem"></div>

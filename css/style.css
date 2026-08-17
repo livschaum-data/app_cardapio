@@ -911,6 +911,16 @@ body {
     gap: 4px;
 }
 
+.atalhos-contagem {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.atalhos-contagem button {
+    min-width: 120px;
+}
+
 .lista-contagem {
     display: grid;
     gap: 10px;
@@ -919,27 +929,36 @@ body {
 .linha-contagem {
     align-items: center;
     background: white;
-    border-left: 4px solid #2f6f5e;
+    border-left: 4px solid var(--cor-destaque);
     border-radius: var(--radius);
     box-shadow: var(--sombra);
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 56px;
+    grid-template-columns: minmax(0, 1fr) 64px;
     gap: 12px;
     padding: 12px 14px;
 }
 
+.linha-contagem-alimento {
+    border-left-color: #2f6f5e;
+}
+
+.linha-contagem-receita {
+    border-left-color: var(--cor-destaque);
+}
+
+.linha-contagem-refeicao {
+    border-left-color: #7c4f94;
+}
+
 .linha-contagem span {
-    color: var(--cor-texto-cinza);
-    display: block;
-    font-size: 12px;
-    margin-top: 3px;
+    margin-top: 0;
 }
 
 .numero-contagem {
     align-items: center;
-    background: rgba(47, 111, 94, 0.12);
+    background: rgba(139, 69, 19, 0.1);
     border-radius: 6px;
-    color: #2f6f5e;
+    color: var(--cor-primaria);
     display: flex;
     font-size: 20px;
     font-weight: 700;
