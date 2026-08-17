@@ -1742,10 +1742,95 @@ body {
 
 .lista-receitas-modal {
     display: grid;
-    gap: 12px;
-    max-height: 54vh;
+    gap: 6px;
+    max-height: 58vh;
     overflow-y: auto;
     padding-right: 4px;
+}
+
+.linha-selecao {
+    align-items: center;
+    background: #fff;
+    border: 1px solid rgba(139, 69, 19, 0.14);
+    border-left: 4px solid var(--cor-destaque);
+    border-radius: 8px;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    min-height: 54px;
+    padding: 8px 10px;
+}
+
+.linha-selecao:hover {
+    background: rgba(139, 69, 19, 0.04);
+}
+
+.linha-selecao-receita {
+    border-left-color: var(--cor-destaque);
+}
+
+.linha-selecao-refeicao {
+    border-left-color: #7c4f94;
+}
+
+.linha-selecao-alimento {
+    border-left-color: #2f6f5e;
+}
+
+.linha-selecao-identidade {
+    align-items: center;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    min-width: 0;
+}
+
+.linha-selecao h3 {
+    color: var(--cor-texto);
+    font-size: 14px;
+    line-height: 1.2;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.linha-selecao p {
+    color: var(--cor-texto-cinza);
+    font-size: 12px;
+    line-height: 1.25;
+    margin: 3px 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.icone-selecao {
+    align-items: center;
+    background: rgba(139, 69, 19, 0.08);
+    border-radius: 50%;
+    color: var(--cor-primaria);
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 900;
+    height: 30px;
+    justify-content: center;
+    width: 30px;
+}
+
+.linha-selecao-refeicao .icone-selecao {
+    background: rgba(124, 79, 148, 0.12);
+    color: #6a3d80;
+}
+
+.linha-selecao-alimento .icone-selecao {
+    background: rgba(47, 111, 94, 0.12);
+    color: #245f50;
+}
+
+.btn-selecionar-linha {
+    min-height: 32px;
+    padding: 6px 12px;
 }
 
 .modal-content {
@@ -1916,8 +2001,17 @@ body {
 
     .linha-ingrediente-receita,
     .linha-item-refeicao,
+    .linha-selecao,
     .filtros-selecao {
         grid-template-columns: 1fr;
+    }
+
+    .linha-selecao {
+        align-items: stretch;
+    }
+
+    .btn-selecionar-linha {
+        width: 100%;
     }
 
     .item-gerenciavel {

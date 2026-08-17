@@ -1713,12 +1713,14 @@ function limparFiltrosModalSelecao() {
     const tipo = document.getElementById('filtro-selecao-tipo');
     const categoria = document.getElementById('filtro-selecao-categoria');
     const tag = document.getElementById('filtro-selecao-tag');
+    const ordenacao = document.getElementById('ordenacao-selecao');
 
     if (busca) busca.value = '';
     if (item) item.value = '';
     if (tipo) tipo.value = '';
     if (categoria) categoria.value = '';
     if (tag) tag.value = '';
+    if (ordenacao) ordenacao.value = 'tipo';
 
     document.querySelectorAll('.segmentos-selecao .segmento').forEach(botao => {
         botao.classList.toggle('ativo', !botao.dataset.filtroItem);
@@ -1728,7 +1730,6 @@ function limparFiltrosModalSelecao() {
 }
 
 function renderizarReceitasModalSelecao() {
-    // Renderizar lista de receitas, refeicoes e alimentos no modal
     const lista = document.getElementById('lista-selecionar-receita');
     atualizarFiltrosModalSelecao();
     lista.innerHTML = '';
@@ -1738,95 +1739,94 @@ function renderizarReceitasModalSelecao() {
         return;
     }
 
-    app.receitas.forEach(receita => {
-        const div = document.createElement('div');
-        div.className = 'card-receita item-selecao';
-        div.dataset.itemTipo = 'receita';
-        div.dataset.nome = receita.nome || '';
-        div.dataset.tipos = obterTiposReceita(receita).join('|');
-        div.dataset.categoria = receita.categoria || '';
-        div.dataset.tags = obterTagsReceita(receita).join('|');
-        div.innerHTML = `
-            <div class="card-receita-header">
-                <div>
-                    <h3>${receita.nome}</h3>
-                    <div class="badge-item badge-receita">Receita</div>
-                    ${renderizarBadgesTipos(receita)}
-                </div>
-            </div>
-            <div class="card-receita-content">
-                <div class="linha-metadados-card">
-                    ${renderizarBadgeCategoria(receita.categoria, 'receita') || '<span class="badge-neutra">Sem categoria</span>'}
-                </div>
-                ${renderizarBadgesTags(receita)}
-                <button onclick="selecionarItemParaPlano('receita', '${receita.id}')"
-                        class="btn-principal" style="width: 100%;">
-                    Selecionar
-                </button>
-            </div>
-        `;
-        lista.appendChild(div);
-    });
-
-    app.refeicoes.forEach(refeicao => {
-        const div = document.createElement('div');
-        div.className = 'card-receita item-selecao';
-        div.dataset.itemTipo = 'refeicao';
-        div.dataset.nome = refeicao.nome || '';
-        div.dataset.tipos = obterTiposReceita(refeicao).join('|');
-        div.dataset.categoria = refeicao.categoria || '';
-        div.dataset.tags = obterTagsReceita(refeicao).join('|');
-        div.innerHTML = `
-            <div class="card-receita-header header-refeicao">
-                <div>
-                    <h3>${refeicao.nome}</h3>
-                    <div class="badge-item badge-refeicao">Refeicao</div>
-                    ${renderizarBadgesTipos(refeicao)}
-                </div>
-            </div>
-            <div class="card-receita-content">
-                <div class="linha-metadados-card">
-                    ${renderizarBadgeCategoria(refeicao.categoria, 'refeicao') || '<span class="badge-neutra">Sem categoria</span>'}
-                </div>
-                ${renderizarBadgesTags(refeicao)}
-                <button onclick="selecionarItemParaPlano('refeicao', '${refeicao.id}')"
-                        class="btn-principal" style="width: 100%;">
-                    Selecionar
-                </button>
-            </div>
-        `;
-        lista.appendChild(div);
-    });
-
-    app.alimentos.forEach(alimento => {
-        const div = document.createElement('div');
-        div.className = 'card-receita item-selecao';
-        div.dataset.itemTipo = 'alimento';
-        div.dataset.nome = alimento.nome || '';
-        div.dataset.tipos = '';
-        div.dataset.categoria = alimento.categoria || '';
-        div.dataset.tags = '';
-        div.innerHTML = `
-            <div class="card-receita-header header-alimento">
-                <div>
-                    <h3>${alimento.nome}</h3>
-                    <div class="badge-item badge-alimento">Alimento</div>
-                </div>
-            </div>
-            <div class="card-receita-content">
-                <div class="linha-metadados-card">
-                    ${renderizarBadgeCategoria(alimento.categoria, 'alimento') || '<span class="badge-neutra">Sem categoria</span>'}
-                </div>
-                <button onclick="selecionarItemParaPlano('alimento', '${alimento.id}')"
-                        class="btn-principal" style="width: 100%;">
-                    Selecionar
-                </button>
-            </div>
-        `;
-        lista.appendChild(div);
+    obterItensOrdenadosModalSelecao().forEach(item => {
+        lista.appendChild(criarLinhaModalSelecao(item));
     });
 
     buscarReceitasModal();
+}
+
+function obterItensOrdenadosModalSelecao() {
+    const itens = [
+        ...app.receitas.map(receita => criarItemModalSelecao('receita', receita)),
+        ...app.refeicoes.map(refeicao => criarItemModalSelecao('refeicao', refeicao)),
+        ...app.alimentos.map(alimento => criarItemModalSelecao('alimento', alimento)),
+    ];
+
+    const ordenacao = document.getElementById('ordenacao-selecao')?.value || 'tipo';
+    const pesoTipo = { receita: 1, refeicao: 2, alimento: 3 };
+
+    return itens.sort((a, b) => {
+        if (ordenacao === 'nome') {
+            return a.nome.localeCompare(b.nome, 'pt-BR') ||
+                (pesoTipo[a.itemTipo] - pesoTipo[b.itemTipo]);
+        }
+
+        if (ordenacao === 'categoria') {
+            return a.categoria.localeCompare(b.categoria, 'pt-BR') ||
+                a.nome.localeCompare(b.nome, 'pt-BR');
+        }
+
+        return (pesoTipo[a.itemTipo] - pesoTipo[b.itemTipo]) ||
+            a.nome.localeCompare(b.nome, 'pt-BR');
+    });
+}
+
+function criarItemModalSelecao(itemTipo, item) {
+    const tipos = itemTipo === 'alimento' ? [] : obterTiposReceita(item);
+    const tags = itemTipo === 'alimento' ? [] : obterTagsReceita(item);
+
+    return {
+        itemTipo,
+        id: item.id,
+        nome: item.nome || '',
+        categoria: item.categoria || '',
+        tipos,
+        tags,
+    };
+}
+
+function obterRotuloItemModalSelecao(itemTipo) {
+    if (itemTipo === 'alimento') return 'Alimento';
+    if (itemTipo === 'refeicao') return 'Refeicao';
+    return 'Receita';
+}
+
+function criarLinhaModalSelecao(item) {
+    const div = document.createElement('div');
+    div.className = `item-selecao linha-selecao linha-selecao-${item.itemTipo}`;
+    div.dataset.itemTipo = item.itemTipo;
+    div.dataset.nome = item.nome;
+    div.dataset.tipos = item.tipos.join('|');
+    div.dataset.categoria = item.categoria;
+    div.dataset.tags = item.tags.join('|');
+
+    const tipoClasse = item.itemTipo === 'alimento'
+        ? 'badge-alimento'
+        : item.itemTipo === 'refeicao'
+            ? 'badge-refeicao'
+            : 'badge-receita';
+    const detalhes = [
+        item.categoria || 'Sem categoria',
+        item.tipos.slice(0, 2).join(', '),
+        item.tags.slice(0, 2).map(tag => `#${tag}`).join(' '),
+    ].filter(Boolean).join(' - ');
+
+    div.innerHTML = `
+        <div class="linha-selecao-identidade">
+            <span class="icone-selecao" aria-hidden="true">${item.itemTipo === 'alimento' ? 'A' : item.itemTipo === 'refeicao' ? 'M' : 'R'}</span>
+            <div>
+                <h3>${escaparHtml(item.nome)}</h3>
+                <p>${escaparHtml(detalhes)}</p>
+            </div>
+        </div>
+        <span class="badge-item ${tipoClasse}">${obterRotuloItemModalSelecao(item.itemTipo)}</span>
+        <button onclick="selecionarItemParaPlano('${item.itemTipo}', '${item.id}')" class="btn-principal btn-selecionar-linha">
+            Selecionar
+        </button>
+    `;
+
+    return div;
 }
 
 function selecionarReceitaParaPlano(receitaId) {
@@ -2655,7 +2655,7 @@ function buscarReceitasModal() {
         const passaTag = !tag || tags.includes(tag);
 
         const visivel = passaBusca && passaItem && passaTipo && passaCategoria && passaTag;
-        card.style.display = visivel ? 'block' : 'none';
+        card.style.display = visivel ? 'grid' : 'none';
         if (visivel) visiveis++;
     });
 

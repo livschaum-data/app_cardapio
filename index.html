@@ -302,6 +302,11 @@
                             <select id="filtro-selecao-tag" onchange="buscarReceitasModal()">
                                 <option value="">Todas as tags</option>
                             </select>
+                            <select id="ordenacao-selecao" onchange="renderizarReceitasModalSelecao()">
+                                <option value="tipo">Ordenar por tipo</option>
+                                <option value="nome">Ordenar por nome</option>
+                                <option value="categoria">Ordenar por categoria</option>
+                            </select>
                             <button type="button" class="btn-secundario" onclick="limparFiltrosModalSelecao()">Limpar filtros</button>
                         </div>
                     </details>
