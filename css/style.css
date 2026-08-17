@@ -953,8 +953,17 @@ body {
     gap: 8px;
 }
 
+.linha-item-refeicao {
+    align-items: center;
+    display: grid;
+    grid-template-columns: 110px minmax(180px, 1fr) 80px 100px auto;
+    gap: 8px;
+}
+
 .linha-ingrediente-receita select,
-.linha-ingrediente-receita input {
+.linha-ingrediente-receita input,
+.linha-item-refeicao select,
+.linha-item-refeicao input {
     min-width: 0;
 }
 
@@ -1620,6 +1629,10 @@ body {
     border-style: solid;
 }
 
+.celula-refeicao-composta {
+    border-style: solid;
+}
+
 .badge-categoria-colorida {
     background: var(--categoria-cor);
     color: var(--categoria-texto);
@@ -1649,6 +1662,10 @@ body {
     background: rgba(47, 111, 94, 0.28);
 }
 
+.badge-refeicao {
+    background: rgba(106, 76, 147, 0.28);
+}
+
 .linha-metadados-card {
     display: flex;
     flex-wrap: wrap;
@@ -1658,6 +1675,10 @@ body {
 
 .card-receita-header.header-alimento {
     background: linear-gradient(135deg, #245f50, #6f9f8f);
+}
+
+.card-receita-header.header-refeicao {
+    background: linear-gradient(135deg, #5f3d79, #aa5f6f);
 }
 
 .lista-receitas-modal {
@@ -1744,7 +1765,7 @@ body {
     border-radius: 8px;
     display: grid;
     gap: 4px;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     padding: 4px;
 }
 
@@ -1835,6 +1856,7 @@ body {
     }
 
     .linha-ingrediente-receita,
+    .linha-item-refeicao,
     .filtros-selecao {
         grid-template-columns: 1fr;
     }

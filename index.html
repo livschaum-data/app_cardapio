@@ -30,6 +30,7 @@
                 <button class="aba-btn" onclick="mostrarVisao('calendario')">Calend&aacute;rio</button>
                 <span class="sidebar-label">Cadastros</span>
                 <button class="aba-btn" onclick="mostrarVisao('receitas')">Receitas</button>
+                <button class="aba-btn" onclick="mostrarVisao('refeicoes')">Refei&ccedil;&otilde;es</button>
                 <button class="aba-btn" onclick="mostrarVisao('alimentos')">Alimentos</button>
                 <span class="sidebar-label">Relat&oacute;rios</span>
                 <button class="aba-btn" onclick="mostrarVisao('contagem')">Contagem</button>
@@ -37,6 +38,7 @@
             <nav class="menu-principal" aria-label="Configuracoes">
                 <span class="sidebar-label">Configura&ccedil;&otilde;es</span>
                 <button class="menu-btn" onclick="abrirModalReceita()">Nova Receita</button>
+                <button class="menu-btn" onclick="abrirModalRefeicao()">Nova Refei&ccedil;&atilde;o</button>
                 <button class="menu-btn" onclick="abrirModalAlimento()">Novo Alimento</button>
                 <button class="menu-btn" onclick="abrirTiposRefeicao()">Tipos de Refei&ccedil;&atilde;o</button>
                 <button class="menu-btn" id="btn-categorias" onclick="abrirCategorias()">Categorias de Receitas</button>
@@ -66,7 +68,7 @@
 
             <div id="nuvem-logado" class="nuvem-box" style="display:none;">
                 <p id="nuvem-usuario" class="texto-ajuda"></p>
-                <p class="texto-ajuda">Alimentos, receitas, planejamentos, tipos, categorias e tags sao sincronizados na sua conta.</p>
+                <p class="texto-ajuda">Alimentos, receitas, refeicoes, planejamentos, tipos, categorias e tags sao sincronizados na sua conta.</p>
                 <div class="nuvem-acoes">
                     <button id="nuvem-sincronizar" type="button" class="btn-principal">Sincronizar agora</button>
                     <button id="nuvem-baixar" type="button" class="btn-secundario">Baixar da nuvem</button>
@@ -179,6 +181,23 @@
             <div id="lista-alimentos" class="lista-receitas"></div>
         </div>
 
+        <div id="visao-refeicoes" class="visao" style="display:none;">
+            <div class="visao-header">
+                <div>
+                    <span>Cadastros</span>
+                    <h2>Refei&ccedil;&otilde;es</h2>
+                </div>
+                <button onclick="abrirModalRefeicao()" class="btn-principal">Nova Refei&ccedil;&atilde;o</button>
+            </div>
+            <div class="controles">
+                <input type="text" id="busca-refeicoes" placeholder="Buscar refeicao..." onkeyup="filtrarRefeicoes()">
+                <select id="filtro-categoria-refeicao" onchange="filtrarRefeicoes()">
+                    <option value="">Todas as categorias</option>
+                </select>
+            </div>
+            <div id="lista-refeicoes" class="lista-receitas"></div>
+        </div>
+
         <div id="visao-contagem" class="visao" style="display:none;">
             <div class="visao-header">
                 <div>
@@ -255,10 +274,11 @@
                 <button class="btn-fechar" onclick="fecharModal('modal-selecionar-receita')">x</button>
                 <h2>Selecionar Item</h2>
                 <div class="filtros-selecao">
-                    <input type="text" id="busca-selecionar" placeholder="Buscar receita ou alimento..." onkeyup="buscarReceitasModal()">
+                    <input type="text" id="busca-selecionar" placeholder="Buscar receita, refeicao ou alimento..." onkeyup="buscarReceitasModal()">
                     <div class="segmentos-selecao" role="group" aria-label="Tipo de item">
                         <button type="button" class="segmento ativo" data-filtro-item="" onclick="selecionarFiltroItemModal(this)">Todos</button>
                         <button type="button" class="segmento" data-filtro-item="receita" onclick="selecionarFiltroItemModal(this)">Receitas</button>
+                        <button type="button" class="segmento" data-filtro-item="refeicao" onclick="selecionarFiltroItemModal(this)">Refei&ccedil;&otilde;es</button>
                         <button type="button" class="segmento" data-filtro-item="alimento" onclick="selecionarFiltroItemModal(this)">Alimentos</button>
                     </div>
                     <input type="hidden" id="filtro-selecao-item" value="">
@@ -304,6 +324,56 @@
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
                         <button type="button" class="btn-secundario" onclick="fecharModal('modal-alimento')">Cancelar</button>
                         <button type="submit" class="btn-principal">Salvar Alimento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="modal-refeicao" class="modal" style="display:none;">
+            <div class="modal-content modal-receita-content">
+                <button class="btn-fechar" onclick="fecharModal('modal-refeicao')">x</button>
+                <h2>Nova Refei&ccedil;&atilde;o</h2>
+                <form id="form-refeicao">
+                    <div class="modal-scroll">
+                        <section class="form-secao">
+                            <h3>Dados</h3>
+                            <div class="form-grid duas-colunas">
+                                <div class="form-grupo campo-largo">
+                                    <label>Nome da Refei&ccedil;&atilde;o *</label>
+                                    <input type="text" id="nome-refeicao-composta" required>
+                                </div>
+                                <div class="form-grupo">
+                                    <label>Categoria</label>
+                                    <select id="categoria-refeicao-composta">
+                                        <option value="">Sem categoria</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-grupo">
+                                <label>Tipo de Refei&ccedil;&atilde;o *</label>
+                                <div id="tipo-refeicao-composta" class="lista-checkboxes lista-checkboxes-compacta"></div>
+                            </div>
+                            <div class="form-grupo">
+                                <label>Tags</label>
+                                <div id="tags-refeicao-composta" class="lista-checkboxes lista-checkboxes-compacta"></div>
+                            </div>
+                        </section>
+                        <section class="form-secao">
+                            <h3>Itens</h3>
+                            <div id="lista-itens-refeicao" class="lista-ingredientes"></div>
+                            <button type="button" class="btn-secundario btn-ingrediente" onclick="adicionarLinhaItemRefeicao()">Adicionar item</button>
+                        </section>
+                        <section class="form-secao">
+                            <h3>Observa&ccedil;&otilde;es</h3>
+                            <div class="form-grupo">
+                                <label>Observa&ccedil;&otilde;es</label>
+                                <textarea id="observacoes-refeicao" placeholder="Ex: porcionamento, preparo final, substituicoes..."></textarea>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secundario" onclick="fecharModal('modal-refeicao')">Cancelar</button>
+                        <button type="submit" class="btn-principal">Salvar Refei&ccedil;&atilde;o</button>
                     </div>
                 </form>
             </div>

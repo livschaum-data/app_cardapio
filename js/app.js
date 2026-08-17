@@ -8,6 +8,9 @@ const app = {
     // Array de receitas
     receitas: [],
 
+    // Array de refeicoes compostas por receitas e/ou alimentos
+    refeicoes: [],
+
     // Array de planejamentos
     planejamentos: [],
 
@@ -78,6 +81,11 @@ async function inicializar() {
         formReceita.addEventListener('submit', salvarReceita);
     }
 
+    const formRefeicao = document.getElementById('form-refeicao');
+    if (formRefeicao) {
+        formRefeicao.addEventListener('submit', salvarRefeicao);
+    }
+
     configurarAcoesPlanejamentoMobile();
 
     const btnCategorias = document.getElementById('btn-categorias');
@@ -100,6 +108,7 @@ function salvarDadosLegado() {
     marcarDadosAlterados();
     localStorage.setItem('cardapio_alimentos', JSON.stringify(app.alimentos));
     localStorage.setItem('cardapio_receitas', JSON.stringify(app.receitas));
+    localStorage.setItem('cardapio_refeicoes', JSON.stringify(app.refeicoes));
     localStorage.setItem('cardapio_planejamentos', JSON.stringify(app.planejamentos));
     localStorage.setItem('cardapio_historico', JSON.stringify(app.historico));
     localStorage.setItem('cardapio_tipos', JSON.stringify(app.tiposRefeicao));
@@ -113,6 +122,7 @@ function salvarDadosLegado() {
 function carregarDadosLegado() {
     app.alimentos = JSON.parse(localStorage.getItem('cardapio_alimentos')) || [];
     app.receitas = JSON.parse(localStorage.getItem('cardapio_receitas')) || [];
+    app.refeicoes = JSON.parse(localStorage.getItem('cardapio_refeicoes')) || [];
     app.planejamentos = JSON.parse(localStorage.getItem('cardapio_planejamentos')) || [];
     app.historico = JSON.parse(localStorage.getItem('cardapio_historico')) || [];
     app.tiposRefeicao = JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao;
@@ -530,6 +540,7 @@ function obterSnapshotDadosApp() {
     return {
         alimentos: app.alimentos,
         receitas: app.receitas,
+        refeicoes: app.refeicoes,
         planejamentos: app.planejamentos,
         historico: app.historico,
         tiposRefeicao: app.tiposRefeicao,
@@ -599,6 +610,10 @@ function chaveReceita(receita) {
     return receita?.id || `nome:${normalizarNomeAlimento(receita?.nome)}`;
 }
 
+function chaveRefeicao(refeicao) {
+    return refeicao?.id || `nome:${normalizarNomeAlimento(refeicao?.nome)}`;
+}
+
 function chavePlanejamento(plano) {
     return plano?.id || [
         plano?.data || '',
@@ -626,6 +641,7 @@ function mesclarDadosCardapio(dadosLocais, dadosRemotos) {
     return {
         alimentos: mesclarListaPorChave(local.alimentos, remoto.alimentos, chaveAlimento),
         receitas: mesclarListaPorChave(local.receitas, remoto.receitas, chaveReceita),
+        refeicoes: mesclarListaPorChave(local.refeicoes, remoto.refeicoes, chaveRefeicao),
         planejamentos: mesclarListaPorChave(local.planejamentos, remoto.planejamentos, chavePlanejamento),
         historico: mesclarListaPorChave(local.historico, remoto.historico, chaveHistorico),
         tiposRefeicao: mesclarListaTexto(local.tiposRefeicao, remoto.tiposRefeicao),
@@ -669,6 +685,7 @@ function renderizarTudoAposSync() {
     renderizarDiaria();
     renderizarCalendario();
     renderizarReceitas();
+    renderizarRefeicoes();
     renderizarAlimentos();
     renderizarCategoriasAlimentos();
     renderizarContagemAlimentos();
@@ -679,6 +696,7 @@ function aplicarDados(dados) {
 
     app.alimentos = Array.isArray(dados.alimentos) ? dados.alimentos : [];
     app.receitas = Array.isArray(dados.receitas) ? dados.receitas : [];
+    app.refeicoes = Array.isArray(dados.refeicoes) ? dados.refeicoes : [];
     app.planejamentos = Array.isArray(dados.planejamentos) ? dados.planejamentos : [];
     app.historico = Array.isArray(dados.historico) ? dados.historico : [];
     app.tiposRefeicao = Array.isArray(dados.tiposRefeicao) && dados.tiposRefeicao.length > 0
@@ -708,6 +726,7 @@ function normalizarEncodingApp() {
     const antes = JSON.stringify({
         alimentos: app.alimentos,
         receitas: app.receitas,
+        refeicoes: app.refeicoes,
         planejamentos: app.planejamentos,
         historico: app.historico,
         tiposRefeicao: app.tiposRefeicao,
@@ -718,6 +737,7 @@ function normalizarEncodingApp() {
 
     app.alimentos = normalizarEncodingValor(app.alimentos);
     app.receitas = normalizarEncodingValor(app.receitas);
+    app.refeicoes = normalizarEncodingValor(app.refeicoes);
     app.planejamentos = normalizarEncodingValor(app.planejamentos);
     app.historico = normalizarEncodingValor(app.historico);
     app.tiposRefeicao = normalizarEncodingValor(app.tiposRefeicao);
@@ -728,6 +748,7 @@ function normalizarEncodingApp() {
     const depois = JSON.stringify({
         alimentos: app.alimentos,
         receitas: app.receitas,
+        refeicoes: app.refeicoes,
         planejamentos: app.planejamentos,
         historico: app.historico,
         tiposRefeicao: app.tiposRefeicao,
@@ -889,11 +910,30 @@ function normalizarIngredienteReceita(ingrediente) {
     return null;
 }
 
+function normalizarItemRefeicao(item) {
+    if (!item || typeof item !== 'object') return null;
+
+    const itemTipo = item.itemTipo === 'alimento' ? 'alimento' : 'receita';
+    const itemId = item.itemId || item.receitaId || item.alimentoId || '';
+    const entidade = itemTipo === 'alimento' ? buscarAlimento(itemId) : buscarReceita(itemId);
+
+    if (!entidade) return null;
+
+    return {
+        itemTipo,
+        itemId,
+        nome: entidade.nome,
+        quantidade: item.quantidade || '',
+        unidade: item.unidade || '',
+    };
+}
+
 function normalizarDadosAlimentos() {
     const antes = JSON.stringify({
         alimentos: app.alimentos,
         categoriasAlimentos: app.categoriasAlimentos,
         receitas: app.receitas,
+        refeicoes: app.refeicoes,
         planejamentos: app.planejamentos,
     });
 
@@ -915,6 +955,22 @@ function normalizarDadosAlimentos() {
             : [];
     });
 
+    app.refeicoes = app.refeicoes
+        .filter(refeicao => refeicao && refeicao.nome && String(refeicao.nome).trim())
+        .map(refeicao => ({
+            id: refeicao.id || `refeicao_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            nome: String(refeicao.nome).trim(),
+            tipo: refeicao.tipo || (Array.isArray(refeicao.tipos) ? refeicao.tipos[0] : ''),
+            tipos: Array.isArray(refeicao.tipos) ? refeicao.tipos.filter(Boolean) : (refeicao.tipo ? [refeicao.tipo] : []),
+            categoria: refeicao.categoria || '',
+            tags: Array.isArray(refeicao.tags) ? refeicao.tags.filter(Boolean) : [],
+            itens: Array.isArray(refeicao.itens)
+                ? refeicao.itens.map(normalizarItemRefeicao).filter(Boolean)
+                : [],
+            observacoes: refeicao.observacoes || '',
+            dataCriacao: refeicao.dataCriacao || new Date().toISOString(),
+        }));
+
     app.planejamentos.forEach(plano => {
         if (!plano.itemTipo) plano.itemTipo = 'receita';
         if (!plano.itemId && plano.receitaId) plano.itemId = plano.receitaId;
@@ -924,6 +980,7 @@ function normalizarDadosAlimentos() {
         alimentos: app.alimentos,
         categoriasAlimentos: app.categoriasAlimentos,
         receitas: app.receitas,
+        refeicoes: app.refeicoes,
         planejamentos: app.planejamentos,
     });
 
@@ -1002,6 +1059,7 @@ function carregarDadosLocais() {
     return {
         alimentos: JSON.parse(localStorage.getItem('cardapio_alimentos')) || [],
         receitas: JSON.parse(localStorage.getItem('cardapio_receitas')) || [],
+        refeicoes: JSON.parse(localStorage.getItem('cardapio_refeicoes')) || [],
         planejamentos: JSON.parse(localStorage.getItem('cardapio_planejamentos')) || [],
         historico: JSON.parse(localStorage.getItem('cardapio_historico')) || [],
         tiposRefeicao: JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao,
@@ -1015,6 +1073,7 @@ function carregarDadosLocais() {
 function salvarDadosLocais() {
     localStorage.setItem('cardapio_alimentos', JSON.stringify(app.alimentos));
     localStorage.setItem('cardapio_receitas', JSON.stringify(app.receitas));
+    localStorage.setItem('cardapio_refeicoes', JSON.stringify(app.refeicoes));
     localStorage.setItem('cardapio_planejamentos', JSON.stringify(app.planejamentos));
     localStorage.setItem('cardapio_historico', JSON.stringify(app.historico));
     localStorage.setItem('cardapio_tipos', JSON.stringify(app.tiposRefeicao));
@@ -1032,10 +1091,21 @@ async function carregarDadosSupabase() {
     const config = window.CARDAPIO_SUPABASE;
     let { data, error } = await app.supabase
         .from(config.table)
-        .select('alimentos, receitas, planejamentos, historico, tipos_refeicao, categorias, categorias_alimentos, tags, atualizado_em')
+        .select('alimentos, receitas, refeicoes, planejamentos, historico, tipos_refeicao, categorias, categorias_alimentos, tags, atualizado_em')
         .eq('user_id', app.usuarioSupabase.id)
         .eq('id', config.recordId)
         .maybeSingle();
+
+    if (error && String(error.message || '').toLowerCase().includes('refeicoes')) {
+        const fallback = await app.supabase
+            .from(config.table)
+            .select('alimentos, receitas, planejamentos, historico, tipos_refeicao, categorias, categorias_alimentos, tags, atualizado_em')
+            .eq('user_id', app.usuarioSupabase.id)
+            .eq('id', config.recordId)
+            .maybeSingle();
+        data = fallback.data;
+        error = fallback.error;
+    }
 
     if (error && String(error.message || '').toLowerCase().includes('categorias_alimentos')) {
         const fallback = await app.supabase
@@ -1065,6 +1135,7 @@ async function carregarDadosSupabase() {
     return {
         alimentos: data.alimentos,
         receitas: data.receitas,
+        refeicoes: data.refeicoes,
         planejamentos: data.planejamentos,
         historico: data.historico,
         tiposRefeicao: data.tipos_refeicao,
@@ -1095,6 +1166,7 @@ async function salvarDadosSupabase() {
             user_id: app.usuarioSupabase.id,
             alimentos: app.alimentos,
             receitas: app.receitas,
+            refeicoes: app.refeicoes,
             planejamentos: app.planejamentos,
             historico: app.historico,
             tipos_refeicao: app.tiposRefeicao,
@@ -1103,6 +1175,25 @@ async function salvarDadosSupabase() {
             tags: app.tags,
             atualizado_em: app.atualizadoEm || new Date().toISOString(),
         }, { onConflict: 'user_id,id' });
+
+    if (error && String(error.message || '').toLowerCase().includes('refeicoes')) {
+        const fallback = await app.supabase
+            .from(config.table)
+            .upsert({
+                id: config.recordId,
+                user_id: app.usuarioSupabase.id,
+                alimentos: app.alimentos,
+                receitas: app.receitas,
+                planejamentos: app.planejamentos,
+                historico: app.historico,
+                tipos_refeicao: app.tiposRefeicao,
+                categorias: app.categorias,
+                categorias_alimentos: app.categoriasAlimentos,
+                tags: app.tags,
+                atualizado_em: app.atualizadoEm || new Date().toISOString(),
+            }, { onConflict: 'user_id,id' });
+        error = fallback.error;
+    }
 
     if (error && String(error.message || '').toLowerCase().includes('categorias_alimentos')) {
         const fallback = await app.supabase
@@ -1171,7 +1262,7 @@ async function carregarDados() {
             return;
         }
 
-        if (app.alimentos.length || app.receitas.length || app.planejamentos.length || app.historico.length) {
+        if (app.alimentos.length || app.receitas.length || app.refeicoes.length || app.planejamentos.length || app.historico.length) {
             await salvarDadosSupabase();
             console.log('Dados locais enviados ao Supabase.');
         }
@@ -1215,6 +1306,8 @@ function mostrarVisao(nomeVisao) {
         renderizarCalendario();
     } else if (nomeVisao === 'receitas') {
         renderizarReceitas();
+    } else if (nomeVisao === 'refeicoes') {
+        renderizarRefeicoes();
     } else if (nomeVisao === 'alimentos') {
         renderizarAlimentos();
     } else if (nomeVisao === 'contagem') {
@@ -1312,6 +1405,10 @@ function obterItemIdPlano(plano) {
     return plano.itemId || plano.receitaId;
 }
 
+function buscarRefeicao(id) {
+    return app.refeicoes.find(refeicao => refeicao.id === id);
+}
+
 function buscarItemPlanejamento(plano) {
     const itemTipo = obterTipoItemPlano(plano);
     const itemId = obterItemIdPlano(plano);
@@ -1320,7 +1417,17 @@ function buscarItemPlanejamento(plano) {
         return { tipo: 'alimento', item: buscarAlimento(itemId) };
     }
 
+    if (itemTipo === 'refeicao') {
+        return { tipo: 'refeicao', item: buscarRefeicao(itemId) };
+    }
+
     return { tipo: 'receita', item: buscarReceita(itemId) };
+}
+
+function obterRotuloTipoItem(tipo, item = null) {
+    if (tipo === 'alimento') return 'Alimento';
+    if (tipo === 'refeicao') return 'Refeicao';
+    return item?.categoria ? `Categoria: ${item.categoria}` : 'Receita';
 }
 
 function renderizarResumoReceitaPlano(plano, compacto = false) {
@@ -1347,10 +1454,10 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
     }
 
     return `
-        <div class="celula-refeicao ${tipo === 'alimento' ? 'celula-alimento' : 'celula-receita'}" style="--categoria-cor:${gerarCorCategoria(item.categoria || tipo, tipo)};">
+        <div class="celula-refeicao ${tipo === 'alimento' ? 'celula-alimento' : tipo === 'refeicao' ? 'celula-refeicao-composta' : 'celula-receita'}" style="--categoria-cor:${gerarCorCategoria(item.categoria || tipo, tipo)};">
             <div class="conteudo-planejamento">
                 <div class="nome-refeicao">${item.nome}</div>
-                ${compacto ? '' : `<div class="tipo-refeicao-tabela">${tipo === 'alimento' ? 'Alimento' : (item.categoria || '')}</div>`}
+                ${compacto ? '' : `<div class="tipo-refeicao-tabela">${tipo === 'alimento' ? 'Alimento' : tipo === 'refeicao' ? 'Refeicao' : (item.categoria || '')}</div>`}
             </div>
             <div class="acoes-planejamento-mini">
                 <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
@@ -1551,13 +1658,13 @@ function limparFiltrosModalSelecao() {
 }
 
 function renderizarReceitasModalSelecao() {
-    // Renderizar lista de receitas e alimentos no modal
+    // Renderizar lista de receitas, refeicoes e alimentos no modal
     const lista = document.getElementById('lista-selecionar-receita');
     atualizarFiltrosModalSelecao();
     lista.innerHTML = '';
 
-    if (app.receitas.length === 0 && app.alimentos.length === 0) {
-        lista.innerHTML = '<div class="sem-resultados">Nenhuma receita ou alimento cadastrado ainda.</div>';
+    if (app.receitas.length === 0 && app.refeicoes.length === 0 && app.alimentos.length === 0) {
+        lista.innerHTML = '<div class="sem-resultados">Nenhuma receita, refeicao ou alimento cadastrado ainda.</div>';
         return;
     }
 
@@ -1583,6 +1690,36 @@ function renderizarReceitasModalSelecao() {
                 </div>
                 ${renderizarBadgesTags(receita)}
                 <button onclick="selecionarItemParaPlano('receita', '${receita.id}')"
+                        class="btn-principal" style="width: 100%;">
+                    Selecionar
+                </button>
+            </div>
+        `;
+        lista.appendChild(div);
+    });
+
+    app.refeicoes.forEach(refeicao => {
+        const div = document.createElement('div');
+        div.className = 'card-receita item-selecao';
+        div.dataset.itemTipo = 'refeicao';
+        div.dataset.nome = refeicao.nome || '';
+        div.dataset.tipos = obterTiposReceita(refeicao).join('|');
+        div.dataset.categoria = refeicao.categoria || '';
+        div.dataset.tags = obterTagsReceita(refeicao).join('|');
+        div.innerHTML = `
+            <div class="card-receita-header header-refeicao">
+                <div>
+                    <h3>${refeicao.nome}</h3>
+                    <div class="badge-item badge-refeicao">Refeicao</div>
+                    ${renderizarBadgesTipos(refeicao)}
+                </div>
+            </div>
+            <div class="card-receita-content">
+                <div class="linha-metadados-card">
+                    ${renderizarBadgeCategoria(refeicao.categoria, 'refeicao') || '<span class="badge-neutra">Sem categoria</span>'}
+                </div>
+                ${renderizarBadgesTags(refeicao)}
+                <button onclick="selecionarItemParaPlano('refeicao', '${refeicao.id}')"
                         class="btn-principal" style="width: 100%;">
                     Selecionar
                 </button>
@@ -1877,7 +2014,7 @@ function renderizarDiaria() {
                     <div class="item-planejamento-diario">
                         <div class="conteudo-planejamento">
                             <p><strong>${item.nome}</strong></p>
-                            <p>${tipoItem === 'alimento' ? 'Alimento' : `Categoria: ${item.categoria || 'N/A'}`}</p>
+                            <p>${obterRotuloTipoItem(tipoItem, item)}</p>
                         </div>
                         <div class="acoes-planejamento">
                             <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
@@ -2315,6 +2452,7 @@ function salvarReceita(e) {
     atualizarFiltroCategoria();
     normalizarTags();
     atualizarSelectTags();
+    atualizarSelectsItensRefeicao();
     renderizarTudoAposSync();
 
     console.log('Receita salva:', receita);
@@ -2375,6 +2513,13 @@ function editarReceita(id) {
 function deletarReceita(id) {
     if (confirm('Deletar esta receita?')) {
         app.receitas = app.receitas.filter(r => r.id !== id);
+        app.refeicoes.forEach(refeicao => {
+            if (Array.isArray(refeicao.itens)) {
+                refeicao.itens = refeicao.itens.filter(item =>
+                    !(item.itemTipo === 'receita' && item.itemId === id)
+                );
+            }
+        });
         app.planejamentos = app.planejamentos.filter(p => !(obterTipoItemPlano(p) === 'receita' && obterItemIdPlano(p) === id));
         salvarDados();
         renderizarTudoAposSync();
@@ -2397,18 +2542,23 @@ function filtrarReceitas() {
 
 function atualizarFiltroCategoria() {
     const select = document.getElementById('filtro-categoria');
-    const valorAtual = select.value;
-    select.innerHTML = '<option value="">Todas as categorias</option>';
-
     normalizarCategorias();
-    app.categorias.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat;
-        option.textContent = cat;
-        select.appendChild(option);
-    });
 
-    select.value = app.categorias.includes(valorAtual) ? valorAtual : '';
+    [select, document.getElementById('filtro-categoria-refeicao')]
+        .filter(Boolean)
+        .forEach(filtro => {
+            const valorAtual = filtro.value;
+            filtro.innerHTML = '<option value="">Todas as categorias</option>';
+
+            app.categorias.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                filtro.appendChild(option);
+            });
+
+            filtro.value = app.categorias.includes(valorAtual) ? valorAtual : '';
+        });
 }
 
 function buscarReceitasModal() {
@@ -2440,6 +2590,350 @@ function buscarReceitasModal() {
     if (contador) {
         contador.textContent = `${visiveis} ${visiveis === 1 ? 'item encontrado' : 'itens encontrados'}`;
     }
+}
+
+/* ==================== REFEICOES ====================
+   Gerenciar refeicoes compostas por receitas e/ou alimentos */
+
+function abrirModalRefeicao(id = '') {
+    const form = document.getElementById('form-refeicao');
+    if (!form) return;
+
+    form.reset();
+    form.dataset.refeicaoId = id;
+    document.querySelector('#modal-refeicao h2').textContent = id ? 'Editar Refeicao' : 'Nova Refeicao';
+    atualizarSelectTiposRefeicaoComposta();
+    atualizarSelectCategoriasRefeicao();
+    atualizarSelectTagsRefeicao();
+    renderizarItensRefeicao();
+
+    if (id) {
+        const refeicao = buscarRefeicao(id);
+        if (!refeicao) return;
+        document.getElementById('nome-refeicao-composta').value = refeicao.nome;
+        atualizarSelectTiposRefeicaoComposta(obterTiposReceita(refeicao));
+        atualizarSelectCategoriasRefeicao(refeicao.categoria);
+        atualizarSelectTagsRefeicao(obterTagsReceita(refeicao));
+        document.getElementById('categoria-refeicao-composta').value = refeicao.categoria || '';
+        document.getElementById('observacoes-refeicao').value = refeicao.observacoes || '';
+        renderizarItensRefeicao(refeicao.itens || []);
+    }
+
+    abrirModal('modal-refeicao');
+}
+
+function atualizarSelectTiposRefeicaoComposta(tiposSelecionados = []) {
+    const container = document.getElementById('tipo-refeicao-composta');
+    if (!container) return;
+
+    container.innerHTML = '';
+    app.tiposRefeicao.forEach(tipo => {
+        const label = document.createElement('label');
+        label.className = 'opcao-checkbox';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'tipos-refeicao-composta';
+        checkbox.value = tipo;
+        checkbox.checked = tiposSelecionados.includes(tipo);
+
+        const span = document.createElement('span');
+        span.textContent = tipo;
+
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        container.appendChild(label);
+    });
+}
+
+function atualizarSelectCategoriasRefeicao(categoriaAtual = '') {
+    const select = document.getElementById('categoria-refeicao-composta');
+    if (!select) return;
+
+    normalizarCategorias();
+    select.innerHTML = '<option value="">Sem categoria</option>';
+
+    if (categoriaAtual && !app.categorias.includes(categoriaAtual)) {
+        app.categorias.push(categoriaAtual);
+        normalizarCategorias();
+    }
+
+    app.categorias.forEach(categoria => {
+        const option = document.createElement('option');
+        option.value = categoria;
+        option.textContent = categoria;
+        select.appendChild(option);
+    });
+}
+
+function atualizarSelectTagsRefeicao(tagsSelecionadas = []) {
+    const container = document.getElementById('tags-refeicao-composta');
+    if (!container) return;
+
+    normalizarTags();
+    container.innerHTML = '';
+    app.tags.forEach(tag => {
+        const label = document.createElement('label');
+        label.className = 'opcao-checkbox';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'tags-refeicao-composta';
+        checkbox.value = tag;
+        checkbox.checked = tagsSelecionadas.includes(tag);
+
+        const span = document.createElement('span');
+        span.textContent = tag;
+
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        container.appendChild(label);
+    });
+}
+
+function obterTiposSelecionadosRefeicao() {
+    return Array.from(document.querySelectorAll('input[name="tipos-refeicao-composta"]:checked'))
+        .map(input => input.value);
+}
+
+function obterTagsSelecionadasRefeicao() {
+    return Array.from(document.querySelectorAll('input[name="tags-refeicao-composta"]:checked'))
+        .map(input => input.value);
+}
+
+function obterItensDisponiveisRefeicao(tipo) {
+    return tipo === 'alimento' ? app.alimentos : app.receitas;
+}
+
+function criarOpcaoItemRefeicao(tipo, itemIdSelecionado = '') {
+    return obterItensDisponiveisRefeicao(tipo)
+        .slice()
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+        .map(item => `
+            <option value="${item.id}" ${item.id === itemIdSelecionado ? 'selected' : ''}>
+                ${escaparHtml(item.nome)}${item.categoria ? ` (${escaparHtml(item.categoria)})` : ''}
+            </option>
+        `)
+        .join('');
+}
+
+function renderizarItensRefeicao(itens = []) {
+    const container = document.getElementById('lista-itens-refeicao');
+    if (!container) return;
+
+    container.innerHTML = '';
+    itens.forEach(item => adicionarLinhaItemRefeicao(item));
+}
+
+function adicionarLinhaItemRefeicao(item = {}) {
+    const container = document.getElementById('lista-itens-refeicao');
+    if (!container) return;
+
+    if (app.receitas.length === 0 && app.alimentos.length === 0) {
+        container.innerHTML = '<div class="sem-resultados itens-refeicao-vazio">Cadastre receitas ou alimentos antes de montar uma refeicao.</div>';
+        return;
+    }
+
+    container.querySelector('.itens-refeicao-vazio')?.remove();
+
+    const itemNormalizado = normalizarItemRefeicao(item);
+    const tipo = itemNormalizado?.itemTipo || (app.receitas.length > 0 ? 'receita' : 'alimento');
+    const itemId = itemNormalizado?.itemId || obterItensDisponiveisRefeicao(tipo)[0]?.id || '';
+    const linha = document.createElement('div');
+    linha.className = 'linha-item-refeicao';
+    linha.innerHTML = `
+        <select class="item-refeicao-tipo" onchange="atualizarSelectItemRefeicao(this)">
+            <option value="receita" ${tipo === 'receita' ? 'selected' : ''}>Receita</option>
+            <option value="alimento" ${tipo === 'alimento' ? 'selected' : ''}>Alimento</option>
+        </select>
+        <select class="item-refeicao-id" required>
+            <option value="">Selecione</option>
+            ${criarOpcaoItemRefeicao(tipo, itemId)}
+        </select>
+        <input class="item-refeicao-quantidade" type="text" inputmode="decimal" placeholder="Qtd" value="${escaparHtml(itemNormalizado?.quantidade || '')}">
+        <input class="item-refeicao-unidade" type="text" placeholder="Unidade" value="${escaparHtml(itemNormalizado?.unidade || '')}">
+        <button type="button" class="btn-remover-ingrediente" onclick="removerLinhaItemRefeicao(this)">Remover</button>
+    `;
+    container.appendChild(linha);
+}
+
+function atualizarSelectItemRefeicao(selectTipo) {
+    const linha = selectTipo.closest('.linha-item-refeicao');
+    const selectItem = linha?.querySelector('.item-refeicao-id');
+    if (!selectItem) return;
+
+    selectItem.innerHTML = '<option value="">Selecione</option>' + criarOpcaoItemRefeicao(selectTipo.value);
+}
+
+function removerLinhaItemRefeicao(botao) {
+    botao.closest('.linha-item-refeicao')?.remove();
+}
+
+function atualizarSelectsItensRefeicao() {
+    document.querySelectorAll('.linha-item-refeicao').forEach(linha => {
+        const tipo = linha.querySelector('.item-refeicao-tipo')?.value || 'receita';
+        const select = linha.querySelector('.item-refeicao-id');
+        const valorAtual = select?.value || '';
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Selecione</option>' + criarOpcaoItemRefeicao(tipo, valorAtual);
+        select.value = obterItensDisponiveisRefeicao(tipo).some(item => item.id === valorAtual) ? valorAtual : '';
+    });
+}
+
+function obterItensSelecionadosRefeicao() {
+    return Array.from(document.querySelectorAll('.linha-item-refeicao'))
+        .map(linha => {
+            const itemTipo = linha.querySelector('.item-refeicao-tipo')?.value || 'receita';
+            const itemId = linha.querySelector('.item-refeicao-id')?.value || '';
+            const entidade = itemTipo === 'alimento' ? buscarAlimento(itemId) : buscarReceita(itemId);
+            if (!entidade) return null;
+
+            return {
+                itemTipo,
+                itemId,
+                nome: entidade.nome,
+                quantidade: linha.querySelector('.item-refeicao-quantidade')?.value.trim() || '',
+                unidade: linha.querySelector('.item-refeicao-unidade')?.value.trim() || '',
+            };
+        })
+        .filter(Boolean);
+}
+
+function formatarItemRefeicao(item) {
+    const normalizado = normalizarItemRefeicao(item);
+    if (!normalizado) return '';
+
+    const quantidade = normalizado.quantidade ? `${normalizado.quantidade} ` : '';
+    const unidade = normalizado.unidade ? `${normalizado.unidade} ` : '';
+    const tipo = normalizado.itemTipo === 'alimento' ? 'Alimento' : 'Receita';
+    return `${quantidade}${unidade}${normalizado.nome} (${tipo})`.trim();
+}
+
+function salvarRefeicao(evento) {
+    evento.preventDefault();
+
+    const tiposSelecionados = obterTiposSelecionadosRefeicao();
+    if (tiposSelecionados.length === 0) {
+        alert('Selecione pelo menos um tipo de refeicao!');
+        return;
+    }
+
+    const itens = obterItensSelecionadosRefeicao();
+    if (itens.length === 0) {
+        alert('Adicione pelo menos uma receita ou alimento.');
+        return;
+    }
+
+    const form = document.getElementById('form-refeicao');
+    const id = form.dataset.refeicaoId || `refeicao_${Date.now()}`;
+    const refeicao = {
+        id,
+        nome: document.getElementById('nome-refeicao-composta').value.trim(),
+        tipo: tiposSelecionados[0],
+        tipos: tiposSelecionados,
+        categoria: document.getElementById('categoria-refeicao-composta').value,
+        tags: obterTagsSelecionadasRefeicao(),
+        itens,
+        observacoes: document.getElementById('observacoes-refeicao').value.trim(),
+        dataCriacao: new Date().toISOString(),
+    };
+
+    if (!refeicao.nome) {
+        alert('Digite o nome da refeicao.');
+        return;
+    }
+
+    const indice = app.refeicoes.findIndex(item => item.id === id);
+    if (indice >= 0) {
+        app.refeicoes[indice] = refeicao;
+    } else {
+        app.refeicoes.push(refeicao);
+    }
+
+    salvarDados();
+    fecharModal('modal-refeicao');
+    normalizarCategorias();
+    normalizarTags();
+    renderizarTudoAposSync();
+}
+
+function renderizarRefeicoes() {
+    const container = document.getElementById('lista-refeicoes');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (app.refeicoes.length === 0) {
+        container.innerHTML = '<div class="sem-resultados">Nenhuma refeicao cadastrada.</div>';
+        return;
+    }
+
+    app.refeicoes.forEach(refeicao => {
+        const itens = Array.isArray(refeicao.itens) ? refeicao.itens.map(formatarItemRefeicao).filter(Boolean) : [];
+        const card = document.createElement('div');
+        card.className = 'card-receita card-refeicao';
+        card.dataset.categoria = refeicao.categoria || '';
+        card.innerHTML = `
+            <div class="card-receita-header header-refeicao">
+                <div>
+                    <h3>${refeicao.nome}</h3>
+                    <div class="badge-tipo">Refeicao</div>
+                    ${renderizarBadgesTipos(refeicao)}
+                </div>
+            </div>
+            <div class="card-receita-content">
+                ${renderizarBadgeCategoria(refeicao.categoria, 'refeicao')}
+                ${renderizarBadgesTags(refeicao)}
+                ${itens.length > 0 ? `<p><strong>Itens:</strong><br>${itens.slice(0, 4).join('<br>')}</p>` : ''}
+                ${refeicao.observacoes ? `<p>${escaparHtml(refeicao.observacoes)}</p>` : ''}
+                <div class="card-receita-actions">
+                    <button class="btn-editar" onclick="abrirModalRefeicao('${refeicao.id}')">Editar</button>
+                    <button class="btn-deletar" onclick="deletarRefeicao('${refeicao.id}')">Deletar</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+
+    filtrarRefeicoes();
+}
+
+function filtrarRefeicoes() {
+    const busca = document.getElementById('busca-refeicoes');
+    if (!busca) return;
+
+    const termo = busca.value.toLowerCase();
+    const categoria = document.getElementById('filtro-categoria-refeicao')?.value || '';
+    document.querySelectorAll('#lista-refeicoes .card-refeicao').forEach(card => {
+        const passaBusca = card.textContent.toLowerCase().includes(termo);
+        const passaCategoria = !categoria || card.dataset.categoria === categoria;
+        card.style.display = passaBusca && passaCategoria ? 'block' : 'none';
+    });
+}
+
+function deletarRefeicao(id) {
+    const refeicao = buscarRefeicao(id);
+    if (!refeicao) return;
+
+    const usadoEmPlanejamento = app.planejamentos.some(plano =>
+        obterTipoItemPlano(plano) === 'refeicao' &&
+        obterItemIdPlano(plano) === id
+    );
+
+    const mensagem = usadoEmPlanejamento
+        ? `Deletar "${refeicao.nome}"? Ela sera removida dos planejamentos onde aparece.`
+        : `Deletar "${refeicao.nome}"?`;
+
+    if (!confirm(mensagem)) return;
+
+    app.refeicoes = app.refeicoes.filter(item => item.id !== id);
+    app.planejamentos = app.planejamentos.filter(plano =>
+        !(obterTipoItemPlano(plano) === 'refeicao' && obterItemIdPlano(plano) === id)
+    );
+
+    salvarDados();
+    renderizarTudoAposSync();
 }
 
 /* ==================== ALIMENTOS ====================
@@ -2679,6 +3173,7 @@ function salvarAlimento(evento) {
     fecharModal('modal-alimento');
     atualizarSelectCategoriasAlimentos();
     atualizarSelectsIngredientesReceita();
+    atualizarSelectsItensRefeicao();
     renderizarTudoAposSync();
 }
 
@@ -2760,6 +3255,13 @@ function deletarAlimento(id) {
             receita.ingredientes = receita.ingredientes.filter(ingrediente => ingrediente.alimentoId !== id);
         }
     });
+    app.refeicoes.forEach(refeicao => {
+        if (Array.isArray(refeicao.itens)) {
+            refeicao.itens = refeicao.itens.filter(item =>
+                !(item.itemTipo === 'alimento' && item.itemId === id)
+            );
+        }
+    });
     app.planejamentos = app.planejamentos.filter(plano =>
         !(obterTipoItemPlano(plano) === 'alimento' && obterItemIdPlano(plano) === id)
     );
@@ -2802,6 +3304,32 @@ function obterDataPlano(plano) {
     return '';
 }
 
+function somarAlimentosReceita(receita, somar) {
+    if (!receita || !Array.isArray(receita.ingredientes)) return;
+
+    receita.ingredientes.forEach(ingrediente => {
+        if (typeof ingrediente === 'string') {
+            const alimento = buscarAlimentoPorNome(ingrediente);
+            somar(alimento?.id);
+            return;
+        }
+        somar(ingrediente.alimentoId);
+    });
+}
+
+function somarAlimentosRefeicao(refeicao, somar) {
+    if (!refeicao || !Array.isArray(refeicao.itens)) return;
+
+    refeicao.itens.forEach(item => {
+        if (item.itemTipo === 'alimento') {
+            somar(item.itemId);
+            return;
+        }
+
+        somarAlimentosReceita(buscarReceita(item.itemId), somar);
+    });
+}
+
 function contarAlimentosNoPeriodo(dataInicio, dataFim) {
     const contagem = new Map();
 
@@ -2825,17 +3353,12 @@ function contarAlimentosNoPeriodo(dataInicio, dataFim) {
                 return;
             }
 
-            const receita = buscarReceita(itemId);
-            if (!receita || !Array.isArray(receita.ingredientes)) return;
+            if (tipoItem === 'refeicao') {
+                somarAlimentosRefeicao(buscarRefeicao(itemId), somar);
+                return;
+            }
 
-            receita.ingredientes.forEach(ingrediente => {
-                if (typeof ingrediente === 'string') {
-                    const alimento = buscarAlimentoPorNome(ingrediente);
-                    somar(alimento?.id);
-                    return;
-                }
-                somar(ingrediente.alimentoId);
-            });
+            somarAlimentosReceita(buscarReceita(itemId), somar);
         });
 
     return Array.from(contagem.entries())
@@ -2895,6 +3418,10 @@ function normalizarTags() {
 
     app.receitas.forEach(receita => {
         obterTagsReceita(receita).forEach(tag => tags.add(tag.trim()));
+    });
+
+    app.refeicoes.forEach(refeicao => {
+        obterTagsReceita(refeicao).forEach(tag => tags.add(tag.trim()));
     });
 
     app.tags = Array.from(tags).sort((a, b) => a.localeCompare(b, 'pt-BR'));
@@ -2975,13 +3502,19 @@ function editarTag(tagAtual) {
         receita.tags = receita.tags.map(tag => tag === tagAtual ? tagLimpa : tag);
     });
 
+    app.refeicoes.forEach(refeicao => {
+        if (!Array.isArray(refeicao.tags)) return;
+        refeicao.tags = refeicao.tags.map(tag => tag === tagAtual ? tagLimpa : tag);
+    });
+
     normalizarTags();
     salvarDados();
     renderizarAposAlterarTags();
 }
 
 function removerTag(tag) {
-    const usada = app.receitas.some(receita => obterTagsReceita(receita).includes(tag));
+    const usada = app.receitas.some(receita => obterTagsReceita(receita).includes(tag)) ||
+        app.refeicoes.some(refeicao => obterTagsReceita(refeicao).includes(tag));
     const mensagem = usada
         ? `Remover "${tag}"? Ela também será removida das receitas.`
         : `Remover "${tag}"?`;
@@ -2992,6 +3525,11 @@ function removerTag(tag) {
     app.receitas.forEach(receita => {
         if (Array.isArray(receita.tags)) {
             receita.tags = receita.tags.filter(item => item !== tag);
+        }
+    });
+    app.refeicoes.forEach(refeicao => {
+        if (Array.isArray(refeicao.tags)) {
+            refeicao.tags = refeicao.tags.filter(item => item !== tag);
         }
     });
 
@@ -3040,8 +3578,10 @@ function renderizarTags() {
 
 function renderizarAposAlterarTags() {
     atualizarSelectTags();
+    atualizarSelectTagsRefeicao();
     renderizarTags();
     renderizarReceitas();
+    renderizarRefeicoes();
     renderizarReceitasModalSelecao();
     renderizarSemanal();
     renderizarMensal();
@@ -3064,6 +3604,12 @@ function normalizarCategorias() {
     app.receitas.forEach(receita => {
         if (receita.categoria && receita.categoria.trim()) {
             categorias.add(receita.categoria.trim());
+        }
+    });
+
+    app.refeicoes.forEach(refeicao => {
+        if (refeicao.categoria && refeicao.categoria.trim()) {
+            categorias.add(refeicao.categoria.trim());
         }
     });
 
@@ -3142,6 +3688,11 @@ function editarCategoria(categoriaAtual) {
             receita.categoria = categoriaLimpa;
         }
     });
+    app.refeicoes.forEach(refeicao => {
+        if (refeicao.categoria === categoriaAtual) {
+            refeicao.categoria = categoriaLimpa;
+        }
+    });
 
     normalizarCategorias();
     salvarDados();
@@ -3149,7 +3700,8 @@ function editarCategoria(categoriaAtual) {
 }
 
 function removerCategoria(categoria) {
-    const usada = app.receitas.some(receita => receita.categoria === categoria);
+    const usada = app.receitas.some(receita => receita.categoria === categoria) ||
+        app.refeicoes.some(refeicao => refeicao.categoria === categoria);
     const mensagem = usada
         ? `Remover "${categoria}"? As receitas desta categoria ficarão sem categoria.`
         : `Remover "${categoria}"?`;
@@ -3160,6 +3712,11 @@ function removerCategoria(categoria) {
     app.receitas.forEach(receita => {
         if (receita.categoria === categoria) {
             receita.categoria = '';
+        }
+    });
+    app.refeicoes.forEach(refeicao => {
+        if (refeicao.categoria === categoria) {
+            refeicao.categoria = '';
         }
     });
 
@@ -3208,9 +3765,11 @@ function renderizarCategorias() {
 
 function renderizarAposAlterarCategorias() {
     atualizarSelectCategorias();
+    atualizarSelectCategoriasRefeicao();
     atualizarFiltroCategoria();
     renderizarCategorias();
     renderizarReceitas();
+    renderizarRefeicoes();
     renderizarReceitasModalSelecao();
     renderizarSemanal();
     renderizarMensal();
@@ -3242,6 +3801,7 @@ function adicionarTipoRefeicao() {
     app.tiposRefeicao.push(novoTipo);
     salvarDados();
     atualizarSelectTipos();
+    atualizarSelectTiposRefeicaoComposta();
     document.getElementById('novo-tipo-refeicao').value = '';
     renderizarTiposRefeicao();
 
@@ -3253,6 +3813,7 @@ function removerTipoRefeicao(tipo) {
         app.tiposRefeicao = app.tiposRefeicao.filter(t => t !== tipo);
         salvarDados();
         atualizarSelectTipos();
+        atualizarSelectTiposRefeicaoComposta();
         renderizarTiposRefeicao();
     }
 }
@@ -3410,6 +3971,13 @@ Object.assign(window, {
     baixarDadosSupabase,
     enviarDadosSupabase,
     abrirModalReceita,
+    abrirModalRefeicao,
+    salvarRefeicao,
+    filtrarRefeicoes,
+    adicionarLinhaItemRefeicao,
+    removerLinhaItemRefeicao,
+    atualizarSelectItemRefeicao,
+    deletarRefeicao,
     abrirModalAlimento,
     salvarAlimento,
     deletarAlimento,
