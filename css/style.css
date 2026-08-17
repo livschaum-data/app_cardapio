@@ -847,13 +847,19 @@ body {
 
 .badge-tag {
     background: rgba(139, 69, 19, 0.08);
-    border: 1px solid var(--cor-borda);
+    border: 1px solid rgba(139, 69, 19, 0.16);
     border-radius: 14px;
     color: var(--cor-primaria);
     display: inline-block;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 800;
     padding: 3px 8px;
+}
+
+.badge-tag-colorida {
+    background: color-mix(in srgb, var(--tag-cor) 16%, white);
+    border-color: color-mix(in srgb, var(--tag-cor) 42%, white);
+    color: var(--tag-cor);
 }
 
 .card-receita-content {
@@ -1109,6 +1115,25 @@ body {
 .opcao-checkbox:has(input:checked) {
     background: rgba(255, 140, 0, 0.14);
     border-color: var(--cor-destaque);
+}
+
+.opcao-checkbox-tag {
+    background: color-mix(in srgb, var(--tag-cor) 10%, white);
+    border-color: color-mix(in srgb, var(--tag-cor) 34%, white);
+}
+
+.opcao-checkbox-tag span {
+    color: var(--tag-cor);
+    font-weight: 800;
+}
+
+.opcao-checkbox-tag:has(input:checked) {
+    background: var(--tag-cor);
+    border-color: var(--tag-cor);
+}
+
+.opcao-checkbox-tag:has(input:checked) span {
+    color: var(--tag-texto);
 }
 
 .linha-form {
@@ -1717,12 +1742,19 @@ body {
     margin-top: 6px;
 }
 
+.badge-receita {
+    background: rgba(178, 93, 28, 0.18);
+    color: #8b4513;
+}
+
 .badge-alimento {
     background: rgba(47, 111, 94, 0.28);
+    color: #245f50;
 }
 
 .badge-refeicao {
     background: rgba(106, 76, 147, 0.28);
+    color: #5f3d79;
 }
 
 .linha-metadados-card {
@@ -1756,7 +1788,7 @@ body {
     border-radius: 8px;
     display: grid;
     gap: 10px;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 0.8fr) auto auto;
     min-height: 54px;
     padding: 8px 10px;
 }
@@ -1803,6 +1835,23 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.tags-selecao {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+}
+
+.tags-selecao .badge-tag {
+    margin: 0;
+}
+
+.tags-selecao-vazia {
+    color: var(--cor-texto-cinza);
+    font-size: 12px;
 }
 
 .icone-selecao {
@@ -2115,17 +2164,41 @@ body {
     #app.sidebar-oculta .visao,
     #app:not(.sidebar-oculta) .visao {
         padding-left: 14px;
-        padding-top: 118px;
+        padding-top: 70px;
     }
 
     .planejamento-switch {
-        left: 14px;
+        gap: 4px;
+        left: 112px;
+        padding: 4px;
         right: 14px;
-        top: 58px;
+        top: 14px;
+    }
+
+    .planejamento-switch span {
+        display: none;
     }
 
     .planejamento-switch-opcoes {
-        flex: 1;
+        flex: 1 1 auto;
+        gap: 3px;
+        grid-template-columns: repeat(2, minmax(48px, 1fr));
+        padding: 3px;
+    }
+
+    .btn-planejamento-opcao,
+    .btn-planejamento-alternar {
+        font-size: 12px;
+        min-height: 28px;
+        padding: 4px 8px;
+    }
+
+    .btn-planejamento-alternar {
+        flex: 0 0 auto;
+        max-width: 64px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .sidebar-brand {
@@ -2165,7 +2238,7 @@ body {
 
 @media (max-width: 640px) {
     .visao {
-        padding: 118px 14px 14px;
+        padding: 70px 14px 14px;
     }
 
     .visao-header {
@@ -2189,12 +2262,7 @@ body {
 
 @media (max-width: 480px) {
     .planejamento-switch {
-        align-items: stretch;
-        display: grid;
-        grid-template-columns: 1fr auto;
-    }
-
-    .planejamento-switch span {
-        grid-column: 1 / -1;
+        align-items: center;
+        display: flex;
     }
 }

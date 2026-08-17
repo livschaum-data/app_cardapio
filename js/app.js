@@ -688,6 +688,7 @@ function renderizarTudoAposSync() {
     atualizarSelectCategorias();
     atualizarFiltroCategoria();
     atualizarSelectTags();
+    atualizarSelectTagsAlimento();
     atualizarSelectCategoriasAlimentos();
     atualizarFiltrosModalSelecao();
     renderizarSemanal();
@@ -954,6 +955,7 @@ function normalizarDadosAlimentos() {
             nome: String(alimento.nome).trim(),
             categoria: alimento.categoria || '',
             unidadePadrao: alimento.unidadePadrao || alimento.unidade || '',
+            tags: Array.isArray(alimento.tags) ? alimento.tags.filter(Boolean) : [],
             dataCriacao: alimento.dataCriacao || new Date().toISOString(),
         }));
 
@@ -1774,7 +1776,7 @@ function obterItensOrdenadosModalSelecao() {
 
 function criarItemModalSelecao(itemTipo, item) {
     const tipos = itemTipo === 'alimento' ? [] : obterTiposReceita(item);
-    const tags = itemTipo === 'alimento' ? [] : obterTagsReceita(item);
+    const tags = obterTagsReceita(item);
 
     return {
         itemTipo,
@@ -1809,8 +1811,10 @@ function criarLinhaModalSelecao(item) {
     const detalhes = [
         item.categoria || 'Sem categoria',
         item.tipos.slice(0, 2).join(', '),
-        item.tags.slice(0, 2).map(tag => `#${tag}`).join(' '),
     ].filter(Boolean).join(' - ');
+    const tagsHtml = item.tags.length > 0
+        ? `<div class="tags-selecao">${item.tags.slice(0, 3).map(tag => renderizarBadgeTag(tag)).join('')}</div>`
+        : '<div class="tags-selecao tags-selecao-vazia">Sem tags</div>';
 
     div.innerHTML = `
         <div class="linha-selecao-identidade">
@@ -1820,6 +1824,7 @@ function criarLinhaModalSelecao(item) {
                 <p>${escaparHtml(detalhes)}</p>
             </div>
         </div>
+        ${tagsHtml}
         <span class="badge-item ${tipoClasse}">${obterRotuloItemModalSelecao(item.itemTipo)}</span>
         <button onclick="selecionarItemParaPlano('${item.itemTipo}', '${item.id}')" class="btn-principal btn-selecionar-linha">
             Selecionar
@@ -2371,6 +2376,27 @@ function obterTagsSelecionadasReceita() {
         .map(input => input.value);
 }
 
+function renderizarOpcaoTag(tag, selecionada, name) {
+    const cor = gerarCorTag(tag);
+    const texto = corTextoParaFundo(cor);
+    return `
+        <label class="opcao-checkbox opcao-checkbox-tag" style="--tag-cor:${cor};--tag-texto:${texto};">
+            <input type="checkbox" name="${name}" value="${escaparHtml(tag)}" ${selecionada ? 'checked' : ''}>
+            <span>${escaparHtml(tag)}</span>
+        </label>
+    `;
+}
+
+function renderizarCheckboxesTags(containerId, name, tagsSelecionadas = []) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    normalizarTags();
+    container.innerHTML = app.tags
+        .map(tag => renderizarOpcaoTag(tag, tagsSelecionadas.includes(tag), name))
+        .join('');
+}
+
 function renderizarBadgesTipos(receita) {
     const tipos = obterTiposReceita(receita);
 
@@ -2392,9 +2418,29 @@ function renderizarBadgesTags(receita) {
 
     return `
         <div class="badges-tags">
-            ${tags.map(tag => `<span class="badge-tag">${tag}</span>`).join('')}
+            ${tags.map(tag => renderizarBadgeTag(tag)).join('')}
         </div>
     `;
+}
+
+function gerarCorTag(tag) {
+    const cores = [
+        '#8B4513',
+        '#2f6f5e',
+        '#7c4f94',
+        '#b25d1c',
+        '#4f6f9f',
+        '#9f5f6f',
+        '#6d7d2d',
+        '#5f4b32',
+    ];
+    return cores[chaveCategoria(tag).split('').reduce((total, char) => total + char.charCodeAt(0), 0) % cores.length];
+}
+
+function renderizarBadgeTag(tag) {
+    const cor = gerarCorTag(tag);
+    const texto = corTextoParaFundo(cor);
+    return `<span class="badge-tag badge-tag-colorida" style="--tag-cor:${cor};--tag-texto:${texto};">${escaparHtml(tag)}</span>`;
 }
 
 function formatarIngredienteReceita(ingrediente) {
@@ -2740,28 +2786,7 @@ function atualizarSelectCategoriasRefeicao(categoriaAtual = '') {
 }
 
 function atualizarSelectTagsRefeicao(tagsSelecionadas = []) {
-    const container = document.getElementById('tags-refeicao-composta');
-    if (!container) return;
-
-    normalizarTags();
-    container.innerHTML = '';
-    app.tags.forEach(tag => {
-        const label = document.createElement('label');
-        label.className = 'opcao-checkbox';
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.name = 'tags-refeicao-composta';
-        checkbox.value = tag;
-        checkbox.checked = tagsSelecionadas.includes(tag);
-
-        const span = document.createElement('span');
-        span.textContent = tag;
-
-        label.appendChild(checkbox);
-        label.appendChild(span);
-        container.appendChild(label);
-    });
+    renderizarCheckboxesTags('tags-refeicao-composta', 'tags-refeicao-composta', tagsSelecionadas);
 }
 
 function obterTiposSelecionadosRefeicao() {
@@ -3190,6 +3215,7 @@ function abrirModalAlimento(id = '') {
     form.dataset.alimentoId = id;
     document.querySelector('#modal-alimento h2').textContent = id ? 'Editar Alimento' : 'Novo Alimento';
     atualizarSelectCategoriasAlimentos();
+    atualizarSelectTagsAlimento();
 
     if (id) {
         const alimento = buscarAlimento(id);
@@ -3197,6 +3223,7 @@ function abrirModalAlimento(id = '') {
         document.getElementById('nome-alimento').value = alimento.nome;
         document.getElementById('categoria-alimento').value = alimento.categoria || '';
         document.getElementById('unidade-alimento').value = alimento.unidadePadrao || '';
+        atualizarSelectTagsAlimento(obterTagsReceita(alimento));
     }
 
     abrirModal('modal-alimento');
@@ -3210,6 +3237,7 @@ function salvarAlimento(evento) {
     const nome = document.getElementById('nome-alimento').value.trim();
     const categoria = document.getElementById('categoria-alimento').value.trim();
     const unidadePadrao = document.getElementById('unidade-alimento').value.trim();
+    const tags = obterTagsSelecionadasAlimento();
 
     if (!nome) {
         alert('Digite o nome do alimento.');
@@ -3231,6 +3259,7 @@ function salvarAlimento(evento) {
         nome,
         categoria,
         unidadePadrao,
+        tags,
         dataCriacao: new Date().toISOString(),
     };
 
@@ -3242,9 +3271,11 @@ function salvarAlimento(evento) {
     }
 
     normalizarCategoriasAlimentos();
+    normalizarTags();
     salvarDados();
     fecharModal('modal-alimento');
     atualizarSelectCategoriasAlimentos();
+    atualizarSelectTagsAlimento();
     atualizarSelectsIngredientesReceita();
     atualizarSelectsItensRefeicao();
     renderizarTudoAposSync();
@@ -3277,6 +3308,7 @@ function renderizarAlimentos() {
                 </div>
                 <div class="card-receita-content">
                     ${renderizarBadgeCategoria(alimento.categoria, 'alimento')}
+                    ${renderizarBadgesTags(alimento)}
                     ${alimento.unidadePadrao ? `<p>Unidade padrao: ${alimento.unidadePadrao}</p>` : ''}
                     <div class="card-receita-actions">
                         <button class="btn-editar" onclick="abrirModalAlimento('${alimento.id}')">Editar</button>
@@ -3493,6 +3525,10 @@ function normalizarTags() {
         obterTagsReceita(receita).forEach(tag => tags.add(tag.trim()));
     });
 
+    app.alimentos.forEach(alimento => {
+        obterTagsReceita(alimento).forEach(tag => tags.add(tag.trim()));
+    });
+
     app.refeicoes.forEach(refeicao => {
         obterTagsReceita(refeicao).forEach(tag => tags.add(tag.trim()));
     });
@@ -3501,29 +3537,16 @@ function normalizarTags() {
 }
 
 function atualizarSelectTags(tagsSelecionadas = []) {
-    const container = document.getElementById('tags-receita');
-    if (!container) return;
+    renderizarCheckboxesTags('tags-receita', 'tags-receita', tagsSelecionadas);
+}
 
-    normalizarTags();
-    container.innerHTML = '';
+function atualizarSelectTagsAlimento(tagsSelecionadas = []) {
+    renderizarCheckboxesTags('tags-alimento', 'tags-alimento', tagsSelecionadas);
+}
 
-    app.tags.forEach(tag => {
-        const label = document.createElement('label');
-        label.className = 'opcao-checkbox';
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.name = 'tags-receita';
-        checkbox.value = tag;
-        checkbox.checked = tagsSelecionadas.includes(tag);
-
-        const span = document.createElement('span');
-        span.textContent = tag;
-
-        label.appendChild(checkbox);
-        label.appendChild(span);
-        container.appendChild(label);
-    });
+function obterTagsSelecionadasAlimento() {
+    return Array.from(document.querySelectorAll('input[name="tags-alimento"]:checked'))
+        .map(input => input.value);
 }
 
 function abrirTags() {
@@ -3549,6 +3572,8 @@ function adicionarTag() {
     normalizarTags();
     salvarDados();
     atualizarSelectTags();
+    atualizarSelectTagsAlimento();
+    atualizarSelectTagsRefeicao();
     input.value = '';
     renderizarTags();
 }
@@ -3575,6 +3600,11 @@ function editarTag(tagAtual) {
         receita.tags = receita.tags.map(tag => tag === tagAtual ? tagLimpa : tag);
     });
 
+    app.alimentos.forEach(alimento => {
+        if (!Array.isArray(alimento.tags)) return;
+        alimento.tags = alimento.tags.map(tag => tag === tagAtual ? tagLimpa : tag);
+    });
+
     app.refeicoes.forEach(refeicao => {
         if (!Array.isArray(refeicao.tags)) return;
         refeicao.tags = refeicao.tags.map(tag => tag === tagAtual ? tagLimpa : tag);
@@ -3587,9 +3617,10 @@ function editarTag(tagAtual) {
 
 function removerTag(tag) {
     const usada = app.receitas.some(receita => obterTagsReceita(receita).includes(tag)) ||
+        app.alimentos.some(alimento => obterTagsReceita(alimento).includes(tag)) ||
         app.refeicoes.some(refeicao => obterTagsReceita(refeicao).includes(tag));
     const mensagem = usada
-        ? `Remover "${tag}"? Ela também será removida das receitas.`
+        ? `Remover "${tag}"? Ela tambem sera removida das receitas, alimentos e refeicoes.`
         : `Remover "${tag}"?`;
 
     if (!confirm(mensagem)) return;
@@ -3598,6 +3629,11 @@ function removerTag(tag) {
     app.receitas.forEach(receita => {
         if (Array.isArray(receita.tags)) {
             receita.tags = receita.tags.filter(item => item !== tag);
+        }
+    });
+    app.alimentos.forEach(alimento => {
+        if (Array.isArray(alimento.tags)) {
+            alimento.tags = alimento.tags.filter(item => item !== tag);
         }
     });
     app.refeicoes.forEach(refeicao => {
@@ -3626,7 +3662,7 @@ function renderizarTags() {
         item.className = 'item-gerenciavel';
 
         const nome = document.createElement('span');
-        nome.textContent = tag;
+        nome.innerHTML = renderizarBadgeTag(tag);
 
         const acoes = document.createElement('div');
         acoes.className = 'acoes-gerenciavel';
@@ -3651,9 +3687,11 @@ function renderizarTags() {
 
 function renderizarAposAlterarTags() {
     atualizarSelectTags();
+    atualizarSelectTagsAlimento();
     atualizarSelectTagsRefeicao();
     renderizarTags();
     renderizarReceitas();
+    renderizarAlimentos();
     renderizarRefeicoes();
     renderizarReceitasModalSelecao();
     renderizarSemanal();
