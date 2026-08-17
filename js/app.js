@@ -14,6 +14,13 @@ const app = {
     // Array de planejamentos
     planejamentos: [],
 
+    // Planejamentos separados que compartilham os mesmos cadastros
+    planejamentosGrupos: [
+        { id: 'adulto', nome: 'Adulto' },
+        { id: 'bebe', nome: 'Beb\u00ea' },
+    ],
+    planejamentoAtivo: localStorage.getItem('cardapio_planejamento_ativo') || 'adulto',
+
     // Array de historico de consumo
     historico: [],
 
@@ -73,6 +80,7 @@ async function inicializar() {
     atualizarSelectCategoriasAlimentos();
 
     // Renderizar visao inicial
+    atualizarControlePlanejamentoAtivo();
     renderizarSemanal();
 
     // Configurar evento de envio de formulario
@@ -616,6 +624,7 @@ function chaveRefeicao(refeicao) {
 
 function chavePlanejamento(plano) {
     return plano?.id || [
+        normalizarGrupoPlanejamento(plano?.grupo),
         plano?.data || '',
         plano?.semana || '',
         plano?.dia || '',
@@ -674,6 +683,7 @@ async function enviarDadosSupabase({ silencioso = false, mesclarAntes = false } 
 }
 
 function renderizarTudoAposSync() {
+    atualizarControlePlanejamentoAtivo();
     atualizarSelectTipos();
     atualizarSelectCategorias();
     atualizarFiltroCategoria();
@@ -974,6 +984,7 @@ function normalizarDadosAlimentos() {
     app.planejamentos.forEach(plano => {
         if (!plano.itemTipo) plano.itemTipo = 'receita';
         if (!plano.itemId && plano.receitaId) plano.itemId = plano.receitaId;
+        plano.grupo = normalizarGrupoPlanejamento(plano.grupo);
     });
 
     const depois = JSON.stringify({
@@ -1371,6 +1382,60 @@ function obterDataSemanaDia(semana, dia, ano = app.anoAtual) {
     return data;
 }
 
+function normalizarGrupoPlanejamento(grupo) {
+    const id = String(grupo || '').trim().toLowerCase();
+    return app.planejamentosGrupos.some(item => item.id === id) ? id : 'adulto';
+}
+
+function obterGrupoPlanejamentoAtivo() {
+    app.planejamentoAtivo = normalizarGrupoPlanejamento(app.planejamentoAtivo);
+    return app.planejamentoAtivo;
+}
+
+function obterNomePlanejamentoAtivo() {
+    const grupo = app.planejamentosGrupos.find(item => item.id === obterGrupoPlanejamentoAtivo());
+    return grupo?.nome || 'Adulto';
+}
+
+function planejamentoPertenceAoAtivo(plano) {
+    return normalizarGrupoPlanejamento(plano?.grupo) === obterGrupoPlanejamentoAtivo();
+}
+
+function atualizarControlePlanejamentoAtivo() {
+    const container = document.getElementById('controle-planejamento-ativo');
+    if (!container) return;
+
+    const ativo = obterGrupoPlanejamentoAtivo();
+    container.innerHTML = app.planejamentosGrupos.map(grupo => `
+        <button type="button"
+                class="btn-planejamento-opcao ${grupo.id === ativo ? 'ativo' : ''}"
+                onclick="selecionarPlanejamentoAtivo('${grupo.id}')">
+            ${escaparHtml(grupo.nome)}
+        </button>
+    `).join('');
+}
+
+function selecionarPlanejamentoAtivo(grupo) {
+    const novoGrupo = normalizarGrupoPlanejamento(grupo);
+    if (novoGrupo === app.planejamentoAtivo) return;
+
+    app.planejamentoAtivo = novoGrupo;
+    localStorage.setItem('cardapio_planejamento_ativo', novoGrupo);
+    atualizarControlePlanejamentoAtivo();
+    renderizarSemanal();
+    renderizarMensal();
+    renderizarDiaria();
+    renderizarCalendario();
+    renderizarContagemAlimentos();
+}
+
+function alternarPlanejamentoAtivo() {
+    const ativo = obterGrupoPlanejamentoAtivo();
+    const indiceAtual = app.planejamentosGrupos.findIndex(grupo => grupo.id === ativo);
+    const proximo = app.planejamentosGrupos[(indiceAtual + 1) % app.planejamentosGrupos.length];
+    selecionarPlanejamentoAtivo(proximo.id);
+}
+
 function obterSemanaDiaPorData(data) {
     return {
         semana: obterNumeroSemana(data),
@@ -1387,9 +1452,11 @@ function buscarPlanejamentosPorData(dataStr, tipo) {
     const legado = obterSemanaDiaPorData(data);
 
     return app.planejamentos.filter(p =>
+        planejamentoPertenceAoAtivo(p) &&
         p.data === dataStr &&
         p.refeicao === tipo
     ).concat(app.planejamentos.filter(p =>
+        planejamentoPertenceAoAtivo(p) &&
         !p.data &&
         Number(p.semana) === legado.semana &&
         normalizarDiaSemana(p.dia) === legado.dia &&
@@ -1548,6 +1615,7 @@ function buscarPlanejamentos(semana, dia, tipo) {
     const planejamentosData = buscarPlanejamentosPorData(dataStr, tipo);
     const ids = new Set(planejamentosData.map(p => p.id));
     const planejamentosLegados = app.planejamentos.filter(p =>
+        planejamentoPertenceAoAtivo(p) &&
         Number(p.semana) === Number(semana) &&
         normalizarDiaSemana(p.dia) === normalizarDiaSemana(dia) &&
         p.refeicao === tipo &&
@@ -1564,6 +1632,7 @@ function abrirModalPlanejar(semana, dia, tipo, data = '') {
     // Guardar contexto
     window.contextoPlanejar = {
         modo: 'semanal',
+        grupo: obterGrupoPlanejamentoAtivo(),
         semana,
         dia: normalizarDiaSemana(dia),
         data: data || formatarDataChave(obterDataSemanaDia(semana, dia)),
@@ -1581,6 +1650,7 @@ function abrirEdicaoPlanejamento(id) {
 
     window.contextoPlanejar = {
         modo: plano.tipo || 'semanal',
+        grupo: normalizarGrupoPlanejamento(plano.grupo),
         semana: plano.semana,
         dia: normalizarDiaSemana(plano.dia),
         data: plano.data || (plano.semana && plano.dia ? formatarDataChave(obterDataSemanaDia(plano.semana, plano.dia)) : ''),
@@ -1775,6 +1845,7 @@ function selecionarItemParaPlano(itemTipo, itemId) {
         planejamentoExistente.itemTipo = itemTipo;
         planejamentoExistente.itemId = itemId;
         planejamentoExistente.receitaId = itemTipo === 'receita' ? itemId : '';
+        planejamentoExistente.grupo = normalizarGrupoPlanejamento(ctx.grupo || planejamentoExistente.grupo);
         planejamentoExistente.refeicao = ctx.refeicao;
         planejamentoExistente.data = ctx.data || planejamentoExistente.data;
         planejamentoExistente.semana = ctx.semana || planejamentoExistente.semana;
@@ -1791,6 +1862,7 @@ function selecionarItemParaPlano(itemTipo, itemId) {
 
     const planeamento = {
         id: 'plan_' + Date.now(),
+        grupo: normalizarGrupoPlanejamento(ctx.grupo || app.planejamentoAtivo),
         itemTipo,
         itemId,
         receitaId: itemTipo === 'receita' ? itemId : '',
@@ -1850,7 +1922,7 @@ function atualizarTituloSemana() {
     const fim = new Date(inicio);
     fim.setDate(inicio.getDate() + 6);
     document.getElementById('titulo-semana').textContent =
-        `Semana ${app.semanaAtual} (${inicio.getDate()}/${inicio.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1})`;
+        `${obterNomePlanejamentoAtivo()} - Semana ${app.semanaAtual} (${inicio.getDate()}/${inicio.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1})`;
     document.getElementById('numero-semana').value = app.semanaAtual;
 }
 
@@ -1943,7 +2015,7 @@ function atualizarTituloMes() {
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     document.getElementById('titulo-mes').textContent = 
-        `${meses[app.mesAtual]} ${app.anoAtual}`;
+        `${obterNomePlanejamentoAtivo()} - ${meses[app.mesAtual]} ${app.anoAtual}`;
 }
 
 function mesAnterior() {
@@ -1979,7 +2051,7 @@ function renderizarDiaria() {
     // Formatar data
     const opcoes = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const dataFormatada = dataDiaria.toLocaleDateString('pt-BR', opcoes);
-    titulo.textContent = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
+    titulo.textContent = `${obterNomePlanejamentoAtivo()} - ${dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1)}`;
 
     // Buscar refeicoes planejadas para essa data
     const dataString = formatarDataChave(dataDiaria);
@@ -2062,6 +2134,7 @@ function abrirModalPlanejarData(data, tipo) {
     const semanaDia = obterSemanaDiaPorData(criarDataLocal(data));
     window.contextoPlanejar = {
         modo: 'calendario',
+        grupo: obterGrupoPlanejamentoAtivo(),
         data,
         semana: semanaDia.semana,
         dia: semanaDia.dia,
@@ -2093,7 +2166,7 @@ function renderizarCalendario() {
 
     // Atualizar titulo
     document.getElementById('titulo-calendario').textContent = 
-        `${meses[mesCalendario]} ${anoCalendario}`;
+        `${obterNomePlanejamentoAtivo()} - ${meses[mesCalendario]} ${anoCalendario}`;
 
     // Primeiro dia do mes
     const primeiro = new Date(anoCalendario, mesCalendario, 1);
@@ -3342,7 +3415,7 @@ function contarAlimentosNoPeriodo(dataInicio, dataFim) {
     app.planejamentos
         .filter(plano => {
             const data = obterDataPlano(plano);
-            return data && data >= dataInicio && data <= dataFim;
+            return planejamentoPertenceAoAtivo(plano) && data && data >= dataInicio && data <= dataFim;
         })
         .forEach(plano => {
             const tipoItem = obterTipoItemPlano(plano);
@@ -3962,6 +4035,8 @@ Object.assign(window, {
     removerTag,
     conectarNuvem,
     alternarSidebar,
+    selecionarPlanejamentoAtivo,
+    alternarPlanejamentoAtivo,
     alternarPainelNuvem,
     fecharPainelNuvem,
     entrarNuvem,

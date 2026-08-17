@@ -82,6 +82,14 @@
 
         <main class="app-main">
         <button type="button" id="btn-expandir-sidebar" class="btn-sidebar-expandir" onclick="alternarSidebar()" aria-label="Mostrar barra lateral" title="Mostrar barra lateral">Menu</button>
+        <div class="planejamento-switch" aria-label="Planejamento ativo">
+            <span>Planejamento</span>
+            <div id="controle-planejamento-ativo" class="planejamento-switch-opcoes">
+                <button type="button" class="btn-planejamento-opcao ativo" onclick="selecionarPlanejamentoAtivo('adulto')">Adulto</button>
+                <button type="button" class="btn-planejamento-opcao" onclick="selecionarPlanejamentoAtivo('bebe')">Beb&ecirc;</button>
+            </div>
+            <button type="button" class="btn-planejamento-alternar" onclick="alternarPlanejamentoAtivo()">Alternar</button>
+        </div>
 
         <div id="visao-semanal" class="visao">
             <div class="controles">

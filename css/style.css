@@ -1300,6 +1300,65 @@ body {
     position: relative;
 }
 
+.planejamento-switch {
+    align-items: center;
+    background: white;
+    border: 1px solid rgba(139, 69, 19, 0.16);
+    border-radius: 8px;
+    box-shadow: var(--sombra);
+    display: flex;
+    gap: 10px;
+    padding: 8px 10px;
+    position: absolute;
+    right: 16px;
+    top: 14px;
+    z-index: 12;
+}
+
+.planejamento-switch span {
+    color: var(--cor-texto-cinza);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.planejamento-switch-opcoes {
+    background: #f1ece4;
+    border-radius: 8px;
+    display: grid;
+    gap: 4px;
+    grid-template-columns: repeat(2, minmax(74px, 1fr));
+    padding: 4px;
+}
+
+.btn-planejamento-opcao,
+.btn-planejamento-alternar {
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+    min-height: 32px;
+    padding: 6px 10px;
+}
+
+.btn-planejamento-opcao {
+    background: transparent;
+    color: var(--cor-texto-cinza);
+}
+
+.btn-planejamento-opcao.ativo {
+    background: var(--cor-primaria);
+    box-shadow: var(--sombra);
+    color: white;
+}
+
+.btn-planejamento-alternar {
+    background: var(--cor-secundaria);
+    color: white;
+}
+
 .header.sidebar {
     background: #161616;
     box-shadow: 4px 0 18px rgba(0, 0, 0, 0.16);
@@ -1466,7 +1525,7 @@ body {
 
 .visao {
     height: 100vh;
-    padding: 22px;
+    padding: 70px 22px 22px;
 }
 
 .visao-header {
@@ -1962,6 +2021,17 @@ body {
     #app.sidebar-oculta .visao,
     #app:not(.sidebar-oculta) .visao {
         padding-left: 14px;
+        padding-top: 118px;
+    }
+
+    .planejamento-switch {
+        left: 14px;
+        right: 14px;
+        top: 58px;
+    }
+
+    .planejamento-switch-opcoes {
+        flex: 1;
     }
 
     .sidebar-brand {
@@ -2001,7 +2071,7 @@ body {
 
 @media (max-width: 640px) {
     .visao {
-        padding: 14px;
+        padding: 118px 14px 14px;
     }
 
     .visao-header {
@@ -2020,5 +2090,17 @@ body {
 
     .modal-footer button {
         width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .planejamento-switch {
+        align-items: stretch;
+        display: grid;
+        grid-template-columns: 1fr auto;
+    }
+
+    .planejamento-switch span {
+        grid-column: 1 / -1;
     }
 }
