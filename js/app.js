@@ -2728,7 +2728,7 @@ function adicionarLinhaIngredienteReceita(ingrediente = {}) {
     const linha = document.createElement('div');
     linha.className = 'linha-ingrediente-receita';
     linha.innerHTML = `
-        <select class="ingrediente-alimento" required>
+        <select class="ingrediente-alimento">
             <option value="">Selecione um alimento</option>
             ${criarOpcaoAlimento(alimentoId)}
         </select>
@@ -2772,18 +2772,13 @@ function salvarReceita(e) {
     e.preventDefault();
 
     const tiposSelecionados = obterTiposSelecionadosReceita();
-    if (tiposSelecionados.length === 0) {
-        alert('Selecione pelo menos um tipo de refeicao!');
-        return;
-    }
-
     const id = document.getElementById('form-receita').dataset.receitaId || 'receita_' + Date.now();
     const existente = app.receitas.find(item => item.id === id);
     const agora = new Date().toISOString();
     const receita = {
         id: id,
         nome: document.getElementById('nome-receita').value,
-        tipo: tiposSelecionados[0],
+        tipo: tiposSelecionados[0] || '',
         tipos: tiposSelecionados,
         categoria: document.getElementById('categoria-receita').value,
         tags: obterTagsSelecionadasReceita(),
@@ -3092,7 +3087,7 @@ function adicionarLinhaItemRefeicao(item = {}) {
             <option value="receita" ${tipo === 'receita' ? 'selected' : ''}>Receita</option>
             <option value="alimento" ${tipo === 'alimento' ? 'selected' : ''}>Alimento</option>
         </select>
-        <select class="item-refeicao-id" required>
+        <select class="item-refeicao-id">
             <option value="">Selecione</option>
             ${criarOpcaoItemRefeicao(tipo, itemId)}
         </select>
@@ -3160,17 +3155,7 @@ function salvarRefeicao(evento) {
     evento.preventDefault();
 
     const tiposSelecionados = obterTiposSelecionadosRefeicao();
-    if (tiposSelecionados.length === 0) {
-        alert('Selecione pelo menos um tipo de refeicao!');
-        return;
-    }
-
     const itens = obterItensSelecionadosRefeicao();
-    if (itens.length === 0) {
-        alert('Adicione pelo menos uma receita ou alimento.');
-        return;
-    }
-
     const form = document.getElementById('form-refeicao');
     const id = form.dataset.refeicaoId || `refeicao_${Date.now()}`;
     const existente = app.refeicoes.find(item => item.id === id);
@@ -3178,7 +3163,7 @@ function salvarRefeicao(evento) {
     const refeicao = {
         id,
         nome: document.getElementById('nome-refeicao-composta').value.trim(),
-        tipo: tiposSelecionados[0],
+        tipo: tiposSelecionados[0] || '',
         tipos: tiposSelecionados,
         categoria: document.getElementById('categoria-refeicao-composta').value,
         tags: obterTagsSelecionadasRefeicao(),
