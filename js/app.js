@@ -51,6 +51,9 @@ const app = {
     salvandoRemoto: false,
     salvarRemotoPendente: false,
     atualizadoEm: null,
+    syncMeta: {
+        deletados: {},
+    },
 };
 
 /* ==================== INICIALIZACAO ====================
@@ -123,6 +126,7 @@ function salvarDadosLegado() {
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
     localStorage.setItem('cardapio_categorias_alimentos', JSON.stringify(app.categoriasAlimentos));
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
+    localStorage.setItem('cardapio_sync_meta', JSON.stringify(normalizarSyncMeta(app.syncMeta)));
     localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
     console.log('Dados salvos!');
 }
@@ -137,6 +141,7 @@ function carregarDadosLegado() {
     app.categorias = JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias;
     app.categoriasAlimentos = JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos;
     app.tags = JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags;
+    app.syncMeta = JSON.parse(localStorage.getItem('cardapio_sync_meta')) || app.syncMeta;
     app.atualizadoEm = localStorage.getItem('cardapio_atualizado_em') || app.atualizadoEm;
     console.log('Dados carregados!');
 }
@@ -556,7 +561,91 @@ function obterSnapshotDadosApp() {
         categoriasAlimentos: app.categoriasAlimentos,
         tags: app.tags,
         atualizadoEm: app.atualizadoEm,
+        syncMeta: normalizarSyncMeta(app.syncMeta),
     };
+}
+
+const COLECOES_SYNC = [
+    'alimentos',
+    'receitas',
+    'refeicoes',
+    'planejamentos',
+    'historico',
+    'tiposRefeicao',
+    'categorias',
+    'categoriasAlimentos',
+    'tags',
+];
+
+function normalizarSyncMeta(meta) {
+    const deletados = {};
+    COLECOES_SYNC.forEach(colecao => {
+        deletados[colecao] = {};
+        const origem = meta?.deletados?.[colecao] || {};
+        Object.keys(origem).forEach(chave => {
+            const timestamp = obterTimestamp(origem[chave]);
+            if (chave && timestamp) {
+                deletados[colecao][chave] = new Date(timestamp).toISOString();
+            }
+        });
+    });
+
+    return { deletados };
+}
+
+function mesclarSyncMeta(metaLocal, metaRemota) {
+    const local = normalizarSyncMeta(metaLocal);
+    const remoto = normalizarSyncMeta(metaRemota);
+    const resultado = normalizarSyncMeta();
+
+    COLECOES_SYNC.forEach(colecao => {
+        const chaves = new Set([
+            ...Object.keys(local.deletados[colecao] || {}),
+            ...Object.keys(remoto.deletados[colecao] || {}),
+        ]);
+
+        chaves.forEach(chave => {
+            const dataLocal = local.deletados[colecao]?.[chave];
+            const dataRemota = remoto.deletados[colecao]?.[chave];
+            resultado.deletados[colecao][chave] =
+                obterTimestamp(dataLocal) >= obterTimestamp(dataRemota) ? dataLocal : dataRemota;
+        });
+    });
+
+    return limparSyncMetaAntigo(resultado);
+}
+
+function limparSyncMetaAntigo(meta) {
+    const normalizado = normalizarSyncMeta(meta);
+    const limite = Date.now() - (1000 * 60 * 60 * 24 * 180);
+
+    COLECOES_SYNC.forEach(colecao => {
+        Object.keys(normalizado.deletados[colecao]).forEach(chave => {
+            if (obterTimestamp(normalizado.deletados[colecao][chave]) < limite) {
+                delete normalizado.deletados[colecao][chave];
+            }
+        });
+    });
+
+    return normalizado;
+}
+
+function registrarExclusao(colecao, chave, data = new Date().toISOString()) {
+    if (!colecao || !chave) return;
+    app.syncMeta = normalizarSyncMeta(app.syncMeta);
+    app.syncMeta.deletados[colecao][String(chave)] = data;
+}
+
+function removerExclusao(colecao, chave) {
+    if (!colecao || !chave) return;
+    app.syncMeta = normalizarSyncMeta(app.syncMeta);
+    delete app.syncMeta.deletados[colecao][String(chave)];
+}
+
+function itemFoiExcluido(colecao, chave, item, meta) {
+    const excluidoEm = normalizarSyncMeta(meta).deletados[colecao]?.[chave];
+    if (!excluidoEm) return false;
+    return obterTimestamp(excluidoEm) >= obterTimestampItem(item);
 }
 
 function obterTimestampItem(item) {
@@ -582,7 +671,7 @@ function escolherItemMesclado(local, remoto) {
     return { ...remoto, ...local };
 }
 
-function mesclarListaPorChave(listaLocal, listaRemota, obterChave) {
+function mesclarListaPorChave(listaLocal, listaRemota, obterChave, colecao, meta) {
     const mapa = new Map();
 
     [...(Array.isArray(listaRemota) ? listaRemota : []), ...(Array.isArray(listaLocal) ? listaLocal : [])]
@@ -593,17 +682,21 @@ function mesclarListaPorChave(listaLocal, listaRemota, obterChave) {
             mapa.set(chave, escolherItemMesclado(mapa.get(chave), item));
         });
 
-    return Array.from(mapa.values());
+    return Array.from(mapa.entries())
+        .filter(([chave, item]) => !itemFoiExcluido(colecao, chave, item, meta))
+        .map(([, item]) => item);
 }
 
-function mesclarListaTexto(listaLocal, listaRemota) {
+function mesclarListaTexto(listaLocal, listaRemota, colecao, meta) {
     const mapa = new Map();
+    const deletados = normalizarSyncMeta(meta).deletados[colecao] || {};
 
     [...(Array.isArray(listaLocal) ? listaLocal : []), ...(Array.isArray(listaRemota) ? listaRemota : [])]
         .map(item => String(item || '').trim())
         .filter(Boolean)
         .forEach(item => {
             const chave = normalizarNomeAlimento(item);
+            if (deletados[chave]) return;
             if (!mapa.has(chave)) mapa.set(chave, item);
         });
 
@@ -646,19 +739,48 @@ function mesclarDadosCardapio(dadosLocais, dadosRemotos) {
     const remoto = dadosRemotos || {};
     const atualizadoLocal = obterTimestamp(local.atualizadoEm);
     const atualizadoRemoto = obterTimestamp(remoto.atualizadoEm);
-
-    return {
-        alimentos: mesclarListaPorChave(local.alimentos, remoto.alimentos, chaveAlimento),
-        receitas: mesclarListaPorChave(local.receitas, remoto.receitas, chaveReceita),
-        refeicoes: mesclarListaPorChave(local.refeicoes, remoto.refeicoes, chaveRefeicao),
-        planejamentos: mesclarListaPorChave(local.planejamentos, remoto.planejamentos, chavePlanejamento),
-        historico: mesclarListaPorChave(local.historico, remoto.historico, chaveHistorico),
-        tiposRefeicao: mesclarListaTexto(local.tiposRefeicao, remoto.tiposRefeicao),
-        categorias: mesclarListaTexto(local.categorias, remoto.categorias),
-        categoriasAlimentos: mesclarListaTexto(local.categoriasAlimentos, remoto.categoriasAlimentos),
-        tags: mesclarListaTexto(local.tags, remoto.tags),
+    const localSemHistorico = !atualizadoLocal && atualizadoRemoto;
+    const syncMeta = mesclarSyncMeta(local.syncMeta, remoto.syncMeta);
+    const dados = {
+        alimentos: mesclarListaPorChave(local.alimentos, remoto.alimentos, chaveAlimento, 'alimentos', syncMeta),
+        receitas: mesclarListaPorChave(local.receitas, remoto.receitas, chaveReceita, 'receitas', syncMeta),
+        refeicoes: mesclarListaPorChave(local.refeicoes, remoto.refeicoes, chaveRefeicao, 'refeicoes', syncMeta),
+        planejamentos: mesclarListaPorChave(local.planejamentos, remoto.planejamentos, chavePlanejamento, 'planejamentos', syncMeta),
+        historico: mesclarListaPorChave(local.historico, remoto.historico, chaveHistorico, 'historico', syncMeta),
+        tiposRefeicao: mesclarListaTexto(localSemHistorico ? [] : local.tiposRefeicao, remoto.tiposRefeicao, 'tiposRefeicao', syncMeta),
+        categorias: mesclarListaTexto(localSemHistorico ? [] : local.categorias, remoto.categorias, 'categorias', syncMeta),
+        categoriasAlimentos: mesclarListaTexto(localSemHistorico ? [] : local.categoriasAlimentos, remoto.categoriasAlimentos, 'categoriasAlimentos', syncMeta),
+        tags: mesclarListaTexto(localSemHistorico ? [] : local.tags, remoto.tags, 'tags', syncMeta),
         atualizadoEm: atualizadoLocal > atualizadoRemoto ? local.atualizadoEm : remoto.atualizadoEm,
+        syncMeta,
     };
+
+    return aplicarExclusoesRelacionadas(dados);
+}
+
+function aplicarExclusoesRelacionadas(dados) {
+    const meta = normalizarSyncMeta(dados.syncMeta);
+    const categoriaExcluida = nome => Boolean(meta.deletados.categorias[normalizarNomeAlimento(nome)]);
+    const categoriaAlimentoExcluida = nome => Boolean(meta.deletados.categoriasAlimentos[normalizarNomeAlimento(nome)]);
+    const tagExcluida = nome => Boolean(meta.deletados.tags[normalizarNomeAlimento(nome)]);
+
+    dados.receitas = (dados.receitas || []).map(receita => ({
+        ...receita,
+        categoria: receita.categoria && categoriaExcluida(receita.categoria) ? '' : receita.categoria,
+        tags: Array.isArray(receita.tags) ? receita.tags.filter(tag => !tagExcluida(tag)) : receita.tags,
+    }));
+    dados.refeicoes = (dados.refeicoes || []).map(refeicao => ({
+        ...refeicao,
+        categoria: refeicao.categoria && categoriaExcluida(refeicao.categoria) ? '' : refeicao.categoria,
+        tags: Array.isArray(refeicao.tags) ? refeicao.tags.filter(tag => !tagExcluida(tag)) : refeicao.tags,
+    }));
+    dados.alimentos = (dados.alimentos || []).map(alimento => ({
+        ...alimento,
+        categoria: alimento.categoria && categoriaAlimentoExcluida(alimento.categoria) ? '' : alimento.categoria,
+        tags: Array.isArray(alimento.tags) ? alimento.tags.filter(tag => !tagExcluida(tag)) : alimento.tags,
+    }));
+
+    return dados;
 }
 
 async function enviarDadosSupabase({ silencioso = false, mesclarAntes = false } = {}) {
@@ -710,19 +832,20 @@ function aplicarDados(dados) {
     app.refeicoes = Array.isArray(dados.refeicoes) ? dados.refeicoes : [];
     app.planejamentos = Array.isArray(dados.planejamentos) ? dados.planejamentos : [];
     app.historico = Array.isArray(dados.historico) ? dados.historico : [];
-    app.tiposRefeicao = Array.isArray(dados.tiposRefeicao) && dados.tiposRefeicao.length > 0
+    app.tiposRefeicao = Array.isArray(dados.tiposRefeicao)
         ? dados.tiposRefeicao
         : app.tiposRefeicao;
-    app.categorias = Array.isArray(dados.categorias) && dados.categorias.length > 0
+    app.categorias = Array.isArray(dados.categorias)
         ? dados.categorias
         : app.categorias;
-    app.categoriasAlimentos = Array.isArray(dados.categoriasAlimentos) && dados.categoriasAlimentos.length > 0
+    app.categoriasAlimentos = Array.isArray(dados.categoriasAlimentos)
         ? dados.categoriasAlimentos
         : app.categoriasAlimentos;
-    app.tags = Array.isArray(dados.tags) && dados.tags.length > 0
+    app.tags = Array.isArray(dados.tags)
         ? dados.tags
         : app.tags;
     app.atualizadoEm = dados.atualizadoEm || app.atualizadoEm;
+    app.syncMeta = normalizarSyncMeta(dados.syncMeta || app.syncMeta);
 
     const normalizou = normalizarEncodingApp();
     const migrou = normalizarDadosAlimentos();
@@ -1080,6 +1203,7 @@ function carregarDadosLocais() {
         categoriasAlimentos: JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos,
         tags: JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags,
         atualizadoEm: localStorage.getItem('cardapio_atualizado_em') || null,
+        syncMeta: JSON.parse(localStorage.getItem('cardapio_sync_meta')) || app.syncMeta,
     };
 }
 
@@ -1093,6 +1217,7 @@ function salvarDadosLocais() {
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
     localStorage.setItem('cardapio_categorias_alimentos', JSON.stringify(app.categoriasAlimentos));
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
+    localStorage.setItem('cardapio_sync_meta', JSON.stringify(normalizarSyncMeta(app.syncMeta)));
     if (app.atualizadoEm) {
         localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
     }
@@ -1104,10 +1229,21 @@ async function carregarDadosSupabase() {
     const config = window.CARDAPIO_SUPABASE;
     let { data, error } = await app.supabase
         .from(config.table)
-        .select('alimentos, receitas, refeicoes, planejamentos, historico, tipos_refeicao, categorias, categorias_alimentos, tags, atualizado_em')
+        .select('alimentos, receitas, refeicoes, planejamentos, historico, tipos_refeicao, categorias, categorias_alimentos, tags, sync_meta, atualizado_em')
         .eq('user_id', app.usuarioSupabase.id)
         .eq('id', config.recordId)
         .maybeSingle();
+
+    if (error && String(error.message || '').toLowerCase().includes('sync_meta')) {
+        const fallback = await app.supabase
+            .from(config.table)
+            .select('alimentos, receitas, refeicoes, planejamentos, historico, tipos_refeicao, categorias, categorias_alimentos, tags, atualizado_em')
+            .eq('user_id', app.usuarioSupabase.id)
+            .eq('id', config.recordId)
+            .maybeSingle();
+        data = fallback.data;
+        error = fallback.error;
+    }
 
     if (error && String(error.message || '').toLowerCase().includes('refeicoes')) {
         const fallback = await app.supabase
@@ -1156,6 +1292,7 @@ async function carregarDadosSupabase() {
         categoriasAlimentos: data.categorias_alimentos,
         tags: data.tags,
         atualizadoEm: data.atualizado_em,
+        syncMeta: data.sync_meta,
     };
 }
 
@@ -1186,8 +1323,29 @@ async function salvarDadosSupabase() {
             categorias: app.categorias,
             categorias_alimentos: app.categoriasAlimentos,
             tags: app.tags,
+            sync_meta: normalizarSyncMeta(app.syncMeta),
             atualizado_em: app.atualizadoEm || new Date().toISOString(),
         }, { onConflict: 'user_id,id' });
+
+    if (error && String(error.message || '').toLowerCase().includes('sync_meta')) {
+        const fallback = await app.supabase
+            .from(config.table)
+            .upsert({
+                id: config.recordId,
+                user_id: app.usuarioSupabase.id,
+                alimentos: app.alimentos,
+                receitas: app.receitas,
+                refeicoes: app.refeicoes,
+                planejamentos: app.planejamentos,
+                historico: app.historico,
+                tipos_refeicao: app.tiposRefeicao,
+                categorias: app.categorias,
+                categorias_alimentos: app.categoriasAlimentos,
+                tags: app.tags,
+                atualizado_em: app.atualizadoEm || new Date().toISOString(),
+            }, { onConflict: 'user_id,id' });
+        error = fallback.error;
+    }
 
     if (error && String(error.message || '').toLowerCase().includes('refeicoes')) {
         const fallback = await app.supabase
@@ -1881,6 +2039,7 @@ function selecionarItemParaPlano(itemTipo, itemId) {
         : null;
 
     if (planejamentoExistente) {
+        const agora = new Date().toISOString();
         planejamentoExistente.itemTipo = itemTipo;
         planejamentoExistente.itemId = itemId;
         planejamentoExistente.receitaId = itemTipo === 'receita' ? itemId : '';
@@ -1890,6 +2049,7 @@ function selecionarItemParaPlano(itemTipo, itemId) {
         planejamentoExistente.semana = ctx.semana || planejamentoExistente.semana;
         planejamentoExistente.dia = ctx.dia || planejamentoExistente.dia;
         planejamentoExistente.tipo = ctx.modo === 'calendario' ? 'calendario' : 'semanal';
+        planejamentoExistente.dataAtualizacao = agora;
         salvarDados();
         renderizarAposPlanejamento(ctx.modo);
         fecharModal('modal-selecionar-receita');
@@ -1899,6 +2059,7 @@ function selecionarItemParaPlano(itemTipo, itemId) {
 
     const isCalendario = ctx.modo === 'calendario';
 
+    const agora = new Date().toISOString();
     const planeamento = {
         id: 'plan_' + Date.now(),
         grupo: normalizarGrupoPlanejamento(ctx.grupo || app.planejamentoAtivo),
@@ -1910,10 +2071,12 @@ function selecionarItemParaPlano(itemTipo, itemId) {
         data: ctx.data,
         semana: ctx.semana,
         dia: ctx.dia,
-        dataCriacao: new Date().toISOString(),
+        dataCriacao: agora,
+        dataAtualizacao: agora,
     };
 
     app.planejamentos.push(planeamento);
+    removerExclusao('planejamentos', chavePlanejamento(planeamento));
     salvarDados();
     renderizarAposPlanejamento(ctx.modo);
     fecharModal('modal-selecionar-receita');
@@ -1931,6 +2094,8 @@ function renderizarAposPlanejamento(modo) {
 
 function removerPlanejamento(id) {
     if (confirm('Remover este planejamento?')) {
+        const plano = app.planejamentos.find(p => p.id === id);
+        if (plano) registrarExclusao('planejamentos', chavePlanejamento(plano));
         app.planejamentos = app.planejamentos.filter(p => p.id !== id);
         salvarDados();
         renderizarTudoAposSync();
@@ -2578,6 +2743,8 @@ function salvarReceita(e) {
     }
 
     const id = document.getElementById('form-receita').dataset.receitaId || 'receita_' + Date.now();
+    const existente = app.receitas.find(item => item.id === id);
+    const agora = new Date().toISOString();
     const receita = {
         id: id,
         nome: document.getElementById('nome-receita').value,
@@ -2587,7 +2754,8 @@ function salvarReceita(e) {
         tags: obterTagsSelecionadasReceita(),
         ingredientes: obterIngredientesSelecionadosReceita(),
         modoPreparo: document.getElementById('preparo-receita').value,
-        dataCriacao: new Date().toISOString(),
+        dataCriacao: existente?.dataCriacao || agora,
+        dataAtualizacao: agora,
     };
 
     // Verificar se e edicao ou novo
@@ -2596,7 +2764,11 @@ function salvarReceita(e) {
         app.receitas[indice] = receita;
     } else {
         app.receitas.push(receita);
+        removerExclusao('receitas', chaveReceita(receita));
     }
+    if (receita.categoria) removerExclusao('categorias', normalizarNomeAlimento(receita.categoria));
+    receita.tags.forEach(tag => removerExclusao('tags', normalizarNomeAlimento(tag)));
+    receita.tipos.forEach(tipo => removerExclusao('tiposRefeicao', normalizarNomeAlimento(tipo)));
 
     salvarDados();
     fecharModal('modal-receita');
@@ -2666,12 +2838,18 @@ function editarReceita(id) {
 
 function deletarReceita(id) {
     if (confirm('Deletar esta receita?')) {
+        const receita = app.receitas.find(r => r.id === id);
+        if (receita) registrarExclusao('receitas', chaveReceita(receita));
+        app.planejamentos
+            .filter(p => obterTipoItemPlano(p) === 'receita' && obterItemIdPlano(p) === id)
+            .forEach(p => registrarExclusao('planejamentos', chavePlanejamento(p)));
         app.receitas = app.receitas.filter(r => r.id !== id);
         app.refeicoes.forEach(refeicao => {
             if (Array.isArray(refeicao.itens)) {
                 refeicao.itens = refeicao.itens.filter(item =>
                     !(item.itemTipo === 'receita' && item.itemId === id)
                 );
+                refeicao.dataAtualizacao = new Date().toISOString();
             }
         });
         app.planejamentos = app.planejamentos.filter(p => !(obterTipoItemPlano(p) === 'receita' && obterItemIdPlano(p) === id));
@@ -2960,6 +3138,8 @@ function salvarRefeicao(evento) {
 
     const form = document.getElementById('form-refeicao');
     const id = form.dataset.refeicaoId || `refeicao_${Date.now()}`;
+    const existente = app.refeicoes.find(item => item.id === id);
+    const agora = new Date().toISOString();
     const refeicao = {
         id,
         nome: document.getElementById('nome-refeicao-composta').value.trim(),
@@ -2969,7 +3149,8 @@ function salvarRefeicao(evento) {
         tags: obterTagsSelecionadasRefeicao(),
         itens,
         observacoes: document.getElementById('observacoes-refeicao').value.trim(),
-        dataCriacao: new Date().toISOString(),
+        dataCriacao: existente?.dataCriacao || agora,
+        dataAtualizacao: agora,
     };
 
     if (!refeicao.nome) {
@@ -2982,7 +3163,11 @@ function salvarRefeicao(evento) {
         app.refeicoes[indice] = refeicao;
     } else {
         app.refeicoes.push(refeicao);
+        removerExclusao('refeicoes', chaveRefeicao(refeicao));
     }
+    if (refeicao.categoria) removerExclusao('categorias', normalizarNomeAlimento(refeicao.categoria));
+    refeicao.tags.forEach(tag => removerExclusao('tags', normalizarNomeAlimento(tag)));
+    refeicao.tipos.forEach(tipo => removerExclusao('tiposRefeicao', normalizarNomeAlimento(tipo)));
 
     salvarDados();
     fecharModal('modal-refeicao');
@@ -3061,6 +3246,10 @@ function deletarRefeicao(id) {
 
     if (!confirm(mensagem)) return;
 
+    registrarExclusao('refeicoes', chaveRefeicao(refeicao));
+    app.planejamentos
+        .filter(plano => obterTipoItemPlano(plano) === 'refeicao' && obterItemIdPlano(plano) === id)
+        .forEach(plano => registrarExclusao('planejamentos', chavePlanejamento(plano)));
     app.refeicoes = app.refeicoes.filter(item => item.id !== id);
     app.planejamentos = app.planejamentos.filter(plano =>
         !(obterTipoItemPlano(plano) === 'refeicao' && obterItemIdPlano(plano) === id)
@@ -3133,6 +3322,7 @@ function adicionarCategoriaAlimento() {
     }
 
     app.categoriasAlimentos.push(novaCategoria);
+    removerExclusao('categoriasAlimentos', normalizarNomeAlimento(novaCategoria));
     normalizarCategoriasAlimentos();
     salvarDados();
     atualizarSelectCategoriasAlimentos();
@@ -3156,6 +3346,8 @@ function editarCategoriaAlimento(categoriaAtual) {
         return;
     }
 
+    registrarExclusao('categoriasAlimentos', normalizarNomeAlimento(categoriaAtual));
+    removerExclusao('categoriasAlimentos', normalizarNomeAlimento(categoriaLimpa));
     app.categoriasAlimentos = app.categoriasAlimentos.map(categoria =>
         categoria === categoriaAtual ? categoriaLimpa : categoria
     );
@@ -3163,6 +3355,7 @@ function editarCategoriaAlimento(categoriaAtual) {
     app.alimentos.forEach(alimento => {
         if (alimento.categoria === categoriaAtual) {
             alimento.categoria = categoriaLimpa;
+            alimento.dataAtualizacao = new Date().toISOString();
         }
     });
 
@@ -3179,10 +3372,12 @@ function removerCategoriaAlimento(categoria) {
 
     if (!confirm(mensagem)) return;
 
+    registrarExclusao('categoriasAlimentos', normalizarNomeAlimento(categoria));
     app.categoriasAlimentos = app.categoriasAlimentos.filter(item => item !== categoria);
     app.alimentos.forEach(alimento => {
         if (alimento.categoria === categoria) {
             alimento.categoria = '';
+            alimento.dataAtualizacao = new Date().toISOString();
         }
     });
 
@@ -3290,13 +3485,16 @@ function salvarAlimento(evento) {
         return;
     }
 
+    const existente = app.alimentos.find(item => item.id === id);
+    const agora = new Date().toISOString();
     const alimento = {
         id,
         nome,
         categoria,
         unidadePadrao,
         tags,
-        dataCriacao: new Date().toISOString(),
+        dataCriacao: existente?.dataCriacao || agora,
+        dataAtualizacao: agora,
     };
 
     const indice = app.alimentos.findIndex(item => item.id === id);
@@ -3304,7 +3502,10 @@ function salvarAlimento(evento) {
         app.alimentos[indice] = { ...app.alimentos[indice], ...alimento };
     } else {
         app.alimentos.push(alimento);
+        removerExclusao('alimentos', chaveAlimento(alimento));
     }
+    if (alimento.categoria) removerExclusao('categoriasAlimentos', normalizarNomeAlimento(alimento.categoria));
+    alimento.tags.forEach(tag => removerExclusao('tags', normalizarNomeAlimento(tag)));
 
     normalizarCategoriasAlimentos();
     normalizarTags();
@@ -3391,10 +3592,15 @@ function deletarAlimento(id) {
 
     if (!confirm(mensagem)) return;
 
+    registrarExclusao('alimentos', chaveAlimento(alimento));
+    app.planejamentos
+        .filter(plano => obterTipoItemPlano(plano) === 'alimento' && obterItemIdPlano(plano) === id)
+        .forEach(plano => registrarExclusao('planejamentos', chavePlanejamento(plano)));
     app.alimentos = app.alimentos.filter(item => item.id !== id);
     app.receitas.forEach(receita => {
         if (Array.isArray(receita.ingredientes)) {
             receita.ingredientes = receita.ingredientes.filter(ingrediente => ingrediente.alimentoId !== id);
+            receita.dataAtualizacao = new Date().toISOString();
         }
     });
     app.refeicoes.forEach(refeicao => {
@@ -3402,6 +3608,7 @@ function deletarAlimento(id) {
             refeicao.itens = refeicao.itens.filter(item =>
                 !(item.itemTipo === 'alimento' && item.itemId === id)
             );
+            refeicao.dataAtualizacao = new Date().toISOString();
         }
     });
     app.planejamentos = app.planejamentos.filter(plano =>
@@ -3697,6 +3904,7 @@ function adicionarTag() {
     }
 
     app.tags.push(novaTag);
+    removerExclusao('tags', normalizarNomeAlimento(novaTag));
     normalizarTags();
     salvarDados();
     atualizarSelectTags();
@@ -3721,21 +3929,26 @@ function editarTag(tagAtual) {
         return;
     }
 
+    registrarExclusao('tags', normalizarNomeAlimento(tagAtual));
+    removerExclusao('tags', normalizarNomeAlimento(tagLimpa));
     app.tags = app.tags.map(tag => tag === tagAtual ? tagLimpa : tag);
 
     app.receitas.forEach(receita => {
         if (!Array.isArray(receita.tags)) return;
         receita.tags = receita.tags.map(tag => tag === tagAtual ? tagLimpa : tag);
+        receita.dataAtualizacao = new Date().toISOString();
     });
 
     app.alimentos.forEach(alimento => {
         if (!Array.isArray(alimento.tags)) return;
         alimento.tags = alimento.tags.map(tag => tag === tagAtual ? tagLimpa : tag);
+        alimento.dataAtualizacao = new Date().toISOString();
     });
 
     app.refeicoes.forEach(refeicao => {
         if (!Array.isArray(refeicao.tags)) return;
         refeicao.tags = refeicao.tags.map(tag => tag === tagAtual ? tagLimpa : tag);
+        refeicao.dataAtualizacao = new Date().toISOString();
     });
 
     normalizarTags();
@@ -3753,20 +3966,24 @@ function removerTag(tag) {
 
     if (!confirm(mensagem)) return;
 
+    registrarExclusao('tags', normalizarNomeAlimento(tag));
     app.tags = app.tags.filter(item => item !== tag);
     app.receitas.forEach(receita => {
         if (Array.isArray(receita.tags)) {
             receita.tags = receita.tags.filter(item => item !== tag);
+            receita.dataAtualizacao = new Date().toISOString();
         }
     });
     app.alimentos.forEach(alimento => {
         if (Array.isArray(alimento.tags)) {
             alimento.tags = alimento.tags.filter(item => item !== tag);
+            alimento.dataAtualizacao = new Date().toISOString();
         }
     });
     app.refeicoes.forEach(refeicao => {
         if (Array.isArray(refeicao.tags)) {
             refeicao.tags = refeicao.tags.filter(item => item !== tag);
+            refeicao.dataAtualizacao = new Date().toISOString();
         }
     });
 
@@ -3895,6 +4112,7 @@ function adicionarCategoria() {
     }
 
     app.categorias.push(novaCategoria);
+    removerExclusao('categorias', normalizarNomeAlimento(novaCategoria));
     normalizarCategorias();
     salvarDados();
     atualizarSelectCategorias();
@@ -3918,6 +4136,8 @@ function editarCategoria(categoriaAtual) {
         return;
     }
 
+    registrarExclusao('categorias', normalizarNomeAlimento(categoriaAtual));
+    removerExclusao('categorias', normalizarNomeAlimento(categoriaLimpa));
     app.categorias = app.categorias.map(categoria =>
         categoria === categoriaAtual ? categoriaLimpa : categoria
     );
@@ -3925,11 +4145,13 @@ function editarCategoria(categoriaAtual) {
     app.receitas.forEach(receita => {
         if (receita.categoria === categoriaAtual) {
             receita.categoria = categoriaLimpa;
+            receita.dataAtualizacao = new Date().toISOString();
         }
     });
     app.refeicoes.forEach(refeicao => {
         if (refeicao.categoria === categoriaAtual) {
             refeicao.categoria = categoriaLimpa;
+            refeicao.dataAtualizacao = new Date().toISOString();
         }
     });
 
@@ -3947,15 +4169,18 @@ function removerCategoria(categoria) {
 
     if (!confirm(mensagem)) return;
 
+    registrarExclusao('categorias', normalizarNomeAlimento(categoria));
     app.categorias = app.categorias.filter(item => item !== categoria);
     app.receitas.forEach(receita => {
         if (receita.categoria === categoria) {
             receita.categoria = '';
+            receita.dataAtualizacao = new Date().toISOString();
         }
     });
     app.refeicoes.forEach(refeicao => {
         if (refeicao.categoria === categoria) {
             refeicao.categoria = '';
+            refeicao.dataAtualizacao = new Date().toISOString();
         }
     });
 
@@ -4038,6 +4263,7 @@ function adicionarTipoRefeicao() {
     }
 
     app.tiposRefeicao.push(novoTipo);
+    removerExclusao('tiposRefeicao', normalizarNomeAlimento(novoTipo));
     salvarDados();
     atualizarSelectTipos();
     atualizarSelectTiposRefeicaoComposta();
@@ -4049,6 +4275,7 @@ function adicionarTipoRefeicao() {
 
 function removerTipoRefeicao(tipo) {
     if (confirm(`Remover "${tipo}"?`)) {
+        registrarExclusao('tiposRefeicao', normalizarNomeAlimento(tipo));
         app.tiposRefeicao = app.tiposRefeicao.filter(t => t !== tipo);
         salvarDados();
         atualizarSelectTipos();
