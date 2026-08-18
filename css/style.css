@@ -437,6 +437,34 @@ body {
     text-align: center;
 }
 
+.check-planejamento {
+    align-items: center;
+    color: #5f4738;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 11px;
+    font-weight: 700;
+    gap: 4px;
+    justify-content: center;
+    line-height: 1;
+    margin-top: 6px;
+    min-height: 18px;
+    text-transform: uppercase;
+}
+
+.check-planejamento input {
+    accent-color: var(--cor-primaria);
+    cursor: pointer;
+    height: 14px;
+    margin: 0;
+    width: 14px;
+}
+
+.item-planejamento-diario .check-planejamento,
+.linha-planejamento-data .check-planejamento {
+    justify-content: flex-start;
+}
+
 .acoes-planejamento-mini {
     display: flex;
     flex-direction: column;

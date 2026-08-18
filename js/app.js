@@ -18,6 +18,7 @@ const app = {
     planejamentosGrupos: [
         { id: 'adulto', nome: 'Adulto' },
         { id: 'bebe', nome: 'Beb\u00ea' },
+        { id: 'simplificado', nome: 'Simplificado' },
     ],
     planejamentoAtivo: localStorage.getItem('cardapio_planejamento_ativo') || 'adulto',
 
@@ -1657,6 +1658,34 @@ function obterRotuloTipoItem(tipo, item = null) {
     return item?.categoria ? `Categoria: ${item.categoria}` : 'Receita';
 }
 
+function planejamentoPermiteCheck(plano) {
+    return normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado';
+}
+
+function renderizarCheckPlanejamento(plano) {
+    if (!planejamentoPermiteCheck(plano)) return '';
+
+    return `
+        <label class="check-planejamento" onclick="event.stopPropagation()">
+            <input type="checkbox" ${plano.seguido ? 'checked' : ''} onchange="alternarPlanoSeguido('${plano.id}', this.checked)">
+            <span>Segui</span>
+        </label>
+    `;
+}
+
+function alternarPlanoSeguido(id, seguido) {
+    const plano = app.planejamentos.find(item => item.id === id);
+    if (!plano || !planejamentoPermiteCheck(plano)) return;
+
+    plano.seguido = Boolean(seguido);
+    plano.dataAtualizacao = new Date().toISOString();
+    salvarDados();
+    renderizarSemanal();
+    renderizarMensal();
+    renderizarDiaria();
+    renderizarCalendario();
+}
+
 function renderizarResumoReceitaPlano(plano, compacto = false) {
     const { tipo, item } = buscarItemPlanejamento(plano);
 
@@ -1665,6 +1694,7 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
             <div class="celula-refeicao receita-removida">
                 <div class="conteudo-planejamento">
                     <div class="nome-refeicao">Item removido</div>
+                    ${renderizarCheckPlanejamento(plano)}
                 </div>
                 <div class="acoes-planejamento-mini">
                     <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
@@ -1683,8 +1713,9 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
     return `
         <div class="celula-refeicao ${tipo === 'alimento' ? 'celula-alimento' : tipo === 'refeicao' ? 'celula-refeicao-composta' : 'celula-receita'}" style="--categoria-cor:${gerarCorCategoria(item.categoria || tipo, tipo)};">
             <div class="conteudo-planejamento">
-                <div class="nome-refeicao">${item.nome}</div>
-                ${compacto ? '' : `<div class="tipo-refeicao-tabela">${tipo === 'alimento' ? 'Alimento' : tipo === 'refeicao' ? 'Refeicao' : (item.categoria || '')}</div>`}
+                <div class="nome-refeicao">${escaparHtml(item.nome)}</div>
+                ${compacto ? '' : `<div class="tipo-refeicao-tabela">${escaparHtml(tipo === 'alimento' ? 'Alimento' : tipo === 'refeicao' ? 'Refeicao' : (item.categoria || ''))}</div>`}
+                ${renderizarCheckPlanejamento(plano)}
             </div>
             <div class="acoes-planejamento-mini">
                 <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
@@ -1720,7 +1751,7 @@ function renderizarSemanal() {
 
     app.tiposRefeicao.forEach(tipo => {
         const tr = document.createElement('tr');
-        let html = `<td class="refeicao-nome" style="font-weight: 600; background: #f0f0f0;">${tipo}</td>`;
+        let html = `<td class="refeicao-nome" style="font-weight: 600; background: #f0f0f0;">${escaparHtml(tipo)}</td>`;
 
         DIAS_SEMANA.forEach(diaInfo => {
             const data = obterDataSemanaDia(app.semanaAtual, diaInfo.chave);
@@ -1784,6 +1815,7 @@ function buscarPlanejamentos(semana, dia, tipo) {
 
     return planejamentosData.concat(planejamentosLegados);
 }
+
 function buscarReceita(id) {
     return app.receitas.find(r => r.id === id);
 }
@@ -2277,6 +2309,7 @@ function renderizarDiaria() {
                         <div class="item-planejamento-diario">
                             <div class="conteudo-planejamento">
                                 <p><strong>Item removido</strong></p>
+                                ${renderizarCheckPlanejamento(plano)}
                             </div>
                             <div class="acoes-planejamento">
                                 <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
@@ -2289,8 +2322,9 @@ function renderizarDiaria() {
                 return `
                     <div class="item-planejamento-diario">
                         <div class="conteudo-planejamento">
-                            <p><strong>${item.nome}</strong></p>
+                            <p><strong>${escaparHtml(item.nome)}</strong></p>
                             <p>${obterRotuloTipoItem(tipoItem, item)}</p>
+                            ${renderizarCheckPlanejamento(plano)}
                         </div>
                         <div class="acoes-planejamento">
                             <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
@@ -2465,7 +2499,8 @@ function atualizarDetalhesData(data) {
                         const { item } = buscarItemPlanejamento(plano);
                         return `
                             <div class="linha-planejamento-data">
-                                <span>${item ? item.nome : 'Item removido'}</span>
+                                <span>${item ? escaparHtml(item.nome) : 'Item removido'}</span>
+                                ${renderizarCheckPlanejamento(plano)}
                                 <div class="acoes-planejamento">
                                     <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
                                     <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
@@ -4430,6 +4465,7 @@ Object.assign(window, {
     alternarSidebar,
     selecionarPlanejamentoAtivo,
     alternarPlanejamentoAtivo,
+    alternarPlanoSeguido,
     alternarNovoItemPlanejamento,
     criarItemParaPlanejamento,
     alternarPainelNuvem,
