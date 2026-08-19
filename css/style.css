@@ -1368,7 +1368,7 @@ body {
 
 .app-main {
     min-width: 0;
-    overflow: hidden;
+    overflow: auto;
     position: relative;
 }
 
@@ -1379,11 +1379,13 @@ body {
     border-radius: 8px;
     box-shadow: var(--sombra);
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
+    justify-content: flex-end;
+    margin: 14px 22px 0 auto;
+    max-width: calc(100% - 44px);
     padding: 8px 10px;
-    position: absolute;
-    right: 16px;
-    top: 14px;
+    position: relative;
     z-index: 12;
 }
 
@@ -1400,7 +1402,7 @@ body {
     border-radius: 8px;
     display: grid;
     gap: 4px;
-    grid-template-columns: repeat(2, minmax(74px, 1fr));
+    grid-template-columns: repeat(3, minmax(74px, 1fr));
     padding: 4px;
 }
 
@@ -1597,7 +1599,7 @@ body {
 
 .visao {
     height: 100vh;
-    padding: 70px 22px 22px;
+    padding: 18px 22px 22px;
 }
 
 .visao-header {
@@ -2249,15 +2251,14 @@ body {
     #app.sidebar-oculta .visao,
     #app:not(.sidebar-oculta) .visao {
         padding-left: 14px;
-        padding-top: 70px;
+        padding-top: 14px;
     }
 
     .planejamento-switch {
         gap: 4px;
-        left: 112px;
+        margin: 14px 14px 0;
+        max-width: none;
         padding: 4px;
-        right: 14px;
-        top: 14px;
     }
 
     .planejamento-switch span {
@@ -2267,7 +2268,7 @@ body {
     .planejamento-switch-opcoes {
         flex: 1 1 auto;
         gap: 3px;
-        grid-template-columns: repeat(2, minmax(48px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         padding: 3px;
     }
 
@@ -2347,7 +2348,13 @@ body {
 
 @media (max-width: 480px) {
     .planejamento-switch {
-        align-items: center;
-        display: flex;
+        align-items: stretch;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        margin: 12px 10px 0;
+    }
+
+    .planejamento-switch-opcoes {
+        grid-template-columns: 1fr;
     }
 }
