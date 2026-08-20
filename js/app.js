@@ -1497,6 +1497,9 @@ const DIAS_SEMANA = [
     { chave: 'domingo', nome: 'Domingo', abrev: 'Dom' },
 ];
 
+const TIPO_PLANEJAMENTO_NOTA_DIA = 'nota-dia';
+const REFEICAO_NOTA_DIA = '__nota_dia__';
+
 function normalizarDiaSemana(dia) {
     const valor = String(dia || '').toLowerCase();
     if (valor.startsWith('ter')) return 'terca';
@@ -1625,8 +1628,86 @@ function buscarPlanejamentosPorData(dataStr, tipo) {
     ));
 }
 
+function buscarNotaPlanejamentoPorData(dataStr) {
+    return app.planejamentos.find(plano =>
+        planejamentoPertenceAoAtivo(plano) &&
+        planejamentoEhNotaDia(plano) &&
+        plano.data === dataStr
+    ) || null;
+}
+
+function criarIdNotaPlanejamento(dataStr, grupo = obterGrupoPlanejamentoAtivo()) {
+    return `nota_${normalizarGrupoPlanejamento(grupo)}_${dataStr}`;
+}
+
+function salvarNotaPlanejamentoData(dataStr, texto) {
+    const data = criarDataLocal(dataStr);
+    const semanaDia = obterSemanaDiaPorData(data);
+    const grupo = obterGrupoPlanejamentoAtivo();
+    const nota = buscarNotaPlanejamentoPorData(dataStr);
+    const conteudo = String(texto || '');
+    const agora = new Date().toISOString();
+
+    if (!conteudo.trim()) {
+        if (nota) {
+            registrarExclusao('planejamentos', chavePlanejamento(nota));
+            app.planejamentos = app.planejamentos.filter(plano => plano.id !== nota.id);
+            salvarDados();
+            renderizarCalendario();
+        }
+        return;
+    }
+
+    if (nota) {
+        nota.nota = conteudo;
+        nota.dataAtualizacao = agora;
+    } else {
+        const novoPlano = {
+            id: criarIdNotaPlanejamento(dataStr, grupo),
+            grupo,
+            itemTipo: TIPO_PLANEJAMENTO_NOTA_DIA,
+            itemId: '',
+            receitaId: '',
+            refeicao: REFEICAO_NOTA_DIA,
+            tipo: 'nota',
+            data: dataStr,
+            semana: semanaDia.semana,
+            dia: semanaDia.dia,
+            nota: conteudo,
+            dataCriacao: agora,
+            dataAtualizacao: agora,
+        };
+
+        app.planejamentos.push(novoPlano);
+        removerExclusao('planejamentos', chavePlanejamento(novoPlano));
+    }
+
+    salvarDados();
+    renderizarCalendario();
+}
+
+function renderizarCampoNotaPlanejamento(dataStr, compacto = false) {
+    const nota = buscarNotaPlanejamentoPorData(dataStr);
+    const valor = escaparHtml(nota?.nota || '');
+    const classeCompacta = compacto ? ' nota-planejamento-compacta' : '';
+
+    return `
+        <label class="nota-planejamento${classeCompacta}" onclick="event.stopPropagation()">
+            <span>Notas</span>
+            <textarea
+                placeholder="Escreva livremente..."
+                onblur="salvarNotaPlanejamentoData('${dataStr}', this.value)"
+                onclick="event.stopPropagation()">${valor}</textarea>
+        </label>
+    `;
+}
+
 function obterTipoItemPlano(plano) {
     return plano.itemTipo || 'receita';
+}
+
+function planejamentoEhNotaDia(plano) {
+    return obterTipoItemPlano(plano || {}) === TIPO_PLANEJAMENTO_NOTA_DIA;
 }
 
 function obterItemIdPlano(plano) {
@@ -1780,6 +1861,14 @@ function renderizarSemanal() {
         tr.innerHTML = html;
         tbody.appendChild(tr);
     });
+
+    const trNotas = document.createElement('tr');
+    trNotas.className = 'linha-notas-planejamento';
+    trNotas.innerHTML = `<td class="refeicao-nome">Notas</td>` + DIAS_SEMANA.map(diaInfo => {
+        const dataStr = formatarDataChave(obterDataSemanaDia(app.semanaAtual, diaInfo.chave));
+        return `<td>${renderizarCampoNotaPlanejamento(dataStr, true)}</td>`;
+    }).join('');
+    tbody.appendChild(trNotas);
 }
 
 function atualizarCabecalhoSemanal() {
@@ -2240,6 +2329,17 @@ function renderizarMensal() {
             tbody.appendChild(tr);
         });
 
+        const trNotas = document.createElement('tr');
+        trNotas.className = 'linha-notas-planejamento';
+        trNotas.innerHTML = '<td style="font-weight: 600;">Notas</td>' + DIAS_SEMANA.map((diaInfo, indice) => {
+            const data = new Date(cursor);
+            data.setDate(cursor.getDate() + indice);
+            const dataStr = formatarDataChave(data);
+            const classeForaMes = data.getMonth() !== app.mesAtual ? ' class="data-fora-mes"' : '';
+            return `<td${classeForaMes}>${renderizarCampoNotaPlanejamento(dataStr, true)}</td>`;
+        }).join('');
+        tbody.appendChild(trNotas);
+
         semanaDiv.appendChild(table);
         container.appendChild(semanaDiv);
         cursor.setDate(cursor.getDate() + 7);
@@ -2291,6 +2391,11 @@ function renderizarDiaria() {
 
     // Buscar refeicoes planejadas para essa data
     const dataString = formatarDataChave(dataDiaria);
+
+    const blocoNotas = document.createElement('div');
+    blocoNotas.className = 'card-diario card-notas-planejamento';
+    blocoNotas.innerHTML = renderizarCampoNotaPlanejamento(dataString);
+    container.appendChild(blocoNotas);
 
     app.tiposRefeicao.forEach(tipo => {
         const planos = buscarPlanejamentosPorData(dataString, tipo);
@@ -2465,6 +2570,10 @@ function criarDiaCalendario(dia, outroMes) {
         if (app.tiposRefeicao.some(tipo => buscarPlanejamentosPorData(dataStr, tipo).length > 0)) {
             div.classList.add('com-refeicao');
         }
+
+        if (buscarNotaPlanejamentoPorData(dataStr)) {
+            div.classList.add('com-nota');
+        }
     }
 
     return div;
@@ -2484,6 +2593,11 @@ function atualizarDetalhesData(data) {
 
     const refeicoes = document.getElementById('refeicoes-data');
     refeicoes.innerHTML = '';
+
+    const blocoNotas = document.createElement('div');
+    blocoNotas.className = 'detalhes-notas-planejamento';
+    blocoNotas.innerHTML = renderizarCampoNotaPlanejamento(dataStr);
+    refeicoes.appendChild(blocoNotas);
 
     app.tiposRefeicao.forEach(tipo => {
         const planos = buscarPlanejamentosPorData(dataStr, tipo);
@@ -3789,7 +3903,11 @@ function contarItensNoPeriodo(dataInicio, dataFim, modo = 'direta') {
     app.planejamentos
         .filter(plano => {
             const data = obterDataPlano(plano);
-            return planejamentoPertenceAoAtivo(plano) && data && data >= dataInicio && data <= dataFim;
+            return planejamentoPertenceAoAtivo(plano) &&
+                !planejamentoEhNotaDia(plano) &&
+                data &&
+                data >= dataInicio &&
+                data <= dataFim;
         })
         .forEach(plano => {
             const tipoItem = obterTipoItemPlano(plano);
@@ -4476,6 +4594,7 @@ Object.assign(window, {
     adicionarLinhaIngredienteReceita,
     removerLinhaIngredienteReceita,
     selecionarItemParaPlano,
+    salvarNotaPlanejamentoData,
     renderizarContagemAlimentos,
     usarSemanaAtualContagem,
     usarMesAtualContagem,
