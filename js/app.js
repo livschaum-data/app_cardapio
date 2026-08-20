@@ -717,6 +717,13 @@ function chaveRefeicao(refeicao) {
 }
 
 function chavePlanejamento(plano) {
+    if (planejamentoEhNotaDia(plano)) {
+        return [
+            'nota-dia',
+            plano?.data || '',
+        ].join('|');
+    }
+
     return plano?.id || [
         normalizarGrupoPlanejamento(plano?.grupo),
         plano?.data || '',
@@ -1110,8 +1117,11 @@ function normalizarDadosAlimentos() {
     app.planejamentos.forEach(plano => {
         if (!plano.itemTipo) plano.itemTipo = 'receita';
         if (!plano.itemId && plano.receitaId) plano.itemId = plano.receitaId;
+        if (planejamentoEhNotaDia(plano)) return;
         plano.grupo = normalizarGrupoPlanejamento(plano.grupo);
     });
+
+    normalizarNotasPlanejamentoDiarias();
 
     const depois = JSON.stringify({
         alimentos: app.alimentos,
@@ -1630,20 +1640,63 @@ function buscarPlanejamentosPorData(dataStr, tipo) {
 
 function buscarNotaPlanejamentoPorData(dataStr) {
     return app.planejamentos.find(plano =>
-        planejamentoPertenceAoAtivo(plano) &&
         planejamentoEhNotaDia(plano) &&
         plano.data === dataStr
     ) || null;
 }
 
-function criarIdNotaPlanejamento(dataStr, grupo = obterGrupoPlanejamentoAtivo()) {
-    return `nota_${normalizarGrupoPlanejamento(grupo)}_${dataStr}`;
+function criarIdNotaPlanejamento(dataStr) {
+    return `nota_${dataStr}`;
+}
+
+function obterTimestampPlano(plano) {
+    return obterTimestamp(plano?.dataAtualizacao || plano?.dataCriacao);
+}
+
+function normalizarNotasPlanejamentoDiarias() {
+    const notasPorData = new Map();
+    const planejamentosSemNotas = [];
+
+    app.planejamentos.forEach(plano => {
+        if (!planejamentoEhNotaDia(plano)) {
+            planejamentosSemNotas.push(plano);
+            return;
+        }
+
+        const dataStr = plano.data || (plano.semana && plano.dia ? formatarDataChave(obterDataSemanaDia(plano.semana, plano.dia)) : '');
+        if (!dataStr) return;
+
+        const notaAtual = notasPorData.get(dataStr);
+        if (!notaAtual || obterTimestampPlano(plano) >= obterTimestampPlano(notaAtual)) {
+            notasPorData.set(dataStr, plano);
+        }
+    });
+
+    notasPorData.forEach((plano, dataStr) => {
+        const data = criarDataLocal(dataStr);
+        const semanaDia = obterSemanaDiaPorData(data);
+        planejamentosSemNotas.push({
+            ...plano,
+            id: criarIdNotaPlanejamento(dataStr),
+            grupo: '',
+            itemTipo: TIPO_PLANEJAMENTO_NOTA_DIA,
+            itemId: '',
+            receitaId: '',
+            refeicao: REFEICAO_NOTA_DIA,
+            tipo: 'nota',
+            data: dataStr,
+            semana: semanaDia.semana,
+            dia: semanaDia.dia,
+            nota: String(plano.nota || ''),
+        });
+    });
+
+    app.planejamentos = planejamentosSemNotas;
 }
 
 function salvarNotaPlanejamentoData(dataStr, texto) {
     const data = criarDataLocal(dataStr);
     const semanaDia = obterSemanaDiaPorData(data);
-    const grupo = obterGrupoPlanejamentoAtivo();
     const nota = buscarNotaPlanejamentoPorData(dataStr);
     const conteudo = String(texto || '');
     const agora = new Date().toISOString();
@@ -1651,7 +1704,9 @@ function salvarNotaPlanejamentoData(dataStr, texto) {
     if (!conteudo.trim()) {
         if (nota) {
             registrarExclusao('planejamentos', chavePlanejamento(nota));
-            app.planejamentos = app.planejamentos.filter(plano => plano.id !== nota.id);
+            app.planejamentos = app.planejamentos.filter(plano =>
+                !(planejamentoEhNotaDia(plano) && plano.data === dataStr)
+            );
             salvarDados();
             renderizarCalendario();
         }
@@ -1659,12 +1714,22 @@ function salvarNotaPlanejamentoData(dataStr, texto) {
     }
 
     if (nota) {
+        nota.id = criarIdNotaPlanejamento(dataStr);
+        nota.grupo = '';
         nota.nota = conteudo;
+        nota.itemTipo = TIPO_PLANEJAMENTO_NOTA_DIA;
+        nota.itemId = '';
+        nota.receitaId = '';
+        nota.refeicao = REFEICAO_NOTA_DIA;
+        nota.tipo = 'nota';
+        nota.data = dataStr;
+        nota.semana = semanaDia.semana;
+        nota.dia = semanaDia.dia;
         nota.dataAtualizacao = agora;
     } else {
         const novoPlano = {
-            id: criarIdNotaPlanejamento(dataStr, grupo),
-            grupo,
+            id: criarIdNotaPlanejamento(dataStr),
+            grupo: '',
             itemTipo: TIPO_PLANEJAMENTO_NOTA_DIA,
             itemId: '',
             receitaId: '',
@@ -1679,9 +1744,10 @@ function salvarNotaPlanejamentoData(dataStr, texto) {
         };
 
         app.planejamentos.push(novoPlano);
-        removerExclusao('planejamentos', chavePlanejamento(novoPlano));
     }
 
+    removerExclusao('planejamentos', ['nota-dia', dataStr].join('|'));
+    normalizarNotasPlanejamentoDiarias();
     salvarDados();
     renderizarCalendario();
 }
