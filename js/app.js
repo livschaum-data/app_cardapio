@@ -1971,6 +1971,16 @@ function buscarPlanejamentos(semana, dia, tipo) {
     return planejamentosData.concat(planejamentosLegados);
 }
 
+function buscarPlanejamentosPorSemana(semana, tipo) {
+    return app.planejamentos.filter(p =>
+        planejamentoPertenceAoAtivo(p) &&
+        !planejamentoEhNotaDia(p) &&
+        p.tipo === 'mensal' &&
+        Number(p.semana) === Number(semana) &&
+        p.refeicao === tipo
+    );
+}
+
 function buscarReceita(id) {
     return app.receitas.find(r => r.id === id);
 }
@@ -1983,6 +1993,21 @@ function abrirModalPlanejar(semana, dia, tipo, data = '') {
         semana,
         dia: normalizarDiaSemana(dia),
         data: data || formatarDataChave(obterDataSemanaDia(semana, dia)),
+        refeicao: tipo,
+        planejamentoId: null,
+    };
+
+    renderizarReceitasModalSelecao();
+    abrirModal('modal-selecionar-receita');
+}
+
+function abrirModalPlanejarSemana(semana, tipo) {
+    window.contextoPlanejar = {
+        modo: 'mensal',
+        grupo: obterGrupoPlanejamentoAtivo(),
+        semana,
+        dia: '',
+        data: '',
         refeicao: tipo,
         planejamentoId: null,
     };
@@ -2232,10 +2257,14 @@ function selecionarItemParaPlano(itemTipo, itemId) {
         planejamentoExistente.receitaId = itemTipo === 'receita' ? itemId : '';
         planejamentoExistente.grupo = normalizarGrupoPlanejamento(ctx.grupo || planejamentoExistente.grupo);
         planejamentoExistente.refeicao = ctx.refeicao;
-        planejamentoExistente.data = ctx.data || planejamentoExistente.data;
+        planejamentoExistente.data = ctx.data || '';
         planejamentoExistente.semana = ctx.semana || planejamentoExistente.semana;
-        planejamentoExistente.dia = ctx.dia || planejamentoExistente.dia;
-        planejamentoExistente.tipo = ctx.modo === 'calendario' ? 'calendario' : 'semanal';
+        planejamentoExistente.dia = ctx.dia || '';
+        planejamentoExistente.tipo = ctx.modo === 'calendario'
+            ? 'calendario'
+            : ctx.modo === 'mensal'
+                ? 'mensal'
+                : 'semanal';
         planejamentoExistente.dataAtualizacao = agora;
         salvarDados();
         renderizarAposPlanejamento(ctx.modo);
@@ -2245,6 +2274,7 @@ function selecionarItemParaPlano(itemTipo, itemId) {
     }
 
     const isCalendario = ctx.modo === 'calendario';
+    const isMensal = ctx.modo === 'mensal';
 
     const agora = new Date().toISOString();
     const planeamento = {
@@ -2254,10 +2284,10 @@ function selecionarItemParaPlano(itemTipo, itemId) {
         itemId,
         receitaId: itemTipo === 'receita' ? itemId : '',
         refeicao: ctx.refeicao,
-        tipo: isCalendario ? 'calendario' : 'semanal',
-        data: ctx.data,
+        tipo: isCalendario ? 'calendario' : isMensal ? 'mensal' : 'semanal',
+        data: isMensal ? '' : ctx.data,
         semana: ctx.semana,
-        dia: ctx.dia,
+        dia: isMensal ? '' : ctx.dia,
         dataCriacao: agora,
         dataAtualizacao: agora,
     };
@@ -2318,100 +2348,100 @@ function atualizarTituloSemana() {
 }
 
 /* ==================== VISAO MENSAL ====================
-   Renderiza multiplas semanas do mes */
+   Renderiza itens associados a semanas do mes */
+
+function obterSemanasMesPlanejamento() {
+    const primeiroDiaMes = new Date(app.anoAtual, app.mesAtual, 1);
+    const ultimoDiaMes = new Date(app.anoAtual, app.mesAtual + 1, 0);
+    const cursor = new Date(primeiroDiaMes);
+    cursor.setDate(primeiroDiaMes.getDate() - obterIndiceSemanaSegunda(primeiroDiaMes));
+
+    const semanas = [];
+    while (cursor <= ultimoDiaMes) {
+        const inicio = new Date(cursor);
+        const fim = new Date(cursor);
+        fim.setDate(cursor.getDate() + 6);
+        semanas.push({
+            indice: semanas.length + 1,
+            numero: obterNumeroSemana(inicio),
+            inicio,
+            fim,
+        });
+        cursor.setDate(cursor.getDate() + 7);
+    }
+
+    return semanas;
+}
+
+function formatarIntervaloSemanaCurto(semana) {
+    const mesmoMes = semana.inicio.getMonth() === semana.fim.getMonth();
+    const inicio = mesmoMes
+        ? String(semana.inicio.getDate())
+        : `${semana.inicio.getDate()}/${semana.inicio.getMonth() + 1}`;
+    const fim = `${semana.fim.getDate()}/${semana.fim.getMonth() + 1}`;
+    return `${inicio} a ${fim}`;
+}
 
 function renderizarMensal() {
     const container = document.getElementById('container-semanas-mensais');
     container.innerHTML = '';
-    const hojeStr = formatarDataChave(new Date());
+    atualizarTituloMes();
 
-    const primeiroDiaMes = new Date(app.anoAtual, app.mesAtual, 1);
-    const ultimoDiaMes = new Date(app.anoAtual, app.mesAtual + 1, 0);
-    const inicio = new Date(primeiroDiaMes);
-    inicio.setDate(primeiroDiaMes.getDate() - obterIndiceSemanaSegunda(primeiroDiaMes));
+    const semanas = obterSemanasMesPlanejamento();
+    const wrapper = document.createElement('div');
+    wrapper.className = 'semana-mensal planejamento-mensal-semanas';
 
-    let cursor = new Date(inicio);
-    while (cursor <= ultimoDiaMes) {
-        const semana = obterNumeroSemana(cursor);
-        const semanaDiv = document.createElement('div');
-        semanaDiv.className = 'semana-mensal';
-        semanaDiv.innerHTML = `<h3>Semana ${semana}</h3>`;
+    const table = document.createElement('table');
+    table.className = 'tabela-semanal tabela-mensal-semanas';
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>Semana</th>
+                ${semanas.map(semana => `
+                    <th>
+                        ${semana.indice}
+                        <br>
+                        <span class="data-cabecalho">(${formatarIntervaloSemanaCurto(semana)})</span>
+                    </th>
+                `).join('')}
+            </tr>
+        </thead>
+        <tbody></tbody>
+    `;
 
-        const table = document.createElement('table');
-        table.className = 'tabela-semanal';
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th>Refeicao</th>
-                    ${DIAS_SEMANA.map((dia, indice) => {
-                        const data = new Date(cursor);
-                        data.setDate(cursor.getDate() + indice);
-                        const classes = [
-                            data.getMonth() !== app.mesAtual ? 'data-fora-mes' : '',
-                            formatarDataChave(data) === hojeStr ? 'coluna-hoje' : ''
-                        ].filter(Boolean).join(' ');
-                        return `<th class="${classes}">${dia.abrev}<br><span class="data-cabecalho">${data.getDate()}/${data.getMonth() + 1}</span></th>`;
-                    }).join('')}
-                </tr>
-            </thead>
-            <tbody></tbody>
-        `;
+    const tbody = table.querySelector('tbody');
+    app.tiposRefeicao.forEach(tipo => {
+        const tr = document.createElement('tr');
+        let html = `<td class="refeicao-nome">${escaparHtml(tipo)}</td>`;
 
-        const tbody = table.querySelector('tbody');
-        app.tiposRefeicao.forEach(tipo => {
-            const tr = document.createElement('tr');
-            let html = `<td style="font-weight: 600;">${tipo}</td>`;
+        semanas.forEach(semana => {
+            const planos = buscarPlanejamentosPorSemana(semana.numero, tipo);
+            const tipoParam = encodeURIComponent(tipo);
 
-            DIAS_SEMANA.forEach((diaInfo, indice) => {
-                const data = new Date(cursor);
-                data.setDate(cursor.getDate() + indice);
-                const dataStr = formatarDataChave(data);
-                const planos = buscarPlanejamentosPorData(dataStr, tipo);
-                const classesDia = [
-                    data.getMonth() !== app.mesAtual ? 'data-fora-mes' : '',
-                    dataStr === hojeStr ? 'coluna-hoje' : ''
-                ].filter(Boolean).join(' ');
-                const classeDia = classesDia ? ` ${classesDia}` : '';
-
-                if (planos.length > 0) {
-                    html += `
-                        <td class="${classeDia}">
-                            ${renderizarListaPlanejamentos(planos, true)}
-                            <button class="btn-adicionar-mini" onclick="abrirModalPlanejar('${semana}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
-                                +
-                            </button>
-                        </td>
-                    `;
-                } else {
-                    html += `
-                        <td class="celula-vazia${classeDia}" onclick="abrirModalPlanejar('${semana}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
-                            +
-                        </td>
-                    `;
-                }
-            });
-
-            tr.innerHTML = html;
-            tbody.appendChild(tr);
+            if (planos.length > 0) {
+                html += `
+                    <td>
+                        ${renderizarListaPlanejamentos(planos, true)}
+                        <button class="btn-adicionar-mini" onclick="abrirModalPlanejarSemana('${semana.numero}', decodeURIComponent('${tipoParam}'))">
+                            Adicionar
+                        </button>
+                    </td>
+                `;
+            } else {
+                html += `
+                    <td class="celula-vazia" onclick="abrirModalPlanejarSemana('${semana.numero}', decodeURIComponent('${tipoParam}'))">
+                        <span class="btn-add-celula">+</span>
+                    </td>
+                `;
+            }
         });
 
-        const trNotas = document.createElement('tr');
-        trNotas.className = 'linha-notas-planejamento';
-        trNotas.innerHTML = '<td style="font-weight: 600;">Notas</td>' + DIAS_SEMANA.map((diaInfo, indice) => {
-            const data = new Date(cursor);
-            data.setDate(cursor.getDate() + indice);
-            const dataStr = formatarDataChave(data);
-            const classeForaMes = data.getMonth() !== app.mesAtual ? ' class="data-fora-mes"' : '';
-            return `<td${classeForaMes}>${renderizarCampoNotaPlanejamento(dataStr, true)}</td>`;
-        }).join('');
-        tbody.appendChild(trNotas);
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+    });
 
-        semanaDiv.appendChild(table);
-        container.appendChild(semanaDiv);
-        cursor.setDate(cursor.getDate() + 7);
-    }
-
-    atualizarTituloMes();
+    wrapper.appendChild(table);
+    container.appendChild(wrapper);
 }
 function atualizarTituloMes() {
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -4660,6 +4690,7 @@ Object.assign(window, {
     adicionarLinhaIngredienteReceita,
     removerLinhaIngredienteReceita,
     selecionarItemParaPlano,
+    abrirModalPlanejarSemana,
     salvarNotaPlanejamentoData,
     renderizarContagemAlimentos,
     usarSemanaAtualContagem,

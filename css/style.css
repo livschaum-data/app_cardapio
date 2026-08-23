@@ -670,6 +670,31 @@ body {
     margin-bottom: 15px;
 }
 
+.planejamento-mensal-semanas {
+    overflow-x: auto;
+}
+
+.tabela-mensal-semanas {
+    min-width: 760px;
+}
+
+.tabela-mensal-semanas th:first-child,
+.tabela-mensal-semanas td:first-child {
+    min-width: 180px;
+    text-align: left;
+}
+
+.tabela-mensal-semanas th:not(:first-child),
+.tabela-mensal-semanas td:not(:first-child) {
+    min-width: 135px;
+}
+
+.tabela-mensal-semanas .refeicao-nome {
+    background: #f8f4ee;
+    color: #3a2a1f;
+    font-weight: 700;
+}
+
 /* ==================== VISO DIRIA ====================
    Refeies do dia em cards */
 
