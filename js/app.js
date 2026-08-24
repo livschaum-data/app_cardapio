@@ -71,6 +71,7 @@ async function inicializar() {
 
     configurarEventosNuvem();
     aplicarEstadoSidebar();
+    configurarFechamentoSidebarMobile();
 
     // Carregar dados locais primeiro; a nuvem entra depois se houver conta conectada.
     configurarSupabase();
@@ -537,6 +538,50 @@ function atualizarBotoesSidebar(sidebarOculta) {
     if (btnMostrar) {
         btnMostrar.setAttribute('aria-expanded', String(!sidebarOculta));
     }
+}
+
+function telaMobileSidebar() {
+    return window.matchMedia('(max-width: 680px)').matches;
+}
+
+function sidebarAbertaMobile() {
+    const appEl = document.getElementById('app');
+    return Boolean(appEl && telaMobileSidebar() && !appEl.classList.contains('sidebar-oculta'));
+}
+
+function fecharSidebarMobile() {
+    const appEl = document.getElementById('app');
+    if (!appEl || !sidebarAbertaMobile()) return;
+
+    appEl.classList.add('sidebar-oculta');
+    localStorage.setItem('cardapio-sidebar-oculta', 'true');
+    atualizarBotoesSidebar(true);
+}
+
+function configurarFechamentoSidebarMobile() {
+    if (document.body.dataset.fechamentoSidebarMobile === 'true') return;
+    document.body.dataset.fechamentoSidebarMobile = 'true';
+
+    const toqueForaSidebar = (alvo) => {
+        const sidebar = document.querySelector('.header.sidebar');
+        const botaoAbrir = document.getElementById('btn-expandir-sidebar');
+
+        return sidebarAbertaMobile() &&
+            !sidebar?.contains(alvo) &&
+            !botaoAbrir?.contains(alvo);
+    };
+
+    document.addEventListener('pointerdown', (evento) => {
+        if (toqueForaSidebar(evento.target)) {
+            fecharSidebarMobile();
+        }
+    });
+
+    document.addEventListener('touchmove', (evento) => {
+        if (toqueForaSidebar(evento.target)) {
+            fecharSidebarMobile();
+        }
+    }, { passive: true });
 }
 
 function alternarSidebar() {
@@ -3526,7 +3571,6 @@ function renderizarRefeicoes() {
             <div class="card-receita-header header-refeicao">
                 <div>
                     <h3>${refeicao.nome}</h3>
-                    <div class="badge-tipo">Refeicao</div>
                     ${renderizarBadgesTipos(refeicao)}
                 </div>
             </div>
@@ -3870,7 +3914,6 @@ function renderizarAlimentos() {
                 <div class="card-receita-header header-alimento">
                     <div>
                         <h3>${alimento.nome}</h3>
-                        <div class="badge-tipo">Alimento</div>
                     </div>
                 </div>
                 <div class="card-receita-content">
