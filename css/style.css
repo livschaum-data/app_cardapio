@@ -423,12 +423,6 @@ body {
     overflow-wrap: anywhere;
 }
 
-.tipo-refeicao-tabela {
-    font-size: 11px;
-    color: #999;
-    overflow-wrap: anywhere;
-}
-
 .conteudo-planejamento {
     min-width: 0;
 }

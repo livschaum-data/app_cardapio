@@ -1889,12 +1889,6 @@ function buscarItemPlanejamento(plano) {
     return { tipo: 'receita', item: buscarReceita(itemId) };
 }
 
-function obterRotuloTipoItem(tipo, item = null) {
-    if (tipo === 'alimento') return 'Alimento';
-    if (tipo === 'refeicao') return 'Refeicao';
-    return item?.categoria ? `Categoria: ${item.categoria}` : 'Receita';
-}
-
 function planejamentoPermiteCheck(plano) {
     return normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado';
 }
@@ -1903,9 +1897,8 @@ function renderizarCheckPlanejamento(plano) {
     if (!planejamentoPermiteCheck(plano)) return '';
 
     return `
-        <label class="check-planejamento" onclick="event.stopPropagation()">
-            <input type="checkbox" ${plano.seguido ? 'checked' : ''} onchange="alternarPlanoSeguido('${plano.id}', this.checked)">
-            <span>Segui</span>
+        <label class="check-planejamento" onclick="event.stopPropagation()" title="Marcar como seguido">
+            <input type="checkbox" aria-label="Marcar como seguido" ${plano.seguido ? 'checked' : ''} onchange="alternarPlanoSeguido('${plano.id}', this.checked)">
         </label>
     `;
 }
@@ -1952,7 +1945,6 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
         <div class="celula-refeicao ${tipo === 'alimento' ? 'celula-alimento' : tipo === 'refeicao' ? 'celula-refeicao-composta' : 'celula-receita'}" style="--categoria-cor:${gerarCorCategoria(item.categoria || tipo, tipo)};">
             <div class="conteudo-planejamento">
                 <div class="nome-refeicao">${escaparHtml(item.nome)}</div>
-                ${compacto ? '' : `<div class="tipo-refeicao-tabela">${escaparHtml(tipo === 'alimento' ? 'Alimento' : tipo === 'refeicao' ? 'Refeicao' : (item.categoria || ''))}</div>`}
                 ${renderizarCheckPlanejamento(plano)}
             </div>
             <div class="acoes-planejamento-mini">
@@ -2616,7 +2608,6 @@ function renderizarDiaria() {
                     <div class="item-planejamento-diario">
                         <div class="conteudo-planejamento">
                             <p><strong>${escaparHtml(item.nome)}</strong></p>
-                            <p>${obterRotuloTipoItem(tipoItem, item)}</p>
                             ${renderizarCheckPlanejamento(plano)}
                         </div>
                         <div class="acoes-planejamento">
