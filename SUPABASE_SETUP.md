@@ -20,7 +20,9 @@ create table if not exists public.cardapio_dados (
   planejamentos jsonb not null default '[]'::jsonb,
   historico jsonb not null default '[]'::jsonb,
   tipos_refeicao jsonb not null default '[]'::jsonb,
+  tipos_uso jsonb not null default '[]'::jsonb,
   categorias jsonb not null default '[]'::jsonb,
+  categorias_refeicoes jsonb not null default '[]'::jsonb,
   categorias_alimentos jsonb not null default '[]'::jsonb,
   tags jsonb not null default '[]'::jsonb,
   sync_meta jsonb not null default '{"deletados":{}}'::jsonb,
@@ -34,6 +36,12 @@ add column if not exists alimentos jsonb not null default '[]'::jsonb;
 
 alter table public.cardapio_dados
 add column if not exists categorias_alimentos jsonb not null default '[]'::jsonb;
+
+alter table public.cardapio_dados
+add column if not exists tipos_uso jsonb not null default '[]'::jsonb;
+
+alter table public.cardapio_dados
+add column if not exists categorias_refeicoes jsonb not null default '[]'::jsonb;
 
 alter table public.cardapio_dados
 add column if not exists refeicoes jsonb not null default '[]'::jsonb;
@@ -131,7 +139,7 @@ Use a chave `anon`/`public`. Nunca coloque a `service_role` no navegador.
 - Voce pode criar conta ou entrar com email e senha.
 - Ao entrar, o app baixa os dados da nuvem.
 - Se a nuvem ainda estiver vazia, o app envia os dados locais.
-- Ao salvar alimentos, receitas, refeicoes, planejamentos, historico, tipos, categorias de receitas, categorias de alimentos ou tags, o app salva localmente e tenta enviar para a nuvem quando houver conta conectada.
+- Ao salvar alimentos, receitas, refeicoes, planejamentos, historico, tipos, tipos de uso, categorias de receitas, categorias de refeicoes, categorias de alimentos ou tags, o app salva localmente e tenta enviar para a nuvem quando houver conta conectada.
 - Exclusoes e renomeacoes tambem geram metadados de sincronizacao em `sync_meta`, evitando que itens removidos em um dispositivo voltem ao mesclar com dados antigos de outro dispositivo.
 - Os botoes `Sincronizar agora`, `Baixar da nuvem` e `Enviar para nuvem` permitem controle manual.
 

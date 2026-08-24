@@ -28,8 +28,14 @@ const app = {
     // Tipos de refeicao customizaveis
     tiposRefeicao: ['Café da Manhã', 'Almoço', 'Lanche', 'Jantar', 'Ceia'],
 
+    // Tipos de uso exclusivos da visao mensal
+    tiposUso: ['Café da Manhã', 'Almoço', 'Lanche', 'Jantar', 'Ceia'],
+
     // Categorias customizaveis de receitas
     categorias: ['Proteínas', 'Acompanhamentos', 'Prato Único', 'Legumes', 'Saladas', 'Lanches', 'Cremes e Sopas', 'Caldas e Molhos', 'Doces e Sobremesas', 'Bolos e Tortas', 'Bolachas e Biscoitos', 'Pães e Massas', 'Bebidas'],
+
+    // Categorias customizaveis de refeicoes compostas
+    categoriasRefeicoes: ['Refeição Principal', 'Lanche', 'Acompanhamento', 'Sobremesa'],
 
     // Categorias customizaveis de alimentos
     categoriasAlimentos: ['Fruta', 'Legume', 'Verdura', 'Proteina', 'Carboidrato', 'Laticinio', 'Bebida', 'Tempero', 'Grao', 'Oleaginosa'],
@@ -78,6 +84,10 @@ async function inicializar() {
     normalizarCategorias();
     atualizarSelectCategorias();
     atualizarFiltroCategoria();
+    normalizarTiposUso();
+    normalizarCategoriasRefeicoes();
+    atualizarSelectCategoriasRefeicao();
+    atualizarFiltroCategoriaRefeicao();
     normalizarTags();
     atualizarSelectTags();
     normalizarCategoriasAlimentos();
@@ -124,10 +134,12 @@ function salvarDadosLegado() {
     localStorage.setItem('cardapio_planejamentos', JSON.stringify(app.planejamentos));
     localStorage.setItem('cardapio_historico', JSON.stringify(app.historico));
     localStorage.setItem('cardapio_tipos', JSON.stringify(app.tiposRefeicao));
+    localStorage.setItem('cardapio_tipos_uso', JSON.stringify(app.tiposUso));
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
+    localStorage.setItem('cardapio_categorias_refeicoes', JSON.stringify(app.categoriasRefeicoes));
     localStorage.setItem('cardapio_categorias_alimentos', JSON.stringify(app.categoriasAlimentos));
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
-    localStorage.setItem('cardapio_sync_meta', JSON.stringify(normalizarSyncMeta(app.syncMeta)));
+    localStorage.setItem('cardapio_sync_meta', JSON.stringify(obterSyncMetaAtual()));
     localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
     console.log('Dados salvos!');
 }
@@ -139,7 +151,9 @@ function carregarDadosLegado() {
     app.planejamentos = JSON.parse(localStorage.getItem('cardapio_planejamentos')) || [];
     app.historico = JSON.parse(localStorage.getItem('cardapio_historico')) || [];
     app.tiposRefeicao = JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao;
+    app.tiposUso = JSON.parse(localStorage.getItem('cardapio_tipos_uso')) || app.tiposUso;
     app.categorias = JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias;
+    app.categoriasRefeicoes = JSON.parse(localStorage.getItem('cardapio_categorias_refeicoes')) || app.categoriasRefeicoes;
     app.categoriasAlimentos = JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos;
     app.tags = JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags;
     app.syncMeta = JSON.parse(localStorage.getItem('cardapio_sync_meta')) || app.syncMeta;
@@ -558,11 +572,13 @@ function obterSnapshotDadosApp() {
         planejamentos: app.planejamentos,
         historico: app.historico,
         tiposRefeicao: app.tiposRefeicao,
+        tiposUso: app.tiposUso,
         categorias: app.categorias,
+        categoriasRefeicoes: app.categoriasRefeicoes,
         categoriasAlimentos: app.categoriasAlimentos,
         tags: app.tags,
         atualizadoEm: app.atualizadoEm,
-        syncMeta: normalizarSyncMeta(app.syncMeta),
+        syncMeta: obterSyncMetaAtual(),
     };
 }
 
@@ -573,7 +589,9 @@ const COLECOES_SYNC = [
     'planejamentos',
     'historico',
     'tiposRefeicao',
+    'tiposUso',
     'categorias',
+    'categoriasRefeicoes',
     'categoriasAlimentos',
     'tags',
 ];
@@ -591,7 +609,15 @@ function normalizarSyncMeta(meta) {
         });
     });
 
-    return { deletados };
+    return {
+        deletados,
+    };
+}
+
+function obterSyncMetaAtual() {
+    const meta = normalizarSyncMeta(app.syncMeta);
+    app.syncMeta = meta;
+    return meta;
 }
 
 function mesclarSyncMeta(metaLocal, metaRemota) {
@@ -756,7 +782,9 @@ function mesclarDadosCardapio(dadosLocais, dadosRemotos) {
         planejamentos: mesclarListaPorChave(local.planejamentos, remoto.planejamentos, chavePlanejamento, 'planejamentos', syncMeta),
         historico: mesclarListaPorChave(local.historico, remoto.historico, chaveHistorico, 'historico', syncMeta),
         tiposRefeicao: mesclarListaTexto(localSemHistorico ? [] : local.tiposRefeicao, remoto.tiposRefeicao, 'tiposRefeicao', syncMeta),
+        tiposUso: mesclarListaTexto(localSemHistorico ? [] : local.tiposUso, remoto.tiposUso, 'tiposUso', syncMeta),
         categorias: mesclarListaTexto(localSemHistorico ? [] : local.categorias, remoto.categorias, 'categorias', syncMeta),
+        categoriasRefeicoes: mesclarListaTexto(localSemHistorico ? [] : local.categoriasRefeicoes, remoto.categoriasRefeicoes, 'categoriasRefeicoes', syncMeta),
         categoriasAlimentos: mesclarListaTexto(localSemHistorico ? [] : local.categoriasAlimentos, remoto.categoriasAlimentos, 'categoriasAlimentos', syncMeta),
         tags: mesclarListaTexto(localSemHistorico ? [] : local.tags, remoto.tags, 'tags', syncMeta),
         atualizadoEm: atualizadoLocal > atualizadoRemoto ? local.atualizadoEm : remoto.atualizadoEm,
@@ -769,6 +797,7 @@ function mesclarDadosCardapio(dadosLocais, dadosRemotos) {
 function aplicarExclusoesRelacionadas(dados) {
     const meta = normalizarSyncMeta(dados.syncMeta);
     const categoriaExcluida = nome => Boolean(meta.deletados.categorias[normalizarNomeAlimento(nome)]);
+    const categoriaRefeicaoExcluida = nome => Boolean(meta.deletados.categoriasRefeicoes[normalizarNomeAlimento(nome)]);
     const categoriaAlimentoExcluida = nome => Boolean(meta.deletados.categoriasAlimentos[normalizarNomeAlimento(nome)]);
     const tagExcluida = nome => Boolean(meta.deletados.tags[normalizarNomeAlimento(nome)]);
 
@@ -779,7 +808,7 @@ function aplicarExclusoesRelacionadas(dados) {
     }));
     dados.refeicoes = (dados.refeicoes || []).map(refeicao => ({
         ...refeicao,
-        categoria: refeicao.categoria && categoriaExcluida(refeicao.categoria) ? '' : refeicao.categoria,
+        categoria: refeicao.categoria && categoriaRefeicaoExcluida(refeicao.categoria) ? '' : refeicao.categoria,
         tags: Array.isArray(refeicao.tags) ? refeicao.tags.filter(tag => !tagExcluida(tag)) : refeicao.tags,
     }));
     dados.alimentos = (dados.alimentos || []).map(alimento => ({
@@ -817,6 +846,10 @@ function renderizarTudoAposSync() {
     atualizarSelectTipos();
     atualizarSelectCategorias();
     atualizarFiltroCategoria();
+    normalizarTiposUso();
+    normalizarCategoriasRefeicoes();
+    atualizarSelectCategoriasRefeicao();
+    atualizarFiltroCategoriaRefeicao();
     atualizarSelectTags();
     atualizarSelectTagsAlimento();
     atualizarSelectCategoriasAlimentos();
@@ -843,9 +876,15 @@ function aplicarDados(dados) {
     app.tiposRefeicao = Array.isArray(dados.tiposRefeicao)
         ? dados.tiposRefeicao
         : app.tiposRefeicao;
+    app.tiposUso = Array.isArray(dados.tiposUso)
+        ? dados.tiposUso
+        : app.tiposUso;
     app.categorias = Array.isArray(dados.categorias)
         ? dados.categorias
         : app.categorias;
+    app.categoriasRefeicoes = Array.isArray(dados.categoriasRefeicoes)
+        ? dados.categoriasRefeicoes
+        : app.categoriasRefeicoes;
     app.categoriasAlimentos = Array.isArray(dados.categoriasAlimentos)
         ? dados.categoriasAlimentos
         : app.categoriasAlimentos;
@@ -872,7 +911,9 @@ function normalizarEncodingApp() {
         planejamentos: app.planejamentos,
         historico: app.historico,
         tiposRefeicao: app.tiposRefeicao,
+        tiposUso: app.tiposUso,
         categorias: app.categorias,
+        categoriasRefeicoes: app.categoriasRefeicoes,
         categoriasAlimentos: app.categoriasAlimentos,
         tags: app.tags,
     });
@@ -883,7 +924,9 @@ function normalizarEncodingApp() {
     app.planejamentos = normalizarEncodingValor(app.planejamentos);
     app.historico = normalizarEncodingValor(app.historico);
     app.tiposRefeicao = normalizarEncodingValor(app.tiposRefeicao);
+    app.tiposUso = normalizarEncodingValor(app.tiposUso);
     app.categorias = normalizarEncodingValor(app.categorias);
+    app.categoriasRefeicoes = normalizarEncodingValor(app.categoriasRefeicoes);
     app.categoriasAlimentos = normalizarEncodingValor(app.categoriasAlimentos);
     app.tags = normalizarEncodingValor(app.tags);
 
@@ -894,7 +937,9 @@ function normalizarEncodingApp() {
         planejamentos: app.planejamentos,
         historico: app.historico,
         tiposRefeicao: app.tiposRefeicao,
+        tiposUso: app.tiposUso,
         categorias: app.categorias,
+        categoriasRefeicoes: app.categoriasRefeicoes,
         categoriasAlimentos: app.categoriasAlimentos,
         tags: app.tags,
     });
@@ -1091,6 +1136,7 @@ function normalizarDadosAlimentos() {
         }));
 
     normalizarCategoriasAlimentos();
+    normalizarTiposUso();
 
     app.receitas.forEach(receita => {
         receita.ingredientes = Array.isArray(receita.ingredientes)
@@ -1113,6 +1159,8 @@ function normalizarDadosAlimentos() {
             observacoes: refeicao.observacoes || '',
             dataCriacao: refeicao.dataCriacao || new Date().toISOString(),
         }));
+
+    normalizarCategoriasRefeicoes();
 
     app.planejamentos.forEach(plano => {
         if (!plano.itemTipo) plano.itemTipo = 'receita';
@@ -1210,7 +1258,9 @@ function carregarDadosLocais() {
         planejamentos: JSON.parse(localStorage.getItem('cardapio_planejamentos')) || [],
         historico: JSON.parse(localStorage.getItem('cardapio_historico')) || [],
         tiposRefeicao: JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao,
+        tiposUso: JSON.parse(localStorage.getItem('cardapio_tipos_uso')) || app.tiposUso,
         categorias: JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias,
+        categoriasRefeicoes: JSON.parse(localStorage.getItem('cardapio_categorias_refeicoes')) || app.categoriasRefeicoes,
         categoriasAlimentos: JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos,
         tags: JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags,
         atualizadoEm: localStorage.getItem('cardapio_atualizado_em') || null,
@@ -1225,10 +1275,12 @@ function salvarDadosLocais() {
     localStorage.setItem('cardapio_planejamentos', JSON.stringify(app.planejamentos));
     localStorage.setItem('cardapio_historico', JSON.stringify(app.historico));
     localStorage.setItem('cardapio_tipos', JSON.stringify(app.tiposRefeicao));
+    localStorage.setItem('cardapio_tipos_uso', JSON.stringify(app.tiposUso));
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
+    localStorage.setItem('cardapio_categorias_refeicoes', JSON.stringify(app.categoriasRefeicoes));
     localStorage.setItem('cardapio_categorias_alimentos', JSON.stringify(app.categoriasAlimentos));
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
-    localStorage.setItem('cardapio_sync_meta', JSON.stringify(normalizarSyncMeta(app.syncMeta)));
+    localStorage.setItem('cardapio_sync_meta', JSON.stringify(obterSyncMetaAtual()));
     if (app.atualizadoEm) {
         localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
     }
@@ -1240,10 +1292,22 @@ async function carregarDadosSupabase() {
     const config = window.CARDAPIO_SUPABASE;
     let { data, error } = await app.supabase
         .from(config.table)
-        .select('alimentos, receitas, refeicoes, planejamentos, historico, tipos_refeicao, categorias, categorias_alimentos, tags, sync_meta, atualizado_em')
+        .select('alimentos, receitas, refeicoes, planejamentos, historico, tipos_refeicao, tipos_uso, categorias, categorias_refeicoes, categorias_alimentos, tags, sync_meta, atualizado_em')
         .eq('user_id', app.usuarioSupabase.id)
         .eq('id', config.recordId)
         .maybeSingle();
+
+    if (error && (String(error.message || '').toLowerCase().includes('tipos_uso') ||
+        String(error.message || '').toLowerCase().includes('categorias_refeicoes'))) {
+        const fallback = await app.supabase
+            .from(config.table)
+            .select('alimentos, receitas, refeicoes, planejamentos, historico, tipos_refeicao, categorias, categorias_alimentos, tags, sync_meta, atualizado_em')
+            .eq('user_id', app.usuarioSupabase.id)
+            .eq('id', config.recordId)
+            .maybeSingle();
+        data = fallback.data;
+        error = fallback.error;
+    }
 
     if (error && String(error.message || '').toLowerCase().includes('sync_meta')) {
         const fallback = await app.supabase
@@ -1299,7 +1363,9 @@ async function carregarDadosSupabase() {
         planejamentos: data.planejamentos,
         historico: data.historico,
         tiposRefeicao: data.tipos_refeicao,
+        tiposUso: data.tipos_uso,
         categorias: data.categorias,
+        categoriasRefeicoes: data.categorias_refeicoes,
         categoriasAlimentos: data.categorias_alimentos,
         tags: data.tags,
         atualizadoEm: data.atualizado_em,
@@ -1331,12 +1397,36 @@ async function salvarDadosSupabase() {
             planejamentos: app.planejamentos,
             historico: app.historico,
             tipos_refeicao: app.tiposRefeicao,
+            tipos_uso: app.tiposUso,
             categorias: app.categorias,
+            categorias_refeicoes: app.categoriasRefeicoes,
             categorias_alimentos: app.categoriasAlimentos,
             tags: app.tags,
-            sync_meta: normalizarSyncMeta(app.syncMeta),
+            sync_meta: obterSyncMetaAtual(),
             atualizado_em: app.atualizadoEm || new Date().toISOString(),
         }, { onConflict: 'user_id,id' });
+
+    if (error && (String(error.message || '').toLowerCase().includes('tipos_uso') ||
+        String(error.message || '').toLowerCase().includes('categorias_refeicoes'))) {
+        const fallback = await app.supabase
+            .from(config.table)
+            .upsert({
+                id: config.recordId,
+                user_id: app.usuarioSupabase.id,
+                alimentos: app.alimentos,
+                receitas: app.receitas,
+                refeicoes: app.refeicoes,
+                planejamentos: app.planejamentos,
+                historico: app.historico,
+                tipos_refeicao: app.tiposRefeicao,
+                categorias: app.categorias,
+                categorias_alimentos: app.categoriasAlimentos,
+                tags: app.tags,
+                sync_meta: obterSyncMetaAtual(),
+                atualizado_em: app.atualizadoEm || new Date().toISOString(),
+            }, { onConflict: 'user_id,id' });
+        error = fallback.error;
+    }
 
     if (error && String(error.message || '').toLowerCase().includes('sync_meta')) {
         const fallback = await app.supabase
@@ -1831,6 +1921,7 @@ function alternarPlanoSeguido(id, seguido) {
     renderizarMensal();
     renderizarDiaria();
     renderizarCalendario();
+    renderizarContagemAlimentos();
 }
 
 function renderizarResumoReceitaPlano(plano, compacto = false) {
@@ -2050,6 +2141,7 @@ function atualizarFiltrosModalSelecao() {
         const valorAtual = categoriaSelect.value;
         const categorias = Array.from(new Set([
             ...app.categorias,
+            ...app.categoriasRefeicoes,
             ...app.categoriasAlimentos,
         ])).filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
@@ -2410,7 +2502,7 @@ function renderizarMensal() {
     `;
 
     const tbody = table.querySelector('tbody');
-    app.tiposRefeicao.forEach(tipo => {
+    app.tiposUso.forEach(tipo => {
         const tr = document.createElement('tr');
         let html = `<td class="refeicao-nome">${escaparHtml(tipo)}</td>`;
 
@@ -3116,21 +3208,37 @@ function atualizarFiltroCategoria() {
     const select = document.getElementById('filtro-categoria');
     normalizarCategorias();
 
-    [select, document.getElementById('filtro-categoria-refeicao')]
-        .filter(Boolean)
-        .forEach(filtro => {
-            const valorAtual = filtro.value;
-            filtro.innerHTML = '<option value="">Todas as categorias</option>';
+    if (!select) return;
 
-            app.categorias.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                filtro.appendChild(option);
-            });
+    const valorAtual = select.value;
+    select.innerHTML = '<option value="">Todas as categorias</option>';
 
-            filtro.value = app.categorias.includes(valorAtual) ? valorAtual : '';
-        });
+    app.categorias.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+    });
+
+    select.value = app.categorias.includes(valorAtual) ? valorAtual : '';
+}
+
+function atualizarFiltroCategoriaRefeicao() {
+    const filtro = document.getElementById('filtro-categoria-refeicao');
+    if (!filtro) return;
+
+    normalizarCategoriasRefeicoes();
+    const valorAtual = filtro.value;
+    filtro.innerHTML = '<option value="">Todas as categorias</option>';
+
+    app.categoriasRefeicoes.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        filtro.appendChild(option);
+    });
+
+    filtro.value = app.categoriasRefeicoes.includes(valorAtual) ? valorAtual : '';
 }
 
 function buscarReceitasModal() {
@@ -3222,15 +3330,15 @@ function atualizarSelectCategoriasRefeicao(categoriaAtual = '') {
     const select = document.getElementById('categoria-refeicao-composta');
     if (!select) return;
 
-    normalizarCategorias();
+    normalizarCategoriasRefeicoes();
     select.innerHTML = '<option value="">Sem categoria</option>';
 
-    if (categoriaAtual && !app.categorias.includes(categoriaAtual)) {
-        app.categorias.push(categoriaAtual);
-        normalizarCategorias();
+    if (categoriaAtual && !app.categoriasRefeicoes.includes(categoriaAtual)) {
+        app.categoriasRefeicoes.push(categoriaAtual);
+        normalizarCategoriasRefeicoes();
     }
 
-    app.categorias.forEach(categoria => {
+    app.categoriasRefeicoes.forEach(categoria => {
         const option = document.createElement('option');
         option.value = categoria;
         option.textContent = categoria;
@@ -3395,13 +3503,13 @@ function salvarRefeicao(evento) {
         app.refeicoes.push(refeicao);
         removerExclusao('refeicoes', chaveRefeicao(refeicao));
     }
-    if (refeicao.categoria) removerExclusao('categorias', normalizarNomeAlimento(refeicao.categoria));
+    if (refeicao.categoria) removerExclusao('categoriasRefeicoes', normalizarNomeAlimento(refeicao.categoria));
     refeicao.tags.forEach(tag => removerExclusao('tags', normalizarNomeAlimento(tag)));
     refeicao.tipos.forEach(tipo => removerExclusao('tiposRefeicao', normalizarNomeAlimento(tipo)));
 
     salvarDados();
     fecharModal('modal-refeicao');
-    normalizarCategorias();
+    normalizarCategoriasRefeicoes();
     normalizarTags();
     renderizarTudoAposSync();
     reabrirSelecaoPlanejamentoAposCadastro();
@@ -4297,12 +4405,6 @@ function normalizarCategorias() {
         }
     });
 
-    app.refeicoes.forEach(refeicao => {
-        if (refeicao.categoria && refeicao.categoria.trim()) {
-            categorias.add(refeicao.categoria.trim());
-        }
-    });
-
     app.categorias = Array.from(categorias).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 
@@ -4382,21 +4484,13 @@ function editarCategoria(categoriaAtual) {
             receita.dataAtualizacao = new Date().toISOString();
         }
     });
-    app.refeicoes.forEach(refeicao => {
-        if (refeicao.categoria === categoriaAtual) {
-            refeicao.categoria = categoriaLimpa;
-            refeicao.dataAtualizacao = new Date().toISOString();
-        }
-    });
-
     normalizarCategorias();
     salvarDados();
     renderizarAposAlterarCategorias();
 }
 
 function removerCategoria(categoria) {
-    const usada = app.receitas.some(receita => receita.categoria === categoria) ||
-        app.refeicoes.some(refeicao => refeicao.categoria === categoria);
+    const usada = app.receitas.some(receita => receita.categoria === categoria);
     const mensagem = usada
         ? `Remover "${categoria}"? As receitas desta categoria ficarão sem categoria.`
         : `Remover "${categoria}"?`;
@@ -4411,13 +4505,6 @@ function removerCategoria(categoria) {
             receita.dataAtualizacao = new Date().toISOString();
         }
     });
-    app.refeicoes.forEach(refeicao => {
-        if (refeicao.categoria === categoria) {
-            refeicao.categoria = '';
-            refeicao.dataAtualizacao = new Date().toISOString();
-        }
-    });
-
     salvarDados();
     renderizarAposAlterarCategorias();
 }
@@ -4463,10 +4550,164 @@ function renderizarCategorias() {
 
 function renderizarAposAlterarCategorias() {
     atualizarSelectCategorias();
-    atualizarSelectCategoriasRefeicao();
     atualizarFiltroCategoria();
     renderizarCategorias();
     renderizarReceitas();
+    renderizarReceitasModalSelecao();
+    renderizarSemanal();
+    renderizarMensal();
+    renderizarDiaria();
+    renderizarCalendario();
+}
+
+/* ==================== CATEGORIAS DE REFEICOES ====================
+   Gerenciar categorias exclusivas das refeicoes compostas */
+
+function normalizarCategoriasRefeicoes() {
+    const categorias = new Set();
+
+    app.categoriasRefeicoes.forEach(categoria => {
+        if (categoria && categoria.trim()) {
+            categorias.add(categoria.trim());
+        }
+    });
+
+    app.refeicoes.forEach(refeicao => {
+        if (refeicao.categoria && refeicao.categoria.trim()) {
+            categorias.add(refeicao.categoria.trim());
+        }
+    });
+
+    app.categoriasRefeicoes = Array.from(categorias).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+function abrirCategoriasRefeicoes() {
+    abrirModal('modal-categorias-refeicoes');
+    renderizarCategoriasRefeicoes();
+}
+
+function adicionarCategoriaRefeicao() {
+    const input = document.getElementById('nova-categoria-refeicao');
+    const novaCategoria = input.value.trim();
+
+    if (!novaCategoria) {
+        alert('Digite uma categoria!');
+        return;
+    }
+
+    if (app.categoriasRefeicoes.some(categoria => categoria.toLowerCase() === novaCategoria.toLowerCase())) {
+        alert('Esta categoria já existe!');
+        return;
+    }
+
+    app.categoriasRefeicoes.push(novaCategoria);
+    removerExclusao('categoriasRefeicoes', normalizarNomeAlimento(novaCategoria));
+    normalizarCategoriasRefeicoes();
+    salvarDados();
+    atualizarSelectCategoriasRefeicao();
+    atualizarFiltroCategoriaRefeicao();
+    input.value = '';
+    renderizarCategoriasRefeicoes();
+}
+
+function editarCategoriaRefeicao(categoriaAtual) {
+    const novaCategoria = prompt('Novo nome da categoria:', categoriaAtual);
+    if (!novaCategoria) return;
+
+    const categoriaLimpa = novaCategoria.trim();
+    if (!categoriaLimpa || categoriaLimpa === categoriaAtual) return;
+
+    if (app.categoriasRefeicoes.some(categoria =>
+        categoria !== categoriaAtual &&
+        categoria.toLowerCase() === categoriaLimpa.toLowerCase()
+    )) {
+        alert('Esta categoria já existe!');
+        return;
+    }
+
+    registrarExclusao('categoriasRefeicoes', normalizarNomeAlimento(categoriaAtual));
+    removerExclusao('categoriasRefeicoes', normalizarNomeAlimento(categoriaLimpa));
+    app.categoriasRefeicoes = app.categoriasRefeicoes.map(categoria =>
+        categoria === categoriaAtual ? categoriaLimpa : categoria
+    );
+
+    app.refeicoes.forEach(refeicao => {
+        if (refeicao.categoria === categoriaAtual) {
+            refeicao.categoria = categoriaLimpa;
+            refeicao.dataAtualizacao = new Date().toISOString();
+        }
+    });
+
+    normalizarCategoriasRefeicoes();
+    salvarDados();
+    renderizarAposAlterarCategoriasRefeicoes();
+}
+
+function removerCategoriaRefeicao(categoria) {
+    const usada = app.refeicoes.some(refeicao => refeicao.categoria === categoria);
+    const mensagem = usada
+        ? `Remover "${categoria}"? As refeicoes desta categoria ficarão sem categoria.`
+        : `Remover "${categoria}"?`;
+
+    if (!confirm(mensagem)) return;
+
+    registrarExclusao('categoriasRefeicoes', normalizarNomeAlimento(categoria));
+    app.categoriasRefeicoes = app.categoriasRefeicoes.filter(item => item !== categoria);
+    app.refeicoes.forEach(refeicao => {
+        if (refeicao.categoria === categoria) {
+            refeicao.categoria = '';
+            refeicao.dataAtualizacao = new Date().toISOString();
+        }
+    });
+
+    salvarDados();
+    renderizarAposAlterarCategoriasRefeicoes();
+}
+
+function renderizarCategoriasRefeicoes() {
+    const container = document.getElementById('lista-categorias-refeicoes');
+    if (!container) return;
+
+    container.innerHTML = '';
+    normalizarCategoriasRefeicoes();
+
+    if (app.categoriasRefeicoes.length === 0) {
+        container.innerHTML = '<div class="sem-resultados">Nenhuma categoria cadastrada.</div>';
+        return;
+    }
+
+    app.categoriasRefeicoes.forEach(categoria => {
+        const item = document.createElement('div');
+        item.className = 'item-gerenciavel';
+
+        const nome = document.createElement('span');
+        nome.innerHTML = `${renderizarBadgeCategoria(categoria, 'refeicao')} ${escaparHtml(categoria)}`;
+
+        const acoes = document.createElement('div');
+        acoes.className = 'acoes-gerenciavel';
+
+        const btnEditar = document.createElement('button');
+        btnEditar.className = 'btn-editar';
+        btnEditar.textContent = 'Editar';
+        btnEditar.onclick = () => editarCategoriaRefeicao(categoria);
+
+        const btnRemover = document.createElement('button');
+        btnRemover.className = 'btn-deletar';
+        btnRemover.textContent = 'Remover';
+        btnRemover.onclick = () => removerCategoriaRefeicao(categoria);
+
+        acoes.appendChild(btnEditar);
+        acoes.appendChild(btnRemover);
+        item.appendChild(nome);
+        item.appendChild(acoes);
+        container.appendChild(item);
+    });
+}
+
+function renderizarAposAlterarCategoriasRefeicoes() {
+    atualizarSelectCategoriasRefeicao();
+    atualizarFiltroCategoriaRefeicao();
+    renderizarCategoriasRefeicoes();
     renderizarRefeicoes();
     renderizarReceitasModalSelecao();
     renderizarSemanal();
@@ -4555,6 +4796,147 @@ function atualizarSelectTipos(tiposSelecionados = []) {
         label.appendChild(checkbox);
         label.appendChild(span);
         container.appendChild(label);
+    });
+}
+
+/* ==================== TIPOS DE USO ====================
+   Gerenciar linhas exclusivas da visao mensal */
+
+function normalizarTiposUso() {
+    const tipos = new Set();
+
+    app.tiposUso.forEach(tipo => {
+        if (tipo && tipo.trim()) {
+            tipos.add(tipo.trim());
+        }
+    });
+
+    app.planejamentos.forEach(plano => {
+        if (plano.tipo === 'mensal' && plano.refeicao && plano.refeicao.trim()) {
+            tipos.add(plano.refeicao.trim());
+        }
+    });
+
+    app.tiposUso = Array.from(tipos).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+function abrirTiposUso() {
+    abrirModal('modal-tipos-uso');
+    renderizarTiposUso();
+}
+
+function adicionarTipoUso() {
+    const input = document.getElementById('novo-tipo-uso');
+    const novoTipo = input.value.trim();
+
+    if (!novoTipo) {
+        alert('Digite um tipo de uso!');
+        return;
+    }
+
+    if (app.tiposUso.some(tipo => tipo.toLowerCase() === novoTipo.toLowerCase())) {
+        alert('Este tipo já existe!');
+        return;
+    }
+
+    app.tiposUso.push(novoTipo);
+    removerExclusao('tiposUso', normalizarNomeAlimento(novoTipo));
+    normalizarTiposUso();
+    salvarDados();
+    input.value = '';
+    renderizarTiposUso();
+    renderizarMensal();
+}
+
+function editarTipoUso(tipoAtual) {
+    const novoTipo = prompt('Novo nome do tipo de uso:', tipoAtual);
+    if (!novoTipo) return;
+
+    const tipoLimpo = novoTipo.trim();
+    if (!tipoLimpo || tipoLimpo === tipoAtual) return;
+
+    if (app.tiposUso.some(tipo =>
+        tipo !== tipoAtual &&
+        tipo.toLowerCase() === tipoLimpo.toLowerCase()
+    )) {
+        alert('Este tipo já existe!');
+        return;
+    }
+
+    registrarExclusao('tiposUso', normalizarNomeAlimento(tipoAtual));
+    removerExclusao('tiposUso', normalizarNomeAlimento(tipoLimpo));
+    app.tiposUso = app.tiposUso.map(tipo => tipo === tipoAtual ? tipoLimpo : tipo);
+    app.planejamentos.forEach(plano => {
+        if (plano.tipo === 'mensal' && plano.refeicao === tipoAtual) {
+            plano.refeicao = tipoLimpo;
+            plano.dataAtualizacao = new Date().toISOString();
+        }
+    });
+
+    normalizarTiposUso();
+    salvarDados();
+    renderizarTiposUso();
+    renderizarMensal();
+}
+
+function removerTipoUso(tipo) {
+    const usado = app.planejamentos.some(plano => plano.tipo === 'mensal' && plano.refeicao === tipo);
+    const mensagem = usado
+        ? `Remover "${tipo}"? Os itens mensais deste tipo tambem serao removidos.`
+        : `Remover "${tipo}"?`;
+
+    if (!confirm(mensagem)) return;
+
+    registrarExclusao('tiposUso', normalizarNomeAlimento(tipo));
+    app.tiposUso = app.tiposUso.filter(item => item !== tipo);
+    app.planejamentos
+        .filter(plano => plano.tipo === 'mensal' && plano.refeicao === tipo)
+        .forEach(plano => registrarExclusao('planejamentos', chavePlanejamento(plano)));
+    app.planejamentos = app.planejamentos.filter(plano => !(plano.tipo === 'mensal' && plano.refeicao === tipo));
+
+    salvarDados();
+    renderizarTiposUso();
+    renderizarMensal();
+    renderizarContagemAlimentos();
+}
+
+function renderizarTiposUso() {
+    const container = document.getElementById('lista-tipos-uso');
+    if (!container) return;
+
+    container.innerHTML = '';
+    normalizarTiposUso();
+
+    if (app.tiposUso.length === 0) {
+        container.innerHTML = '<div class="sem-resultados">Nenhum tipo de uso cadastrado.</div>';
+        return;
+    }
+
+    app.tiposUso.forEach(tipo => {
+        const item = document.createElement('div');
+        item.className = 'item-gerenciavel';
+
+        const nome = document.createElement('span');
+        nome.textContent = tipo;
+
+        const acoes = document.createElement('div');
+        acoes.className = 'acoes-gerenciavel';
+
+        const btnEditar = document.createElement('button');
+        btnEditar.className = 'btn-editar';
+        btnEditar.textContent = 'Editar';
+        btnEditar.onclick = () => editarTipoUso(tipo);
+
+        const btnRemover = document.createElement('button');
+        btnRemover.className = 'btn-deletar';
+        btnRemover.textContent = 'Remover';
+        btnRemover.onclick = () => removerTipoUso(tipo);
+
+        acoes.appendChild(btnEditar);
+        acoes.appendChild(btnRemover);
+        item.appendChild(nome);
+        item.appendChild(acoes);
+        container.appendChild(item);
     });
 }
 
@@ -4656,6 +5038,10 @@ Object.assign(window, {
     adicionarCategoria,
     editarCategoria,
     removerCategoria,
+    abrirCategoriasRefeicoes,
+    adicionarCategoriaRefeicao,
+    editarCategoriaRefeicao,
+    removerCategoriaRefeicao,
     abrirTags,
     adicionarTag,
     editarTag,
@@ -4702,6 +5088,10 @@ Object.assign(window, {
     editarCategoriaAlimento,
     removerCategoriaAlimento,
     abrirTiposRefeicao,
+    abrirTiposUso,
+    adicionarTipoUso,
+    editarTipoUso,
+    removerTipoUso,
     abrirHistorico,
 });
 
