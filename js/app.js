@@ -2106,7 +2106,6 @@ function buscarPlanejamentos(semana, dia, tipo) {
 
 function buscarPlanejamentosPorSemana(semana, tipo) {
     return app.planejamentos.filter(p =>
-        planejamentoPertenceAoAtivo(p) &&
         !planejamentoEhNotaDia(p) &&
         p.tipo === 'mensal' &&
         Number(p.semana) === Number(semana) &&
@@ -2660,6 +2659,40 @@ function renderizarGrupoDiario(grupo, dataString, tipo) {
     `;
 }
 
+function renderizarResumoSemanaDiaria(data) {
+    const semana = obterNumeroSemana(data);
+    const inicio = obterInicioSemana(semana, data.getFullYear());
+    const fim = new Date(inicio);
+    fim.setDate(inicio.getDate() + 6);
+    const intervalo = `${inicio.getDate()}/${inicio.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1}`;
+    const colunas = app.tiposUso.map(tipo => {
+        const planos = buscarPlanejamentosPorSemana(semana, tipo);
+        const tipoParam = encodeURIComponent(tipo);
+        const itensHtml = planos.length > 0
+            ? renderizarListaPlanejamentos(planos, true)
+            : '<p class="sem-planejamento-diario">Sem planejamento</p>';
+
+        return `
+            <div class="coluna-semana-diaria">
+                <div class="tipo-uso-semana-diaria">${escaparHtml(tipo)}</div>
+                <div class="planejamentos-semana-diaria">${itensHtml}</div>
+                <button onclick="abrirModalPlanejarSemana('${semana}', decodeURIComponent('${tipoParam}'))">
+                    Adicionar
+                </button>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <section class="card-diario card-semana-diaria">
+            <h3>Semana ${semana} <span>${intervalo}</span></h3>
+            <div class="grade-semana-diaria">
+                ${colunas}
+            </div>
+        </section>
+    `;
+}
+
 function renderizarDiaria() {
     const container = document.getElementById('container-diaria');
     const titulo = document.getElementById('titulo-dia');
@@ -2690,6 +2723,8 @@ function renderizarDiaria() {
 
         container.appendChild(card);
     });
+
+    container.insertAdjacentHTML('beforeend', renderizarResumoSemanaDiaria(dataDiaria));
 }
 
 function diaAnterior() {

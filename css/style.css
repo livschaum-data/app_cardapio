@@ -743,6 +743,51 @@ body {
     font-size: 13px;
 }
 
+.card-semana-diaria h3 span {
+    color: var(--cor-texto-cinza);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.grade-semana-diaria {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    min-width: 520px;
+}
+
+.coluna-semana-diaria,
+.tipo-uso-semana-diaria,
+.planejamentos-semana-diaria {
+    border-radius: 8px;
+}
+
+.coluna-semana-diaria {
+    background: #fffaf4;
+    border: 1px solid rgba(139, 69, 19, 0.12);
+    min-width: 0;
+    padding: 10px;
+}
+
+.tipo-uso-semana-diaria {
+    align-items: center;
+    background: #3a2a1f;
+    color: white;
+    display: flex;
+    font-size: 12px;
+    font-weight: 800;
+    justify-content: center;
+    margin-bottom: 8px;
+    min-height: 38px;
+    padding: 8px 10px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.planejamentos-semana-diaria {
+    min-width: 0;
+}
+
 .item-planejamento-diario {
     min-height: 58px;
     position: relative;
