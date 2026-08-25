@@ -2511,8 +2511,53 @@ body {
     .visao {
         height: 100dvh;
         min-height: 0;
-        overflow: auto;
+        overflow-x: hidden;
+        overflow-y: auto;
         width: 100%;
+    }
+
+    #visao-diaria {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    #visao-diaria .container-diaria {
+        gap: 12px;
+    }
+
+    #visao-diaria .card-diario {
+        overflow-x: visible;
+        padding: 12px;
+    }
+
+    #visao-diaria .card-diario h3 {
+        font-size: 22px;
+        line-height: 1.15;
+    }
+
+    #visao-diaria .grupos-diaria,
+    #visao-diaria .grade-semana-diaria {
+        grid-template-columns: 1fr;
+        min-width: 0;
+    }
+
+    #visao-diaria .grupo-diaria,
+    #visao-diaria .coluna-semana-diaria {
+        padding: 9px;
+        width: 100%;
+    }
+
+    #visao-diaria .grupo-diaria h4,
+    #visao-diaria .tipo-uso-semana-diaria {
+        font-size: 11px;
+        min-height: 32px;
+    }
+
+    #visao-diaria .grupo-diaria .celula-refeicao,
+    #visao-diaria .planejamentos-semana-diaria .celula-refeicao,
+    #visao-diaria .item-planejamento-diario {
+        min-height: 46px;
+        padding: 9px;
     }
 
     .painel-nuvem {
