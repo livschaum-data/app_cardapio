@@ -694,16 +694,17 @@ body {
 
 .container-diaria {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: 1fr;
     gap: 15px;
 }
 
 .card-diario {
     background: white;
     border-left: 4px solid var(--cor-destaque);
-    padding: 15px;
     border-radius: var(--radius);
     box-shadow: var(--sombra);
+    overflow-x: auto;
+    padding: 15px;
 }
 
 .card-diario h3 {
@@ -714,6 +715,32 @@ body {
 .card-diario p {
     color: var(--cor-texto-cinza);
     margin-bottom: 8px;
+}
+
+.grupos-diaria {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+}
+
+.grupo-diaria {
+    background: #fffaf4;
+    border: 1px solid rgba(139, 69, 19, 0.12);
+    border-radius: 8px;
+    min-width: 0;
+    padding: 10px;
+}
+
+.grupo-diaria h4 {
+    color: #5f4738;
+    font-size: 12px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.sem-planejamento-diario {
+    font-size: 13px;
 }
 
 .item-planejamento-diario {

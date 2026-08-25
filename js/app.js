@@ -1757,15 +1757,20 @@ function buscarPlanejamentoPorData(dataStr, tipo) {
 }
 
 function buscarPlanejamentosPorData(dataStr, tipo) {
+    return buscarPlanejamentosPorDataGrupo(dataStr, tipo, obterGrupoPlanejamentoAtivo());
+}
+
+function buscarPlanejamentosPorDataGrupo(dataStr, tipo, grupo) {
     const data = criarDataLocal(dataStr);
     const legado = obterSemanaDiaPorData(data);
+    const grupoNormalizado = normalizarGrupoPlanejamento(grupo);
 
     return app.planejamentos.filter(p =>
-        planejamentoPertenceAoAtivo(p) &&
+        normalizarGrupoPlanejamento(p?.grupo) === grupoNormalizado &&
         p.data === dataStr &&
         p.refeicao === tipo
     ).concat(app.planejamentos.filter(p =>
-        planejamentoPertenceAoAtivo(p) &&
+        normalizarGrupoPlanejamento(p?.grupo) === grupoNormalizado &&
         !p.data &&
         Number(p.semana) === legado.semana &&
         normalizarDiaSemana(p.dia) === legado.dia &&
@@ -2604,6 +2609,57 @@ function proxMes() {
 
 let dataDiaria = new Date();
 
+function renderizarItemPlanejamentoDiario(plano) {
+    const { tipo: tipoItem, item } = buscarItemPlanejamento(plano);
+
+    if (!item) {
+        return `
+            <div class="item-planejamento-diario">
+                <div class="conteudo-planejamento">
+                    <p><strong>Item removido</strong></p>
+                    ${renderizarCheckPlanejamento(plano)}
+                </div>
+                <div class="acoes-planejamento">
+                    <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
+                    <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
+                </div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="item-planejamento-diario">
+            <div class="conteudo-planejamento">
+                <p><strong>${escaparHtml(item.nome)}</strong></p>
+                ${renderizarCheckPlanejamento(plano)}
+            </div>
+            <div class="acoes-planejamento">
+                <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
+                ${tipoItem === 'receita' ? `<button onclick="marcarComoConsumida('${item.id}')">Consumida</button>` : ''}
+                <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
+            </div>
+        </div>
+    `;
+}
+
+function renderizarGrupoDiario(grupo, dataString, tipo) {
+    const planos = buscarPlanejamentosPorDataGrupo(dataString, tipo, grupo.id);
+    const tipoParam = encodeURIComponent(tipo);
+    const itensHtml = planos.length > 0
+        ? planos.map(renderizarItemPlanejamentoDiario).join('')
+        : '<p class="sem-planejamento-diario">Sem refeicao planejada</p>';
+
+    return `
+        <section class="grupo-diaria grupo-diaria-${grupo.id}">
+            <h4>${escaparHtml(grupo.nome)}</h4>
+            ${itensHtml}
+            <button onclick="abrirModalPlanejarData('${dataString}', decodeURIComponent('${tipoParam}'), '${grupo.id}')">
+                Adicionar
+            </button>
+        </section>
+    `;
+}
+
 function renderizarDiaria() {
     const container = document.getElementById('container-diaria');
     const titulo = document.getElementById('titulo-dia');
@@ -2612,7 +2668,7 @@ function renderizarDiaria() {
     // Formatar data
     const opcoes = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const dataFormatada = dataDiaria.toLocaleDateString('pt-BR', opcoes);
-    titulo.textContent = `${obterNomePlanejamentoAtivo()} - ${dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1)}`;
+    titulo.textContent = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
 
     // Buscar refeicoes planejadas para essa data
     const dataString = formatarDataChave(dataDiaria);
@@ -2623,60 +2679,14 @@ function renderizarDiaria() {
     container.appendChild(blocoNotas);
 
     app.tiposRefeicao.forEach(tipo => {
-        const planos = buscarPlanejamentosPorData(dataString, tipo);
-
         const card = document.createElement('div');
         card.className = 'card-diario';
         card.innerHTML = `
-            <h3>${tipo}</h3>
+            <h3>${escaparHtml(tipo)}</h3>
+            <div class="grupos-diaria">
+                ${app.planejamentosGrupos.map(grupo => renderizarGrupoDiario(grupo, dataString, tipo)).join('')}
+            </div>
         `;
-
-        if (planos.length > 0) {
-            card.innerHTML += planos.map(plano => {
-                const { tipo: tipoItem, item } = buscarItemPlanejamento(plano);
-                if (!item) {
-                    return `
-                        <div class="item-planejamento-diario">
-                            <div class="conteudo-planejamento">
-                                <p><strong>Item removido</strong></p>
-                                ${renderizarCheckPlanejamento(plano)}
-                            </div>
-                            <div class="acoes-planejamento">
-                                <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
-                                <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                return `
-                    <div class="item-planejamento-diario">
-                        <div class="conteudo-planejamento">
-                            <p><strong>${escaparHtml(item.nome)}</strong></p>
-                            ${renderizarCheckPlanejamento(plano)}
-                        </div>
-                        <div class="acoes-planejamento">
-                            <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
-                            ${tipoItem === 'receita' ? `<button onclick="marcarComoConsumida('${item.id}')">Consumida</button>` : ''}
-                            <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            card.innerHTML += `
-                <button onclick="abrirModalPlanejarData('${dataString}', '${tipo}')">
-                    Adicionar
-                </button>
-            `;
-        } else {
-            card.innerHTML += `
-                <p style="color: #999;">Sem refeicao planejada</p>
-                <button onclick="abrirModalPlanejarData('${dataString}', '${tipo}')">
-                    Adicionar
-                </button>
-            `;
-        }
 
         container.appendChild(card);
     });
@@ -2697,11 +2707,11 @@ function mudarDataDiaria(data) {
     renderizarDiaria();
 }
 
-function abrirModalPlanejarData(data, tipo) {
+function abrirModalPlanejarData(data, tipo, grupo = '') {
     const semanaDia = obterSemanaDiaPorData(criarDataLocal(data));
     window.contextoPlanejar = {
         modo: 'calendario',
-        grupo: obterGrupoPlanejamentoAtivo(),
+        grupo: grupo ? normalizarGrupoPlanejamento(grupo) : obterGrupoPlanejamentoAtivo(),
         data,
         semana: semanaDia.semana,
         dia: semanaDia.dia,
