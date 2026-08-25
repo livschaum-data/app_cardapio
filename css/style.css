@@ -824,6 +824,10 @@ body {
     padding-right: 0;
 }
 
+#visao-diaria .check-planejamento {
+    display: none;
+}
+
 .item-planejamento-diario .acoes-planejamento,
 .linha-planejamento-data .acoes-planejamento {
     display: flex;
