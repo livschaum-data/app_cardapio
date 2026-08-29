@@ -2363,8 +2363,8 @@ function criarLinhaModalSelecao(item) {
         </div>
         ${tagsHtml}
         <span class="badge-item ${tipoClasse}">${obterRotuloItemModalSelecao(item.itemTipo)}</span>
-        <button onclick="selecionarItemParaPlano('${item.itemTipo}', '${item.id}')" class="btn-principal btn-selecionar-linha">
-            Selecionar
+        <button onclick="selecionarItemParaPlano('${item.itemTipo}', '${item.id}')" class="btn-principal btn-selecionar-linha" aria-label="Selecionar ${escaparHtml(item.nome)}" title="Selecionar">
+            +
         </button>
     `;
 

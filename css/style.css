@@ -2030,7 +2030,7 @@ body {
 
 .lista-receitas-modal {
     display: grid;
-    gap: 6px;
+    gap: 4px;
     max-height: 58vh;
     overflow-y: auto;
     padding-right: 4px;
@@ -2043,10 +2043,10 @@ body {
     border-left: 4px solid var(--cor-destaque);
     border-radius: 8px;
     display: grid;
-    gap: 10px;
-    grid-template-columns: minmax(0, 1fr) minmax(120px, 0.8fr) auto auto;
-    min-height: 54px;
-    padding: 8px 10px;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) minmax(110px, 0.55fr) auto auto;
+    min-height: 44px;
+    padding: 6px 8px;
 }
 
 .linha-selecao:hover {
@@ -2068,8 +2068,8 @@ body {
 .linha-selecao-identidade {
     align-items: center;
     display: grid;
-    gap: 10px;
-    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 8px;
+    grid-template-columns: 26px minmax(0, 1fr);
     min-width: 0;
 }
 
@@ -2118,9 +2118,9 @@ body {
     display: inline-flex;
     font-size: 12px;
     font-weight: 900;
-    height: 30px;
+    height: 26px;
     justify-content: center;
-    width: 30px;
+    width: 26px;
 }
 
 .linha-selecao-refeicao .icone-selecao {
@@ -2134,8 +2134,13 @@ body {
 }
 
 .btn-selecionar-linha {
+    border-radius: 6px;
+    font-size: 20px;
+    height: 32px;
+    line-height: 1;
     min-height: 32px;
-    padding: 6px 12px;
+    padding: 0;
+    width: 32px;
 }
 
 .modal-content {
@@ -2344,17 +2349,39 @@ body {
 
     .linha-ingrediente-receita,
     .linha-item-refeicao,
-    .linha-selecao,
     .filtros-selecao {
         grid-template-columns: 1fr;
     }
 
     .linha-selecao {
-        align-items: stretch;
+        align-items: center;
+        gap: 7px;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        min-height: 42px;
+        padding: 5px 7px;
+    }
+
+    .linha-selecao .tags-selecao {
+        display: none;
+    }
+
+    .linha-selecao-identidade {
+        grid-template-columns: 24px minmax(0, 1fr);
+    }
+
+    .linha-selecao p {
+        font-size: 11px;
+        margin-top: 1px;
+    }
+
+    .linha-selecao .badge-item {
+        font-size: 10px;
+        padding: 3px 5px;
     }
 
     .btn-selecionar-linha {
-        width: 100%;
+        height: 32px;
+        width: 32px;
     }
 
     .item-gerenciavel {
