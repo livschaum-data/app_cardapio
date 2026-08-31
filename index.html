@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Card&aacute;pio</title>
-    <link rel="stylesheet" href="css/style.css?v=20260829-selecao-compacta">
+    <link rel="stylesheet" href="css/style.css?v=20260831-diaria-padrao">
 </head>
 <body>
     <div id="app">
@@ -24,9 +24,9 @@
             </div>
             <nav class="abas" aria-label="Navegacao principal">
                 <span class="sidebar-label">Planejamento</span>
-                <button class="aba-btn ativo" onclick="mostrarVisao('semanal')">Semanal</button>
+                <button class="aba-btn" onclick="mostrarVisao('semanal')">Semanal</button>
                 <button class="aba-btn" onclick="mostrarVisao('mensal')">Mensal</button>
-                <button class="aba-btn" onclick="mostrarVisao('diaria')">Di&aacute;ria</button>
+                <button class="aba-btn ativo" onclick="mostrarVisao('diaria')">Di&aacute;ria</button>
                 <button class="aba-btn" onclick="mostrarVisao('calendario')">Calend&aacute;rio</button>
                 <span class="sidebar-label">Cadastros</span>
                 <button class="aba-btn" onclick="mostrarVisao('receitas')">Receitas</button>
@@ -93,7 +93,7 @@
             <button type="button" class="btn-planejamento-alternar" onclick="alternarPlanejamentoAtivo()">Alternar</button>
         </div>
 
-        <div id="visao-semanal" class="visao">
+        <div id="visao-semanal" class="visao" style="display:none;">
             <div class="controles">
                 <button onclick="semanaAnterior()">Semana Anterior</button>
                 <h2 id="titulo-semana">Semana 1</h2>
@@ -129,7 +129,7 @@
             <div id="container-semanas-mensais" class="container-semanas"></div>
         </div>
 
-        <div id="visao-diaria" class="visao" style="display:none;">
+        <div id="visao-diaria" class="visao">
             <div class="controles">
                 <button onclick="diaAnterior()">Dia Anterior</button>
                 <h2 id="titulo-dia">Segunda, 1 de Janeiro</h2>
@@ -539,6 +539,6 @@
 
     <script src="js/supabase-config.js?v=20260803-supabase-url"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/app.js?v=20260829-selecao-compacta"></script>
+    <script src="js/app.js?v=20260831-diaria-padrao"></script>
 </body>
 </html>

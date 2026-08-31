@@ -16,9 +16,9 @@ const app = {
 
     // Planejamentos separados que compartilham os mesmos cadastros
     planejamentosGrupos: [
+        { id: 'simplificado', nome: 'Simplificado' },
         { id: 'adulto', nome: 'Adulto' },
         { id: 'bebe', nome: 'Beb\u00ea' },
-        { id: 'simplificado', nome: 'Simplificado' },
     ],
     planejamentoAtivo: localStorage.getItem('cardapio_planejamento_ativo') || 'adulto',
 
@@ -96,7 +96,7 @@ async function inicializar() {
 
     // Renderizar visao inicial
     atualizarControlePlanejamentoAtivo();
-    renderizarSemanal();
+    mostrarVisao('diaria');
 
     // Configurar evento de envio de formulario
     const formReceita = document.getElementById('form-receita');
