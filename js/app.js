@@ -40,6 +40,16 @@ const app = {
     // Categorias customizaveis de alimentos
     categoriasAlimentos: ['Fruta', 'Legume', 'Verdura', 'Proteina', 'Carboidrato', 'Laticinio', 'Bebida', 'Tempero', 'Grao', 'Oleaginosa'],
 
+    // Cores customizaveis de tipos e categorias
+    coresTiposCategorias: {
+        tiposRefeicao: {},
+        tiposUso: {},
+        categorias: {},
+        categoriasRefeicoes: {},
+        categoriasAlimentos: {},
+    },
+    configuracoesAtualizadasEm: null,
+
     // Tags customizaveis de receitas
     tags: ['bebê', 'sem glúten', 'sem lactose', 'dia a dia'],
 
@@ -139,6 +149,8 @@ function salvarDadosLegado() {
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
     localStorage.setItem('cardapio_categorias_refeicoes', JSON.stringify(app.categoriasRefeicoes));
     localStorage.setItem('cardapio_categorias_alimentos', JSON.stringify(app.categoriasAlimentos));
+    localStorage.setItem('cardapio_cores_tipos_categorias', JSON.stringify(app.coresTiposCategorias));
+    localStorage.setItem('cardapio_configuracoes_atualizadas_em', app.configuracoesAtualizadasEm || app.atualizadoEm || '');
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
     localStorage.setItem('cardapio_sync_meta', JSON.stringify(obterSyncMetaAtual()));
     localStorage.setItem('cardapio_atualizado_em', app.atualizadoEm);
@@ -156,6 +168,8 @@ function carregarDadosLegado() {
     app.categorias = JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias;
     app.categoriasRefeicoes = JSON.parse(localStorage.getItem('cardapio_categorias_refeicoes')) || app.categoriasRefeicoes;
     app.categoriasAlimentos = JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos;
+    app.coresTiposCategorias = normalizarCoresTiposCategorias(JSON.parse(localStorage.getItem('cardapio_cores_tipos_categorias')), app.coresTiposCategorias);
+    app.configuracoesAtualizadasEm = localStorage.getItem('cardapio_configuracoes_atualizadas_em') || app.configuracoesAtualizadasEm;
     app.tags = JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags;
     app.syncMeta = JSON.parse(localStorage.getItem('cardapio_sync_meta')) || app.syncMeta;
     app.atualizadoEm = localStorage.getItem('cardapio_atualizado_em') || app.atualizadoEm;
@@ -599,6 +613,11 @@ function obterTimestamp(valor) {
     return data && !Number.isNaN(data.getTime()) ? data.getTime() : 0;
 }
 
+function normalizarTimestamp(valor) {
+    const timestamp = obterTimestamp(valor);
+    return timestamp ? new Date(timestamp).toISOString() : null;
+}
+
 function dadosLocaisMaisRecentesQueNuvem(dadosRemotos) {
     const local = obterTimestamp(app.atualizadoEm);
     const remoto = obterTimestamp(dadosRemotos?.atualizadoEm);
@@ -621,6 +640,8 @@ function obterSnapshotDadosApp() {
         categorias: app.categorias,
         categoriasRefeicoes: app.categoriasRefeicoes,
         categoriasAlimentos: app.categoriasAlimentos,
+        coresTiposCategorias: app.coresTiposCategorias,
+        configuracoesAtualizadasEm: app.configuracoesAtualizadasEm,
         tags: app.tags,
         atualizadoEm: app.atualizadoEm,
         syncMeta: obterSyncMetaAtual(),
@@ -656,11 +677,15 @@ function normalizarSyncMeta(meta) {
 
     return {
         deletados,
+        coresTiposCategorias: normalizarCoresTiposCategorias(meta?.coresTiposCategorias),
+        configuracoesAtualizadasEm: normalizarTimestamp(meta?.configuracoesAtualizadasEm),
     };
 }
 
 function obterSyncMetaAtual() {
     const meta = normalizarSyncMeta(app.syncMeta);
+    meta.coresTiposCategorias = normalizarCoresTiposCategorias(app.coresTiposCategorias, meta.coresTiposCategorias);
+    meta.configuracoesAtualizadasEm = app.configuracoesAtualizadasEm || meta.configuracoesAtualizadasEm || app.atualizadoEm || null;
     app.syncMeta = meta;
     return meta;
 }
@@ -759,11 +784,14 @@ function mesclarListaPorChave(listaLocal, listaRemota, obterChave, colecao, meta
         .map(([, item]) => item);
 }
 
-function mesclarListaTexto(listaLocal, listaRemota, colecao, meta) {
+function mesclarListaTexto(listaLocal, listaRemota, colecao, meta, preferirLocal = true) {
     const mapa = new Map();
     const deletados = normalizarSyncMeta(meta).deletados[colecao] || {};
+    const listas = preferirLocal
+        ? [listaLocal, listaRemota]
+        : [listaRemota, listaLocal];
 
-    [...(Array.isArray(listaLocal) ? listaLocal : []), ...(Array.isArray(listaRemota) ? listaRemota : [])]
+    listas.flatMap(lista => Array.isArray(lista) ? lista : [])
         .map(item => String(item || '').trim())
         .filter(Boolean)
         .forEach(item => {
@@ -773,6 +801,68 @@ function mesclarListaTexto(listaLocal, listaRemota, colecao, meta) {
         });
 
     return Array.from(mapa.values());
+}
+
+function obterTimestampConfiguracoesDados(dados) {
+    return obterTimestamp(
+        dados?.configuracoesAtualizadasEm ||
+        dados?.syncMeta?.configuracoesAtualizadasEm ||
+        dados?.atualizadoEm
+    );
+}
+
+function normalizarCoresTiposCategorias(valor, fallback = null) {
+    const colecoes = ['tiposRefeicao', 'tiposUso', 'categorias', 'categoriasRefeicoes', 'categoriasAlimentos'];
+    const resultado = {};
+
+    colecoes.forEach(colecao => {
+        resultado[colecao] = {};
+        const origem = valor?.[colecao] || fallback?.[colecao] || {};
+        Object.keys(origem).forEach(chave => {
+            const cor = normalizarCorHex(origem[chave]);
+            if (chave && cor) {
+                resultado[colecao][normalizarNomeAlimento(chave)] = cor;
+            }
+        });
+    });
+
+    return resultado;
+}
+
+function normalizarListaTextoConfiguravel(lista, valoresRelacionados = []) {
+    const mapa = new Map();
+
+    [...(Array.isArray(lista) ? lista : []), ...(Array.isArray(valoresRelacionados) ? valoresRelacionados : [])]
+        .map(item => String(item || '').trim())
+        .filter(Boolean)
+        .forEach(item => {
+            const chave = normalizarNomeAlimento(item);
+            if (!mapa.has(chave)) mapa.set(chave, item);
+        });
+
+    return Array.from(mapa.values());
+}
+
+function normalizarCorHex(cor) {
+    const valor = String(cor || '').trim();
+    if (/^#[0-9a-f]{6}$/i.test(valor)) return valor.toLowerCase();
+    if (/^[0-9a-f]{6}$/i.test(valor)) return `#${valor.toLowerCase()}`;
+    return '';
+}
+
+function mesclarCoresTiposCategorias(local, remoto, localMaisRecente = false) {
+    const base = normalizarCoresTiposCategorias(localMaisRecente ? remoto : local);
+    const preferencial = normalizarCoresTiposCategorias(localMaisRecente ? local : remoto);
+    const resultado = normalizarCoresTiposCategorias(base);
+
+    Object.keys(preferencial).forEach(colecao => {
+        resultado[colecao] = {
+            ...(resultado[colecao] || {}),
+            ...preferencial[colecao],
+        };
+    });
+
+    return resultado;
 }
 
 function chaveAlimento(alimento) {
@@ -818,6 +908,9 @@ function mesclarDadosCardapio(dadosLocais, dadosRemotos) {
     const remoto = dadosRemotos || {};
     const atualizadoLocal = obterTimestamp(local.atualizadoEm);
     const atualizadoRemoto = obterTimestamp(remoto.atualizadoEm);
+    const configuracoesLocal = obterTimestampConfiguracoesDados(local);
+    const configuracoesRemotas = obterTimestampConfiguracoesDados(remoto);
+    const preferirConfiguracoesLocais = configuracoesLocal >= configuracoesRemotas;
     const localSemHistorico = !atualizadoLocal && atualizadoRemoto;
     const syncMeta = mesclarSyncMeta(local.syncMeta, remoto.syncMeta);
     const dados = {
@@ -826,13 +919,21 @@ function mesclarDadosCardapio(dadosLocais, dadosRemotos) {
         refeicoes: mesclarListaPorChave(local.refeicoes, remoto.refeicoes, chaveRefeicao, 'refeicoes', syncMeta),
         planejamentos: mesclarListaPorChave(local.planejamentos, remoto.planejamentos, chavePlanejamento, 'planejamentos', syncMeta),
         historico: mesclarListaPorChave(local.historico, remoto.historico, chaveHistorico, 'historico', syncMeta),
-        tiposRefeicao: mesclarListaTexto(localSemHistorico ? [] : local.tiposRefeicao, remoto.tiposRefeicao, 'tiposRefeicao', syncMeta),
-        tiposUso: mesclarListaTexto(localSemHistorico ? [] : local.tiposUso, remoto.tiposUso, 'tiposUso', syncMeta),
-        categorias: mesclarListaTexto(localSemHistorico ? [] : local.categorias, remoto.categorias, 'categorias', syncMeta),
-        categoriasRefeicoes: mesclarListaTexto(localSemHistorico ? [] : local.categoriasRefeicoes, remoto.categoriasRefeicoes, 'categoriasRefeicoes', syncMeta),
-        categoriasAlimentos: mesclarListaTexto(localSemHistorico ? [] : local.categoriasAlimentos, remoto.categoriasAlimentos, 'categoriasAlimentos', syncMeta),
+        tiposRefeicao: mesclarListaTexto(localSemHistorico ? [] : local.tiposRefeicao, remoto.tiposRefeicao, 'tiposRefeicao', syncMeta, preferirConfiguracoesLocais),
+        tiposUso: mesclarListaTexto(localSemHistorico ? [] : local.tiposUso, remoto.tiposUso, 'tiposUso', syncMeta, preferirConfiguracoesLocais),
+        categorias: mesclarListaTexto(localSemHistorico ? [] : local.categorias, remoto.categorias, 'categorias', syncMeta, preferirConfiguracoesLocais),
+        categoriasRefeicoes: mesclarListaTexto(localSemHistorico ? [] : local.categoriasRefeicoes, remoto.categoriasRefeicoes, 'categoriasRefeicoes', syncMeta, preferirConfiguracoesLocais),
+        categoriasAlimentos: mesclarListaTexto(localSemHistorico ? [] : local.categoriasAlimentos, remoto.categoriasAlimentos, 'categoriasAlimentos', syncMeta, preferirConfiguracoesLocais),
+        coresTiposCategorias: mesclarCoresTiposCategorias(
+            local.coresTiposCategorias || local.syncMeta?.coresTiposCategorias,
+            remoto.coresTiposCategorias || remoto.syncMeta?.coresTiposCategorias,
+            preferirConfiguracoesLocais
+        ),
         tags: mesclarListaTexto(localSemHistorico ? [] : local.tags, remoto.tags, 'tags', syncMeta),
         atualizadoEm: atualizadoLocal > atualizadoRemoto ? local.atualizadoEm : remoto.atualizadoEm,
+        configuracoesAtualizadasEm: configuracoesLocal > configuracoesRemotas
+            ? (local.configuracoesAtualizadasEm || local.syncMeta?.configuracoesAtualizadasEm)
+            : (remoto.configuracoesAtualizadasEm || remoto.syncMeta?.configuracoesAtualizadasEm),
         syncMeta,
     };
 
@@ -933,6 +1034,13 @@ function aplicarDados(dados) {
     app.categoriasAlimentos = Array.isArray(dados.categoriasAlimentos)
         ? dados.categoriasAlimentos
         : app.categoriasAlimentos;
+    app.coresTiposCategorias = normalizarCoresTiposCategorias(
+        dados.coresTiposCategorias || dados.syncMeta?.coresTiposCategorias,
+        app.coresTiposCategorias
+    );
+    app.configuracoesAtualizadasEm = dados.configuracoesAtualizadasEm ||
+        dados.syncMeta?.configuracoesAtualizadasEm ||
+        app.configuracoesAtualizadasEm;
     app.tags = Array.isArray(dados.tags)
         ? dados.tags
         : app.tags;
@@ -960,6 +1068,8 @@ function normalizarEncodingApp() {
         categorias: app.categorias,
         categoriasRefeicoes: app.categoriasRefeicoes,
         categoriasAlimentos: app.categoriasAlimentos,
+        coresTiposCategorias: app.coresTiposCategorias,
+        configuracoesAtualizadasEm: app.configuracoesAtualizadasEm,
         tags: app.tags,
     });
 
@@ -973,6 +1083,7 @@ function normalizarEncodingApp() {
     app.categorias = normalizarEncodingValor(app.categorias);
     app.categoriasRefeicoes = normalizarEncodingValor(app.categoriasRefeicoes);
     app.categoriasAlimentos = normalizarEncodingValor(app.categoriasAlimentos);
+    app.coresTiposCategorias = normalizarEncodingValor(app.coresTiposCategorias);
     app.tags = normalizarEncodingValor(app.tags);
 
     const depois = JSON.stringify({
@@ -986,6 +1097,8 @@ function normalizarEncodingApp() {
         categorias: app.categorias,
         categoriasRefeicoes: app.categoriasRefeicoes,
         categoriasAlimentos: app.categoriasAlimentos,
+        coresTiposCategorias: app.coresTiposCategorias,
+        configuracoesAtualizadasEm: app.configuracoesAtualizadasEm,
         tags: app.tags,
     });
 
@@ -1052,6 +1165,14 @@ const CORES_CATEGORIAS_ALIMENTO = {
 };
 
 function gerarCorCategoria(nome, tipo = 'receita') {
+    const colecao = tipo === 'alimento'
+        ? 'categoriasAlimentos'
+        : tipo === 'refeicao'
+            ? 'categoriasRefeicoes'
+            : 'categorias';
+    const corCustomizada = obterCorCustomizada(colecao, nome);
+    if (corCustomizada) return corCustomizada;
+
     const chave = chaveCategoria(nome);
     const paleta = tipo === 'alimento' ? CORES_CATEGORIAS_ALIMENTO : CORES_CATEGORIAS_RECEITA;
     if (paleta[chave]) return paleta[chave];
@@ -1062,7 +1183,112 @@ function gerarCorCategoria(nome, tipo = 'receita') {
         hash |= 0;
     }
     const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 58%, 44%)`;
+    return hslParaHex(hue, 58, 44);
+}
+
+function hslParaHex(h, s, l) {
+    const saturacao = s / 100;
+    const luminosidade = l / 100;
+    const c = (1 - Math.abs(2 * luminosidade - 1)) * saturacao;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = luminosidade - c / 2;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+
+    if (h < 60) [r, g, b] = [c, x, 0];
+    else if (h < 120) [r, g, b] = [x, c, 0];
+    else if (h < 180) [r, g, b] = [0, c, x];
+    else if (h < 240) [r, g, b] = [0, x, c];
+    else if (h < 300) [r, g, b] = [x, 0, c];
+    else [r, g, b] = [c, 0, x];
+
+    const paraHex = valor => Math.round((valor + m) * 255).toString(16).padStart(2, '0');
+    return `#${paraHex(r)}${paraHex(g)}${paraHex(b)}`;
+}
+
+function gerarCorTipo(nome, colecao = 'tiposRefeicao') {
+    const corCustomizada = obterCorCustomizada(colecao, nome);
+    if (corCustomizada) return corCustomizada;
+    return gerarCorCategoria(nome, 'receita');
+}
+
+function obterCorCustomizada(colecao, nome) {
+    const chave = normalizarNomeAlimento(nome);
+    return app.coresTiposCategorias?.[colecao]?.[chave] || '';
+}
+
+function definirCorCustomizada(colecao, nome, cor) {
+    const chave = normalizarNomeAlimento(nome);
+    const corLimpa = normalizarCorHex(cor);
+    if (!chave || !corLimpa) return;
+
+    app.coresTiposCategorias = normalizarCoresTiposCategorias(app.coresTiposCategorias);
+    app.coresTiposCategorias[colecao][chave] = corLimpa;
+}
+
+function removerCorCustomizada(colecao, nome) {
+    const chave = normalizarNomeAlimento(nome);
+    if (!chave || !app.coresTiposCategorias?.[colecao]) return;
+    delete app.coresTiposCategorias[colecao][chave];
+}
+
+function renomearCorCustomizada(colecao, nomeAtual, novoNome) {
+    const cor = obterCorCustomizada(colecao, nomeAtual);
+    removerCorCustomizada(colecao, nomeAtual);
+    if (cor) definirCorCustomizada(colecao, novoNome, cor);
+}
+
+function moverItemConfiguravel(colecao, indice, direcao, callbackRender) {
+    const lista = app[colecao];
+    const novoIndice = indice + direcao;
+    if (!Array.isArray(lista) || novoIndice < 0 || novoIndice >= lista.length) return;
+
+    [lista[indice], lista[novoIndice]] = [lista[novoIndice], lista[indice]];
+    marcarConfiguracoesAlteradas();
+    salvarDados();
+    callbackRender?.();
+}
+
+function alterarCorConfiguravel(colecao, nome, cor, callbackRender) {
+    definirCorCustomizada(colecao, nome, cor);
+    marcarConfiguracoesAlteradas();
+    salvarDados();
+    callbackRender?.();
+    renderizarReceitas();
+    renderizarRefeicoes();
+    renderizarAlimentos();
+    renderizarSemanal();
+    renderizarMensal();
+    renderizarDiaria();
+    renderizarCalendario();
+    renderizarReceitasModalSelecao();
+}
+
+function renderizarAcoesOrdemConfiguravel(colecao, indice, total, callbackRender) {
+    const callback = callbackRender.name;
+    return `
+        <button type="button" class="btn-ordem" ${indice === 0 ? 'disabled' : ''} onclick="moverItemConfiguravel('${colecao}', ${indice}, -1, ${callback})" title="Subir">↑</button>
+        <button type="button" class="btn-ordem" ${indice === total - 1 ? 'disabled' : ''} onclick="moverItemConfiguravel('${colecao}', ${indice}, 1, ${callback})" title="Descer">↓</button>
+    `;
+}
+
+function renderizarControleCorConfiguravel(colecao, nome, tipoVisual, callbackRender) {
+    const cor = colecao.startsWith('categorias')
+        ? gerarCorCategoria(nome, tipoVisual)
+        : gerarCorTipo(nome, colecao);
+    const callback = callbackRender.name;
+
+    return `
+        <label class="controle-cor-configuravel" title="Alterar cor">
+            <span class="amostra-cor" style="--cor-configuravel:${cor};"></span>
+            <input type="color" value="${cor}" onchange="alterarCorConfiguravel('${colecao}', '${escaparAtributoJs(nome)}', this.value, ${callback})">
+        </label>
+    `;
+}
+
+function escaparAtributoJs(valor) {
+    return escaparHtml(String(valor || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 }
 
 function corTextoParaFundo(cor) {
@@ -1307,6 +1533,11 @@ function carregarDadosLocais() {
         categorias: JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias,
         categoriasRefeicoes: JSON.parse(localStorage.getItem('cardapio_categorias_refeicoes')) || app.categoriasRefeicoes,
         categoriasAlimentos: JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos,
+        coresTiposCategorias: normalizarCoresTiposCategorias(
+            JSON.parse(localStorage.getItem('cardapio_cores_tipos_categorias')),
+            app.coresTiposCategorias
+        ),
+        configuracoesAtualizadasEm: localStorage.getItem('cardapio_configuracoes_atualizadas_em') || null,
         tags: JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags,
         atualizadoEm: localStorage.getItem('cardapio_atualizado_em') || null,
         syncMeta: JSON.parse(localStorage.getItem('cardapio_sync_meta')) || app.syncMeta,
@@ -1324,6 +1555,8 @@ function salvarDadosLocais() {
     localStorage.setItem('cardapio_categorias', JSON.stringify(app.categorias));
     localStorage.setItem('cardapio_categorias_refeicoes', JSON.stringify(app.categoriasRefeicoes));
     localStorage.setItem('cardapio_categorias_alimentos', JSON.stringify(app.categoriasAlimentos));
+    localStorage.setItem('cardapio_cores_tipos_categorias', JSON.stringify(app.coresTiposCategorias));
+    localStorage.setItem('cardapio_configuracoes_atualizadas_em', app.configuracoesAtualizadasEm || '');
     localStorage.setItem('cardapio_tags', JSON.stringify(app.tags));
     localStorage.setItem('cardapio_sync_meta', JSON.stringify(obterSyncMetaAtual()));
     if (app.atualizadoEm) {
@@ -1412,6 +1645,8 @@ async function carregarDadosSupabase() {
         categorias: data.categorias,
         categoriasRefeicoes: data.categorias_refeicoes,
         categoriasAlimentos: data.categorias_alimentos,
+        coresTiposCategorias: data.sync_meta?.coresTiposCategorias,
+        configuracoesAtualizadasEm: data.sync_meta?.configuracoesAtualizadasEm,
         tags: data.tags,
         atualizadoEm: data.atualizado_em,
         syncMeta: data.sync_meta,
@@ -1558,6 +1793,11 @@ function marcarDadosAlterados() {
     app.atualizadoEm = new Date().toISOString();
 }
 
+function marcarConfiguracoesAlteradas() {
+    marcarDadosAlterados();
+    app.configuracoesAtualizadasEm = app.atualizadoEm;
+}
+
 async function carregarDados() {
     const dadosLocais = carregarDadosLocais();
     aplicarDados(dadosLocais);
@@ -1607,8 +1847,11 @@ function mostrarVisao(nomeVisao) {
         visao.style.display = 'block';
     }
 
-    const botaoAtivo = event?.target || document.querySelector(`.aba-btn[onclick*="${nomeVisao}"]`);
-    if (botaoAtivo) {
+    const alvoEvento = window.event?.target;
+    const botaoAtivo = alvoEvento?.classList?.contains('aba-btn')
+        ? alvoEvento
+        : document.querySelector(`.aba-btn[onclick*="${nomeVisao}"]`);
+    if (botaoAtivo?.classList) {
         botaoAtivo.classList.add('ativo');
     }
 
@@ -2031,7 +2274,8 @@ function renderizarSemanal() {
 
     app.tiposRefeicao.forEach(tipo => {
         const tr = document.createElement('tr');
-        let html = `<td class="refeicao-nome" style="font-weight: 600; background: #f0f0f0;">${escaparHtml(tipo)}</td>`;
+        const corTipo = gerarCorTipo(tipo, 'tiposRefeicao');
+        let html = `<td class="refeicao-nome refeicao-nome-colorida" style="--tipo-cor:${corTipo};--tipo-texto:${corTextoParaFundo(corTipo)};">${escaparHtml(tipo)}</td>`;
 
         DIAS_SEMANA.forEach(diaInfo => {
             const data = obterDataSemanaDia(app.semanaAtual, diaInfo.chave);
@@ -2545,7 +2789,8 @@ function renderizarMensal() {
     const tbody = table.querySelector('tbody');
     app.tiposUso.forEach(tipo => {
         const tr = document.createElement('tr');
-        let html = `<td class="refeicao-nome">${escaparHtml(tipo)}</td>`;
+        const corTipo = gerarCorTipo(tipo, 'tiposUso');
+        let html = `<td class="refeicao-nome refeicao-nome-colorida" style="--tipo-cor:${corTipo};--tipo-texto:${corTextoParaFundo(corTipo)};">${escaparHtml(tipo)}</td>`;
 
         semanas.forEach(semana => {
             const planos = buscarPlanejamentosPorSemana(semana.numero, tipo);
@@ -2627,7 +2872,7 @@ function renderizarItemPlanejamentoDiario(plano) {
     }
 
     return `
-        <div class="item-planejamento-diario">
+        <div class="item-planejamento-diario" style="--categoria-cor:${gerarCorCategoria(item.categoria || tipoItem, tipoItem)};">
             <div class="conteudo-planejamento">
                 <p><strong>${escaparHtml(item.nome)}</strong></p>
                 ${renderizarCheckPlanejamento(plano)}
@@ -2666,6 +2911,7 @@ function renderizarResumoSemanaDiaria(data) {
     fim.setDate(inicio.getDate() + 6);
     const intervalo = `${inicio.getDate()}/${inicio.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1}`;
     const colunas = app.tiposUso.map(tipo => {
+        const corTipo = gerarCorTipo(tipo, 'tiposUso');
         const planos = buscarPlanejamentosPorSemana(semana, tipo);
         const tipoParam = encodeURIComponent(tipo);
         const itensHtml = planos.length > 0
@@ -2674,7 +2920,7 @@ function renderizarResumoSemanaDiaria(data) {
 
         return `
             <div class="coluna-semana-diaria">
-                <div class="tipo-uso-semana-diaria">${escaparHtml(tipo)}</div>
+                <div class="tipo-uso-semana-diaria" style="--tipo-cor:${corTipo};--tipo-texto:${corTextoParaFundo(corTipo)};">${escaparHtml(tipo)}</div>
                 <div class="planejamentos-semana-diaria">${itensHtml}</div>
                 <button onclick="abrirModalPlanejarSemana('${semana}', decodeURIComponent('${tipoParam}'))">
                     Adicionar
@@ -2713,7 +2959,10 @@ function renderizarDiaria() {
 
     app.tiposRefeicao.forEach(tipo => {
         const card = document.createElement('div');
+        const corTipo = gerarCorTipo(tipo, 'tiposRefeicao');
         card.className = 'card-diario';
+        card.style.setProperty('--tipo-cor', corTipo);
+        card.style.setProperty('--tipo-texto', corTextoParaFundo(corTipo));
         card.innerHTML = `
             <h3>${escaparHtml(tipo)}</h3>
             <div class="grupos-diaria">
@@ -3023,7 +3272,11 @@ function renderizarBadgesTipos(receita) {
 
     return `
         <div class="badges-tipos">
-            ${tipos.map(tipo => `<span class="badge-tipo">${tipo}</span>`).join('')}
+            ${tipos.map(tipo => {
+                const cor = gerarCorTipo(tipo, 'tiposRefeicao');
+                const texto = corTextoParaFundo(cor);
+                return `<span class="badge-tipo badge-tipo-colorido" style="--tipo-cor:${cor};--tipo-texto:${texto};">${escaparHtml(tipo)}</span>`;
+            }).join('')}
         </div>
     `;
 }
@@ -3681,19 +3934,10 @@ function deletarRefeicao(id) {
    Gerenciar alimentos avulsos e ingredientes */
 
 function normalizarCategoriasAlimentos() {
-    const categorias = new Set();
-
-    app.categoriasAlimentos.forEach(categoria => {
-        if (categoria && categoria.trim()) categorias.add(categoria.trim());
-    });
-
-    app.alimentos.forEach(alimento => {
-        if (alimento.categoria && alimento.categoria.trim()) {
-            categorias.add(alimento.categoria.trim());
-        }
-    });
-
-    app.categoriasAlimentos = Array.from(categorias).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    app.categoriasAlimentos = normalizarListaTextoConfiguravel(
+        app.categoriasAlimentos,
+        app.alimentos.map(alimento => alimento.categoria)
+    );
 }
 
 function atualizarSelectCategoriasAlimentos(categoriaAtual = '') {
@@ -3741,7 +3985,7 @@ function adicionarCategoriaAlimento() {
 
     app.categoriasAlimentos.push(novaCategoria);
     removerExclusao('categoriasAlimentos', normalizarNomeAlimento(novaCategoria));
-    normalizarCategoriasAlimentos();
+    marcarConfiguracoesAlteradas();
     salvarDados();
     atualizarSelectCategoriasAlimentos();
     atualizarFiltrosModalSelecao();
@@ -3766,6 +4010,7 @@ function editarCategoriaAlimento(categoriaAtual) {
 
     registrarExclusao('categoriasAlimentos', normalizarNomeAlimento(categoriaAtual));
     removerExclusao('categoriasAlimentos', normalizarNomeAlimento(categoriaLimpa));
+    renomearCorCustomizada('categoriasAlimentos', categoriaAtual, categoriaLimpa);
     app.categoriasAlimentos = app.categoriasAlimentos.map(categoria =>
         categoria === categoriaAtual ? categoriaLimpa : categoria
     );
@@ -3778,6 +4023,7 @@ function editarCategoriaAlimento(categoriaAtual) {
     });
 
     normalizarCategoriasAlimentos();
+    marcarConfiguracoesAlteradas();
     salvarDados();
     renderizarAposAlterarCategoriasAlimentos();
 }
@@ -3791,6 +4037,7 @@ function removerCategoriaAlimento(categoria) {
     if (!confirm(mensagem)) return;
 
     registrarExclusao('categoriasAlimentos', normalizarNomeAlimento(categoria));
+    removerCorCustomizada('categoriasAlimentos', categoria);
     app.categoriasAlimentos = app.categoriasAlimentos.filter(item => item !== categoria);
     app.alimentos.forEach(alimento => {
         if (alimento.categoria === categoria) {
@@ -3799,6 +4046,7 @@ function removerCategoriaAlimento(categoria) {
         }
     });
 
+    marcarConfiguracoesAlteradas();
     salvarDados();
     renderizarAposAlterarCategoriasAlimentos();
 }
@@ -3815,15 +4063,20 @@ function renderizarCategoriasAlimentos() {
         return;
     }
 
-    app.categoriasAlimentos.forEach(categoria => {
+    app.categoriasAlimentos.forEach((categoria, indice) => {
         const item = document.createElement('div');
         item.className = 'item-gerenciavel';
 
         const nome = document.createElement('span');
+        nome.className = 'nome-gerenciavel';
         nome.innerHTML = `${renderizarBadgeCategoria(categoria, 'alimento')} ${escaparHtml(categoria)}`;
 
         const acoes = document.createElement('div');
         acoes.className = 'acoes-gerenciavel';
+        acoes.innerHTML = `
+            ${renderizarControleCorConfiguravel('categoriasAlimentos', categoria, 'alimento', renderizarCategoriasAlimentos)}
+            ${renderizarAcoesOrdemConfiguravel('categoriasAlimentos', indice, app.categoriasAlimentos.length, renderizarAposAlterarCategoriasAlimentos)}
+        `;
 
         const btnEditar = document.createElement('button');
         btnEditar.className = 'btn-editar';
@@ -4470,21 +4723,10 @@ function renderizarAposAlterarTags() {
    Gerenciar categorias de receitas */
 
 function normalizarCategorias() {
-    const categorias = new Set();
-
-    app.categorias.forEach(categoria => {
-        if (categoria && categoria.trim()) {
-            categorias.add(categoria.trim());
-        }
-    });
-
-    app.receitas.forEach(receita => {
-        if (receita.categoria && receita.categoria.trim()) {
-            categorias.add(receita.categoria.trim());
-        }
-    });
-
-    app.categorias = Array.from(categorias).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    app.categorias = normalizarListaTextoConfiguravel(
+        app.categorias,
+        app.receitas.map(receita => receita.categoria)
+    );
 }
 
 function atualizarSelectCategorias(categoriaAtual = '') {
@@ -4528,7 +4770,7 @@ function adicionarCategoria() {
 
     app.categorias.push(novaCategoria);
     removerExclusao('categorias', normalizarNomeAlimento(novaCategoria));
-    normalizarCategorias();
+    marcarConfiguracoesAlteradas();
     salvarDados();
     atualizarSelectCategorias();
     atualizarFiltroCategoria();
@@ -4553,6 +4795,7 @@ function editarCategoria(categoriaAtual) {
 
     registrarExclusao('categorias', normalizarNomeAlimento(categoriaAtual));
     removerExclusao('categorias', normalizarNomeAlimento(categoriaLimpa));
+    renomearCorCustomizada('categorias', categoriaAtual, categoriaLimpa);
     app.categorias = app.categorias.map(categoria =>
         categoria === categoriaAtual ? categoriaLimpa : categoria
     );
@@ -4564,6 +4807,7 @@ function editarCategoria(categoriaAtual) {
         }
     });
     normalizarCategorias();
+    marcarConfiguracoesAlteradas();
     salvarDados();
     renderizarAposAlterarCategorias();
 }
@@ -4577,6 +4821,7 @@ function removerCategoria(categoria) {
     if (!confirm(mensagem)) return;
 
     registrarExclusao('categorias', normalizarNomeAlimento(categoria));
+    removerCorCustomizada('categorias', categoria);
     app.categorias = app.categorias.filter(item => item !== categoria);
     app.receitas.forEach(receita => {
         if (receita.categoria === categoria) {
@@ -4584,6 +4829,7 @@ function removerCategoria(categoria) {
             receita.dataAtualizacao = new Date().toISOString();
         }
     });
+    marcarConfiguracoesAlteradas();
     salvarDados();
     renderizarAposAlterarCategorias();
 }
@@ -4599,15 +4845,20 @@ function renderizarCategorias() {
         return;
     }
 
-    app.categorias.forEach(categoria => {
+    app.categorias.forEach((categoria, indice) => {
         const item = document.createElement('div');
         item.className = 'item-gerenciavel';
 
         const nome = document.createElement('span');
+        nome.className = 'nome-gerenciavel';
         nome.innerHTML = `${renderizarBadgeCategoria(categoria, 'receita')} ${escaparHtml(categoria)}`;
 
         const acoes = document.createElement('div');
         acoes.className = 'acoes-gerenciavel';
+        acoes.innerHTML = `
+            ${renderizarControleCorConfiguravel('categorias', categoria, 'receita', renderizarCategorias)}
+            ${renderizarAcoesOrdemConfiguravel('categorias', indice, app.categorias.length, renderizarAposAlterarCategorias)}
+        `;
 
         const btnEditar = document.createElement('button');
         btnEditar.className = 'btn-editar';
@@ -4643,21 +4894,10 @@ function renderizarAposAlterarCategorias() {
    Gerenciar categorias exclusivas das refeicoes compostas */
 
 function normalizarCategoriasRefeicoes() {
-    const categorias = new Set();
-
-    app.categoriasRefeicoes.forEach(categoria => {
-        if (categoria && categoria.trim()) {
-            categorias.add(categoria.trim());
-        }
-    });
-
-    app.refeicoes.forEach(refeicao => {
-        if (refeicao.categoria && refeicao.categoria.trim()) {
-            categorias.add(refeicao.categoria.trim());
-        }
-    });
-
-    app.categoriasRefeicoes = Array.from(categorias).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    app.categoriasRefeicoes = normalizarListaTextoConfiguravel(
+        app.categoriasRefeicoes,
+        app.refeicoes.map(refeicao => refeicao.categoria)
+    );
 }
 
 function abrirCategoriasRefeicoes() {
@@ -4681,7 +4921,7 @@ function adicionarCategoriaRefeicao() {
 
     app.categoriasRefeicoes.push(novaCategoria);
     removerExclusao('categoriasRefeicoes', normalizarNomeAlimento(novaCategoria));
-    normalizarCategoriasRefeicoes();
+    marcarConfiguracoesAlteradas();
     salvarDados();
     atualizarSelectCategoriasRefeicao();
     atualizarFiltroCategoriaRefeicao();
@@ -4706,6 +4946,7 @@ function editarCategoriaRefeicao(categoriaAtual) {
 
     registrarExclusao('categoriasRefeicoes', normalizarNomeAlimento(categoriaAtual));
     removerExclusao('categoriasRefeicoes', normalizarNomeAlimento(categoriaLimpa));
+    renomearCorCustomizada('categoriasRefeicoes', categoriaAtual, categoriaLimpa);
     app.categoriasRefeicoes = app.categoriasRefeicoes.map(categoria =>
         categoria === categoriaAtual ? categoriaLimpa : categoria
     );
@@ -4718,6 +4959,7 @@ function editarCategoriaRefeicao(categoriaAtual) {
     });
 
     normalizarCategoriasRefeicoes();
+    marcarConfiguracoesAlteradas();
     salvarDados();
     renderizarAposAlterarCategoriasRefeicoes();
 }
@@ -4731,6 +4973,7 @@ function removerCategoriaRefeicao(categoria) {
     if (!confirm(mensagem)) return;
 
     registrarExclusao('categoriasRefeicoes', normalizarNomeAlimento(categoria));
+    removerCorCustomizada('categoriasRefeicoes', categoria);
     app.categoriasRefeicoes = app.categoriasRefeicoes.filter(item => item !== categoria);
     app.refeicoes.forEach(refeicao => {
         if (refeicao.categoria === categoria) {
@@ -4739,6 +4982,7 @@ function removerCategoriaRefeicao(categoria) {
         }
     });
 
+    marcarConfiguracoesAlteradas();
     salvarDados();
     renderizarAposAlterarCategoriasRefeicoes();
 }
@@ -4755,15 +4999,20 @@ function renderizarCategoriasRefeicoes() {
         return;
     }
 
-    app.categoriasRefeicoes.forEach(categoria => {
+    app.categoriasRefeicoes.forEach((categoria, indice) => {
         const item = document.createElement('div');
         item.className = 'item-gerenciavel';
 
         const nome = document.createElement('span');
+        nome.className = 'nome-gerenciavel';
         nome.innerHTML = `${renderizarBadgeCategoria(categoria, 'refeicao')} ${escaparHtml(categoria)}`;
 
         const acoes = document.createElement('div');
         acoes.className = 'acoes-gerenciavel';
+        acoes.innerHTML = `
+            ${renderizarControleCorConfiguravel('categoriasRefeicoes', categoria, 'refeicao', renderizarCategoriasRefeicoes)}
+            ${renderizarAcoesOrdemConfiguravel('categoriasRefeicoes', indice, app.categoriasRefeicoes.length, renderizarAposAlterarCategoriasRefeicoes)}
+        `;
 
         const btnEditar = document.createElement('button');
         btnEditar.className = 'btn-editar';
@@ -4818,6 +5067,7 @@ function adicionarTipoRefeicao() {
 
     app.tiposRefeicao.push(novoTipo);
     removerExclusao('tiposRefeicao', normalizarNomeAlimento(novoTipo));
+    marcarConfiguracoesAlteradas();
     salvarDados();
     atualizarSelectTipos();
     atualizarSelectTiposRefeicaoComposta();
@@ -4830,7 +5080,9 @@ function adicionarTipoRefeicao() {
 function removerTipoRefeicao(tipo) {
     if (confirm(`Remover "${tipo}"?`)) {
         registrarExclusao('tiposRefeicao', normalizarNomeAlimento(tipo));
+        removerCorCustomizada('tiposRefeicao', tipo);
         app.tiposRefeicao = app.tiposRefeicao.filter(t => t !== tipo);
+        marcarConfiguracoesAlteradas();
         salvarDados();
         atualizarSelectTipos();
         atualizarSelectTiposRefeicaoComposta();
@@ -4838,18 +5090,55 @@ function removerTipoRefeicao(tipo) {
     }
 }
 
+function renderizarAposAlterarTiposRefeicao() {
+    atualizarSelectTipos();
+    atualizarSelectTiposRefeicaoComposta();
+    renderizarTiposRefeicao();
+    renderizarSemanal();
+    renderizarDiaria();
+    renderizarCalendario();
+    renderizarReceitas();
+    renderizarRefeicoes();
+    renderizarReceitasModalSelecao();
+}
+
 function renderizarTiposRefeicao() {
     const container = document.getElementById('lista-tipos-refeicao');
     container.innerHTML = '';
 
-    app.tiposRefeicao.forEach(tipo => {
-        const badge = document.createElement('div');
-        badge.className = 'badge-tipo-removivel';
-        badge.innerHTML = `
-            ${tipo}
-            <button onclick="removerTipoRefeicao('${tipo}')">x</button>
+    app.tiposRefeicao = normalizarListaTextoConfiguravel(app.tiposRefeicao);
+
+    if (app.tiposRefeicao.length === 0) {
+        container.innerHTML = '<div class="sem-resultados">Nenhum tipo cadastrado.</div>';
+        return;
+    }
+
+    app.tiposRefeicao.forEach((tipo, indice) => {
+        const item = document.createElement('div');
+        item.className = 'item-gerenciavel';
+
+        const nome = document.createElement('span');
+        nome.className = 'nome-gerenciavel';
+        const cor = gerarCorTipo(tipo, 'tiposRefeicao');
+        const texto = corTextoParaFundo(cor);
+        nome.innerHTML = `<span class="badge-tipo badge-tipo-colorido" style="--tipo-cor:${cor};--tipo-texto:${texto};">${escaparHtml(tipo)}</span> ${escaparHtml(tipo)}`;
+
+        const acoes = document.createElement('div');
+        acoes.className = 'acoes-gerenciavel';
+        acoes.innerHTML = `
+            ${renderizarControleCorConfiguravel('tiposRefeicao', tipo, 'receita', renderizarTiposRefeicao)}
+            ${renderizarAcoesOrdemConfiguravel('tiposRefeicao', indice, app.tiposRefeicao.length, renderizarAposAlterarTiposRefeicao)}
         `;
-        container.appendChild(badge);
+
+        const btnRemover = document.createElement('button');
+        btnRemover.className = 'btn-deletar';
+        btnRemover.textContent = 'Remover';
+        btnRemover.onclick = () => removerTipoRefeicao(tipo);
+
+        acoes.appendChild(btnRemover);
+        item.appendChild(nome);
+        item.appendChild(acoes);
+        container.appendChild(item);
     });
 }
 
@@ -4882,21 +5171,12 @@ function atualizarSelectTipos(tiposSelecionados = []) {
    Gerenciar linhas exclusivas da visao mensal */
 
 function normalizarTiposUso() {
-    const tipos = new Set();
-
-    app.tiposUso.forEach(tipo => {
-        if (tipo && tipo.trim()) {
-            tipos.add(tipo.trim());
-        }
-    });
-
-    app.planejamentos.forEach(plano => {
-        if (plano.tipo === 'mensal' && plano.refeicao && plano.refeicao.trim()) {
-            tipos.add(plano.refeicao.trim());
-        }
-    });
-
-    app.tiposUso = Array.from(tipos).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    app.tiposUso = normalizarListaTextoConfiguravel(
+        app.tiposUso,
+        app.planejamentos
+            .filter(plano => plano.tipo === 'mensal')
+            .map(plano => plano.refeicao)
+    );
 }
 
 function abrirTiposUso() {
@@ -4920,7 +5200,7 @@ function adicionarTipoUso() {
 
     app.tiposUso.push(novoTipo);
     removerExclusao('tiposUso', normalizarNomeAlimento(novoTipo));
-    normalizarTiposUso();
+    marcarConfiguracoesAlteradas();
     salvarDados();
     input.value = '';
     renderizarTiposUso();
@@ -4944,6 +5224,7 @@ function editarTipoUso(tipoAtual) {
 
     registrarExclusao('tiposUso', normalizarNomeAlimento(tipoAtual));
     removerExclusao('tiposUso', normalizarNomeAlimento(tipoLimpo));
+    renomearCorCustomizada('tiposUso', tipoAtual, tipoLimpo);
     app.tiposUso = app.tiposUso.map(tipo => tipo === tipoAtual ? tipoLimpo : tipo);
     app.planejamentos.forEach(plano => {
         if (plano.tipo === 'mensal' && plano.refeicao === tipoAtual) {
@@ -4953,6 +5234,7 @@ function editarTipoUso(tipoAtual) {
     });
 
     normalizarTiposUso();
+    marcarConfiguracoesAlteradas();
     salvarDados();
     renderizarTiposUso();
     renderizarMensal();
@@ -4967,12 +5249,14 @@ function removerTipoUso(tipo) {
     if (!confirm(mensagem)) return;
 
     registrarExclusao('tiposUso', normalizarNomeAlimento(tipo));
+    removerCorCustomizada('tiposUso', tipo);
     app.tiposUso = app.tiposUso.filter(item => item !== tipo);
     app.planejamentos
         .filter(plano => plano.tipo === 'mensal' && plano.refeicao === tipo)
         .forEach(plano => registrarExclusao('planejamentos', chavePlanejamento(plano)));
     app.planejamentos = app.planejamentos.filter(plano => !(plano.tipo === 'mensal' && plano.refeicao === tipo));
 
+    marcarConfiguracoesAlteradas();
     salvarDados();
     renderizarTiposUso();
     renderizarMensal();
@@ -4991,15 +5275,22 @@ function renderizarTiposUso() {
         return;
     }
 
-    app.tiposUso.forEach(tipo => {
+    app.tiposUso.forEach((tipo, indice) => {
         const item = document.createElement('div');
         item.className = 'item-gerenciavel';
 
         const nome = document.createElement('span');
-        nome.textContent = tipo;
+        nome.className = 'nome-gerenciavel';
+        const cor = gerarCorTipo(tipo, 'tiposUso');
+        const texto = corTextoParaFundo(cor);
+        nome.innerHTML = `<span class="badge-tipo badge-tipo-colorido" style="--tipo-cor:${cor};--tipo-texto:${texto};">${escaparHtml(tipo)}</span> ${escaparHtml(tipo)}`;
 
         const acoes = document.createElement('div');
         acoes.className = 'acoes-gerenciavel';
+        acoes.innerHTML = `
+            ${renderizarControleCorConfiguravel('tiposUso', tipo, 'receita', renderizarTiposUso)}
+            ${renderizarAcoesOrdemConfiguravel('tiposUso', indice, app.tiposUso.length, renderizarAposAlterarTiposUso)}
+        `;
 
         const btnEditar = document.createElement('button');
         btnEditar.className = 'btn-editar';
@@ -5017,6 +5308,13 @@ function renderizarTiposUso() {
         item.appendChild(acoes);
         container.appendChild(item);
     });
+}
+
+function renderizarAposAlterarTiposUso() {
+    renderizarTiposUso();
+    renderizarMensal();
+    renderizarDiaria();
+    renderizarContagemAlimentos();
 }
 
 /* ==================== HISTORICO ====================
@@ -5117,10 +5415,12 @@ Object.assign(window, {
     adicionarCategoria,
     editarCategoria,
     removerCategoria,
+    renderizarAposAlterarCategorias,
     abrirCategoriasRefeicoes,
     adicionarCategoriaRefeicao,
     editarCategoriaRefeicao,
     removerCategoriaRefeicao,
+    renderizarAposAlterarCategoriasRefeicoes,
     abrirTags,
     adicionarTag,
     editarTag,
@@ -5166,11 +5466,16 @@ Object.assign(window, {
     adicionarCategoriaAlimento,
     editarCategoriaAlimento,
     removerCategoriaAlimento,
+    renderizarAposAlterarCategoriasAlimentos,
     abrirTiposRefeicao,
+    renderizarAposAlterarTiposRefeicao,
     abrirTiposUso,
     adicionarTipoUso,
     editarTipoUso,
     removerTipoUso,
+    renderizarAposAlterarTiposUso,
+    moverItemConfiguravel,
+    alterarCorConfiguravel,
     abrirHistorico,
 });
 

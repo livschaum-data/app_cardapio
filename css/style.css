@@ -712,6 +712,14 @@ body {
     margin-bottom: 10px;
 }
 
+.card-diario {
+    border-left-color: var(--tipo-cor, var(--cor-destaque));
+}
+
+.card-diario > h3 {
+    color: var(--tipo-cor, var(--cor-primaria));
+}
+
 .card-diario p {
     color: var(--cor-texto-cinza);
     margin-bottom: 8px;
@@ -771,8 +779,8 @@ body {
 
 .tipo-uso-semana-diaria {
     align-items: center;
-    background: #3a2a1f;
-    color: white;
+    background: var(--tipo-cor, #3a2a1f);
+    color: var(--tipo-texto, white);
     display: flex;
     font-size: 12px;
     font-weight: 800;
@@ -1054,6 +1062,11 @@ body {
     border-radius: 4px;
     font-size: 12px;
     white-space: nowrap;
+}
+
+.badge-tipo-colorido {
+    background: var(--tipo-cor);
+    color: var(--tipo-texto);
 }
 
 .badges-tipos {
@@ -1492,8 +1505,19 @@ body {
     overflow-wrap: anywhere;
 }
 
+.nome-gerenciavel {
+    align-items: center;
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+}
+
 .acoes-gerenciavel {
     display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     flex-shrink: 0;
 }
@@ -1506,6 +1530,42 @@ body {
     font-size: 12px;
     font-weight: 600;
     padding: 6px 10px;
+}
+
+.acoes-gerenciavel .btn-ordem {
+    background: var(--cor-secundaria);
+    min-width: 34px;
+    padding: 6px 8px;
+}
+
+.acoes-gerenciavel .btn-ordem:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+}
+
+.controle-cor-configuravel {
+    align-items: center;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 6px;
+}
+
+.controle-cor-configuravel input[type="color"] {
+    border: 1px solid var(--cor-borda);
+    border-radius: 4px;
+    cursor: pointer;
+    height: 30px;
+    padding: 2px;
+    width: 38px;
+}
+
+.amostra-cor {
+    background: var(--cor-configuravel);
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    border-radius: 999px;
+    display: inline-block;
+    height: 18px;
+    width: 18px;
 }
 
 /* ==================== HISTRICO ====================
@@ -1884,6 +1944,14 @@ body {
     background: #f8f4ee !important;
     color: #3d3028;
     font-weight: 700;
+}
+
+.tabela-semanal td.refeicao-nome-colorida,
+.tabela-mensal-semanas td.refeicao-nome-colorida {
+    background: color-mix(in srgb, var(--tipo-cor) 14%, white) !important;
+    border-left: 4px solid var(--tipo-cor);
+    color: #2d221b;
+    font-weight: 800;
 }
 
 .tabela-semanal th.coluna-hoje,
