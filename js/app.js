@@ -82,6 +82,7 @@ async function inicializar() {
     configurarEventosNuvem();
     aplicarEstadoSidebar();
     configurarFechamentoSidebarMobile();
+    configurarSelecaoItemPlanejamento();
 
     // Carregar dados locais primeiro; a nuvem entra depois se houver conta conectada.
     configurarSupabase();
@@ -1409,11 +1410,17 @@ function normalizarDadosAlimentos() {
     normalizarCategoriasAlimentos();
     normalizarTiposUso();
 
-    app.receitas.forEach(receita => {
-        receita.ingredientes = Array.isArray(receita.ingredientes)
-            ? receita.ingredientes.map(normalizarIngredienteReceita).filter(Boolean)
-            : [];
-    });
+    app.receitas = app.receitas
+        .filter(receita => receita && receita.nome && String(receita.nome).trim())
+        .map(receita => ({
+            ...receita,
+            id: receita.id || `receita_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            nome: String(receita.nome).trim(),
+            ingredientes: Array.isArray(receita.ingredientes)
+                ? receita.ingredientes.map(normalizarIngredienteReceita).filter(Boolean)
+                : [],
+            dataCriacao: receita.dataCriacao || new Date().toISOString(),
+        }));
 
     app.refeicoes = app.refeicoes
         .filter(refeicao => refeicao && refeicao.nome && String(refeicao.nome).trim())
@@ -2167,19 +2174,24 @@ function buscarRefeicao(id) {
     return app.refeicoes.find(refeicao => refeicao.id === id);
 }
 
-function buscarItemPlanejamento(plano) {
-    const itemTipo = obterTipoItemPlano(plano);
-    const itemId = obterItemIdPlano(plano);
+function buscarItemPorTipo(itemTipo, itemId) {
+    const id = String(itemId || '');
 
     if (itemTipo === 'alimento') {
-        return { tipo: 'alimento', item: buscarAlimento(itemId) };
+        return app.alimentos.find(alimento => String(alimento.id || '') === id);
     }
 
     if (itemTipo === 'refeicao') {
-        return { tipo: 'refeicao', item: buscarRefeicao(itemId) };
+        return app.refeicoes.find(refeicao => String(refeicao.id || '') === id);
     }
 
-    return { tipo: 'receita', item: buscarReceita(itemId) };
+    return app.receitas.find(receita => String(receita.id || '') === id);
+}
+
+function buscarItemPlanejamento(plano) {
+    const itemTipo = obterTipoItemPlano(plano);
+    const itemId = obterItemIdPlano(plano);
+    return { tipo: itemTipo, item: buscarItemPorTipo(itemTipo, itemId) };
 }
 
 function planejamentoPermiteCheck(plano) {
@@ -2512,10 +2524,34 @@ function reabrirSelecaoPlanejamentoAposCadastro() {
     abrirModal('modal-selecionar-receita');
 }
 
+function configurarSelecaoItemPlanejamento() {
+    const lista = document.getElementById('lista-selecionar-receita');
+    if (!lista || lista.dataset.listenerSelecao === 'true') return;
+
+    lista.addEventListener('click', (evento) => {
+        const botao = evento.target.closest('.btn-selecionar-linha');
+        if (!botao || !lista.contains(botao)) return;
+
+        const linha = botao.closest('.linha-selecao');
+        const itemTipo = botao.dataset.itemTipo || linha?.dataset.itemTipo || '';
+        const itemId = botao.dataset.itemId || linha?.dataset.itemId || '';
+        selecionarItemParaPlano(itemTipo, itemId);
+    });
+
+    lista.dataset.listenerSelecao = 'true';
+}
+
 function renderizarReceitasModalSelecao() {
     const lista = document.getElementById('lista-selecionar-receita');
+    configurarSelecaoItemPlanejamento();
     atualizarFiltrosModalSelecao();
     lista.innerHTML = '';
+
+    if (normalizarDadosAlimentos()) {
+        marcarDadosAlterados();
+        salvarDadosLocais();
+        salvarDadosSupabase();
+    }
 
     if (app.receitas.length === 0 && app.refeicoes.length === 0 && app.alimentos.length === 0) {
         lista.innerHTML = '<div class="sem-resultados">Nenhuma receita, refeicao ou alimento cadastrado ainda.</div>';
@@ -2579,6 +2615,7 @@ function criarLinhaModalSelecao(item) {
     const div = document.createElement('div');
     div.className = `item-selecao linha-selecao linha-selecao-${item.itemTipo}`;
     div.dataset.itemTipo = item.itemTipo;
+    div.dataset.itemId = item.id || '';
     div.dataset.nome = item.nome;
     div.dataset.tipos = item.tipos.join('|');
     div.dataset.categoria = item.categoria;
@@ -2614,7 +2651,8 @@ function criarLinhaModalSelecao(item) {
 
     const botaoSelecionar = div.querySelector('.btn-selecionar-linha');
     if (botaoSelecionar) {
-        botaoSelecionar.addEventListener('click', () => selecionarItemParaPlano(item.itemTipo, item.id));
+        botaoSelecionar.dataset.itemTipo = item.itemTipo;
+        botaoSelecionar.dataset.itemId = item.id || '';
     }
 
     return div;
@@ -2625,62 +2663,75 @@ function selecionarReceitaParaPlano(receitaId) {
 }
 
 function selecionarItemParaPlano(itemTipo, itemId) {
-    const ctx = window.contextoPlanejar;
-    if (!ctx) return;
+    try {
+        const ctx = window.contextoPlanejar;
+        if (!ctx) {
+            alert('Nao foi possivel identificar onde adicionar este item. Clique em Adicionar novamente.');
+            return;
+        }
 
-    const planejamentoExistente = ctx.planejamentoId
-        ? app.planejamentos.find(p => p.id === ctx.planejamentoId)
-        : null;
+        if (!buscarItemPorTipo(itemTipo, itemId)) {
+            alert('Este item nao foi encontrado. Atualize a lista e tente novamente.');
+            return;
+        }
 
-    if (planejamentoExistente) {
+        const planejamentoExistente = ctx.planejamentoId
+            ? app.planejamentos.find(p => p.id === ctx.planejamentoId)
+            : null;
+
+        if (planejamentoExistente) {
+            const agora = new Date().toISOString();
+            planejamentoExistente.itemTipo = itemTipo;
+            planejamentoExistente.itemId = itemId;
+            planejamentoExistente.receitaId = itemTipo === 'receita' ? itemId : '';
+            planejamentoExistente.grupo = normalizarGrupoPlanejamento(ctx.grupo || planejamentoExistente.grupo);
+            planejamentoExistente.refeicao = ctx.refeicao;
+            planejamentoExistente.data = ctx.data || '';
+            planejamentoExistente.semana = ctx.semana || planejamentoExistente.semana;
+            planejamentoExistente.dia = ctx.dia || '';
+            planejamentoExistente.tipo = ctx.modo === 'calendario'
+                ? 'calendario'
+                : ctx.modo === 'mensal'
+                    ? 'mensal'
+                    : 'semanal';
+            planejamentoExistente.dataAtualizacao = agora;
+            salvarDados();
+            fecharModal('modal-selecionar-receita');
+            renderizarAposPlanejamento(ctx.modo);
+            console.log('Planejamento atualizado:', planejamentoExistente);
+            return;
+        }
+
+        const isCalendario = ctx.modo === 'calendario';
+        const isMensal = ctx.modo === 'mensal';
+
         const agora = new Date().toISOString();
-        planejamentoExistente.itemTipo = itemTipo;
-        planejamentoExistente.itemId = itemId;
-        planejamentoExistente.receitaId = itemTipo === 'receita' ? itemId : '';
-        planejamentoExistente.grupo = normalizarGrupoPlanejamento(ctx.grupo || planejamentoExistente.grupo);
-        planejamentoExistente.refeicao = ctx.refeicao;
-        planejamentoExistente.data = ctx.data || '';
-        planejamentoExistente.semana = ctx.semana || planejamentoExistente.semana;
-        planejamentoExistente.dia = ctx.dia || '';
-        planejamentoExistente.tipo = ctx.modo === 'calendario'
-            ? 'calendario'
-            : ctx.modo === 'mensal'
-                ? 'mensal'
-                : 'semanal';
-        planejamentoExistente.dataAtualizacao = agora;
+        const planeamento = {
+            id: 'plan_' + Date.now(),
+            grupo: normalizarGrupoPlanejamento(ctx.grupo || app.planejamentoAtivo),
+            itemTipo,
+            itemId,
+            receitaId: itemTipo === 'receita' ? itemId : '',
+            refeicao: ctx.refeicao,
+            tipo: isCalendario ? 'calendario' : isMensal ? 'mensal' : 'semanal',
+            data: isMensal ? '' : ctx.data,
+            semana: ctx.semana,
+            dia: isMensal ? '' : ctx.dia,
+            dataCriacao: agora,
+            dataAtualizacao: agora,
+        };
+
+        app.planejamentos.push(planeamento);
+        removerExclusao('planejamentos', chavePlanejamento(planeamento));
         salvarDados();
-        renderizarAposPlanejamento(ctx.modo);
         fecharModal('modal-selecionar-receita');
-        console.log('Planejamento atualizado:', planejamentoExistente);
-        return;
+        renderizarAposPlanejamento(ctx.modo);
+
+        console.log('Refeicao planejada:', planeamento);
+    } catch (error) {
+        console.error('Erro ao selecionar item para o planejamento:', error);
+        alert('Nao foi possivel adicionar este item. Veja o console para detalhes.');
     }
-
-    const isCalendario = ctx.modo === 'calendario';
-    const isMensal = ctx.modo === 'mensal';
-
-    const agora = new Date().toISOString();
-    const planeamento = {
-        id: 'plan_' + Date.now(),
-        grupo: normalizarGrupoPlanejamento(ctx.grupo || app.planejamentoAtivo),
-        itemTipo,
-        itemId,
-        receitaId: itemTipo === 'receita' ? itemId : '',
-        refeicao: ctx.refeicao,
-        tipo: isCalendario ? 'calendario' : isMensal ? 'mensal' : 'semanal',
-        data: isMensal ? '' : ctx.data,
-        semana: ctx.semana,
-        dia: isMensal ? '' : ctx.dia,
-        dataCriacao: agora,
-        dataAtualizacao: agora,
-    };
-
-    app.planejamentos.push(planeamento);
-    removerExclusao('planejamentos', chavePlanejamento(planeamento));
-    salvarDados();
-    renderizarAposPlanejamento(ctx.modo);
-    fecharModal('modal-selecionar-receita');
-
-    console.log('Refeicao planejada:', planeamento);
 }
 
 function renderizarAposPlanejamento(modo) {
