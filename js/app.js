@@ -1399,7 +1399,7 @@ function normalizarDadosAlimentos() {
     app.alimentos = app.alimentos
         .filter(alimento => alimento && alimento.nome && String(alimento.nome).trim())
         .map(alimento => ({
-            id: alimento.id || criarIdAlimento(),
+            id: String(alimento.id || criarIdAlimento()),
             nome: String(alimento.nome).trim(),
             categoria: alimento.categoria || '',
             unidadePadrao: alimento.unidadePadrao || alimento.unidade || '',
@@ -1414,7 +1414,7 @@ function normalizarDadosAlimentos() {
         .filter(receita => receita && receita.nome && String(receita.nome).trim())
         .map(receita => ({
             ...receita,
-            id: receita.id || `receita_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            id: String(receita.id || `receita_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
             nome: String(receita.nome).trim(),
             ingredientes: Array.isArray(receita.ingredientes)
                 ? receita.ingredientes.map(normalizarIngredienteReceita).filter(Boolean)
@@ -1425,7 +1425,7 @@ function normalizarDadosAlimentos() {
     app.refeicoes = app.refeicoes
         .filter(refeicao => refeicao && refeicao.nome && String(refeicao.nome).trim())
         .map(refeicao => ({
-            id: refeicao.id || `refeicao_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            id: String(refeicao.id || `refeicao_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
             nome: String(refeicao.nome).trim(),
             tipo: refeicao.tipo || (Array.isArray(refeicao.tipos) ? refeicao.tipos[0] : ''),
             tipos: Array.isArray(refeicao.tipos) ? refeicao.tipos.filter(Boolean) : (refeicao.tipo ? [refeicao.tipo] : []),
@@ -2735,11 +2735,19 @@ function selecionarItemParaPlano(itemTipo, itemId) {
 }
 
 function renderizarAposPlanejamento(modo) {
-    renderizarSemanal();
-    renderizarMensal();
-    renderizarDiaria();
-    renderizarCalendario();
-    renderizarContagemAlimentos();
+    [
+        ['semanal', renderizarSemanal],
+        ['mensal', renderizarMensal],
+        ['diaria', renderizarDiaria],
+        ['calendario', renderizarCalendario],
+        ['contagem', renderizarContagemAlimentos],
+    ].forEach(([nome, renderizar]) => {
+        try {
+            renderizar();
+        } catch (error) {
+            console.error(`Erro ao renderizar ${nome} apos alterar planejamento:`, error);
+        }
+    });
 }
 
 function removerPlanejamento(id) {
