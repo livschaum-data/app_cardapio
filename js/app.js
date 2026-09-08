@@ -2607,10 +2607,15 @@ function criarLinhaModalSelecao(item) {
         </div>
         ${tagsHtml}
         <span class="badge-item ${tipoClasse}">${obterRotuloItemModalSelecao(item.itemTipo)}</span>
-        <button onclick="selecionarItemParaPlano('${item.itemTipo}', '${item.id}')" class="btn-principal btn-selecionar-linha" aria-label="Selecionar ${escaparHtml(item.nome)}" title="Selecionar">
+        <button type="button" class="btn-principal btn-selecionar-linha" aria-label="Selecionar ${escaparHtml(item.nome)}" title="Selecionar">
             +
         </button>
     `;
+
+    const botaoSelecionar = div.querySelector('.btn-selecionar-linha');
+    if (botaoSelecionar) {
+        botaoSelecionar.addEventListener('click', () => selecionarItemParaPlano(item.itemTipo, item.id));
+    }
 
     return div;
 }
