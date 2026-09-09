@@ -1791,9 +1791,48 @@ async function salvarDadosSupabase() {
 
 function salvarDados() {
     marcarDadosAlterados();
-    salvarDadosLocais();
-    salvarDadosSupabase();
+    try {
+        salvarDadosLocais();
+    } catch (error) {
+        console.error('Erro ao salvar dados locais:', error);
+
+        if (erroQuotaLocalStorage(error)) {
+            compactarSyncMetaParaSalvar();
+            salvarDadosLocais();
+        } else {
+            throw error;
+        }
+    }
+
+    salvarDadosSupabase().catch(error => {
+        app.supabaseOnline = false;
+        atualizarStatusNuvem('erro', 'Erro ao salvar na nuvem');
+        console.error('Erro inesperado ao salvar no Supabase:', error);
+    });
     console.log('Dados salvos localmente.');
+}
+
+function erroQuotaLocalStorage(error) {
+    const nome = String(error?.name || '');
+    const mensagem = String(error?.message || '');
+    return nome.includes('Quota') ||
+        nome.includes('NS_ERROR_DOM_QUOTA_REACHED') ||
+        mensagem.toLowerCase().includes('quota');
+}
+
+function compactarSyncMetaParaSalvar() {
+    const meta = normalizarSyncMeta(app.syncMeta);
+    const limite = Date.now() - (1000 * 60 * 60 * 24 * 30);
+
+    COLECOES_SYNC.forEach(colecao => {
+        Object.keys(meta.deletados[colecao]).forEach(chave => {
+            if (obterTimestamp(meta.deletados[colecao][chave]) < limite) {
+                delete meta.deletados[colecao][chave];
+            }
+        });
+    });
+
+    app.syncMeta = meta;
 }
 
 function marcarDadosAlterados() {
@@ -2730,7 +2769,8 @@ function selecionarItemParaPlano(itemTipo, itemId) {
         console.log('Refeicao planejada:', planeamento);
     } catch (error) {
         console.error('Erro ao selecionar item para o planejamento:', error);
-        alert('Nao foi possivel adicionar este item. Veja o console para detalhes.');
+        const detalhe = error?.message ? ` Detalhe: ${error.message}` : '';
+        alert(`Nao foi possivel adicionar este item.${detalhe}`);
     }
 }
 
