@@ -4441,6 +4441,50 @@ function obterDataPlano(plano) {
     return '';
 }
 
+function obterOrigemPlanoContagem(plano) {
+    return plano?.tipo === 'mensal' ? 'semanas' : 'dias';
+}
+
+function obterRotuloOrigemContagem(origem) {
+    return origem === 'semanas' ? 'Planejamentos de semanas' : 'Planejamentos de dias';
+}
+
+function obterNomeGrupoContagem(grupo) {
+    const id = normalizarGrupoPlanejamento(grupo);
+    return app.planejamentosGrupos.find(item => item.id === id)?.nome || 'Adulto';
+}
+
+function planoDentroPeriodoContagem(plano, dataInicio, dataFim) {
+    if (plano?.tipo === 'mensal') {
+        return semanaPlanoDentroPeriodo(plano, dataInicio, dataFim);
+    }
+
+    const data = obterDataPlano(plano);
+    return Boolean(data && data >= dataInicio && data <= dataFim);
+}
+
+function semanaPlanoDentroPeriodo(plano, dataInicio, dataFim) {
+    const semana = Number(plano?.semana);
+    if (!semana) return false;
+
+    const inicio = criarDataLocal(dataInicio);
+    const fim = criarDataLocal(dataFim);
+    const anoInicio = inicio.getFullYear();
+    const anoFim = fim.getFullYear();
+
+    for (let ano = anoInicio; ano <= anoFim; ano++) {
+        const inicioSemana = obterInicioSemana(semana, ano);
+        const fimSemana = new Date(inicioSemana);
+        fimSemana.setDate(inicioSemana.getDate() + 6);
+
+        if (inicioSemana <= fim && fimSemana >= inicio) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function somarAlimentosReceita(receita, somar) {
     if (!receita || !Array.isArray(receita.ingredientes)) return;
 
@@ -4509,6 +4553,18 @@ function obterRotuloTipoContagem(itemTipo) {
 function atualizarFiltrosContagem(itensBase = obterItensBaseContagem()) {
     const filtroCategoria = document.getElementById('contagem-filtro-categoria');
     const filtroTipo = document.getElementById('contagem-filtro-tipo')?.value || '';
+    const filtroGrupo = document.getElementById('contagem-filtro-grupo');
+
+    if (filtroGrupo && filtroGrupo.dataset.inicializado !== 'true') {
+        const valorAtualGrupo = filtroGrupo.value;
+        filtroGrupo.innerHTML = '<option value="">Todos os grupos</option>' +
+            app.planejamentosGrupos
+                .map(grupo => `<option value="${escaparHtml(grupo.id)}">${escaparHtml(grupo.nome)}</option>`)
+                .join('');
+        filtroGrupo.value = app.planejamentosGrupos.some(grupo => grupo.id === valorAtualGrupo) ? valorAtualGrupo : '';
+        filtroGrupo.dataset.inicializado = 'true';
+    }
+
     if (!filtroCategoria) return;
 
     const valorAtual = filtroCategoria.value;
@@ -4530,53 +4586,139 @@ function atualizarFiltrosContagem(itensBase = obterItensBaseContagem()) {
         : '';
 }
 
-function contarItensNoPeriodo(dataInicio, dataFim, modo = 'direta') {
+function contarItensNoPeriodo(dataInicio, dataFim, modo = 'direta', filtros = {}) {
     const contagem = new Map();
+    const secoes = new Map();
 
-    const somar = (itemTipo, itemId) => {
+    const criarSecao = (grupo, origem) => {
+        const grupoId = normalizarGrupoPlanejamento(grupo);
+        const chave = `${grupoId}:${origem}`;
+
+        if (!secoes.has(chave)) {
+            secoes.set(chave, {
+                chave,
+                grupo: grupoId,
+                grupoNome: obterNomeGrupoContagem(grupoId),
+                origem,
+                origemNome: obterRotuloOrigemContagem(origem),
+                contagem: new Map(),
+            });
+        }
+
+        return secoes.get(chave);
+    };
+
+    const somar = (itemTipo, itemId, secao = null) => {
         if (!itemTipo || !itemId) return;
         const chave = criarChaveContagem(itemTipo, itemId);
         const atual = contagem.get(chave) || 0;
         contagem.set(chave, atual + 1);
+
+        if (secao) {
+            const atualSecao = secao.contagem.get(chave) || 0;
+            secao.contagem.set(chave, atualSecao + 1);
+        }
     };
 
     app.planejamentos
         .filter(plano => {
-            const data = obterDataPlano(plano);
-            return planejamentoPertenceAoAtivo(plano) &&
-                !planejamentoEhNotaDia(plano) &&
-                data &&
-                data >= dataInicio &&
-                data <= dataFim;
+            const grupo = normalizarGrupoPlanejamento(plano?.grupo);
+            const origem = obterOrigemPlanoContagem(plano);
+
+            return !planejamentoEhNotaDia(plano) &&
+                (!filtros.grupo || grupo === filtros.grupo) &&
+                (!filtros.origem || origem === filtros.origem) &&
+                planoDentroPeriodoContagem(plano, dataInicio, dataFim);
         })
         .forEach(plano => {
             const tipoItem = obterTipoItemPlano(plano);
             const itemId = obterItemIdPlano(plano);
+            const secao = criarSecao(plano.grupo, obterOrigemPlanoContagem(plano));
 
-            somar(tipoItem, itemId);
+            somar(tipoItem, itemId, secao);
             if (modo !== 'indireta') return;
 
             if (tipoItem === 'receita') {
-                somarAlimentosReceita(buscarReceita(itemId), somar);
+                somarAlimentosReceita(buscarReceita(itemId), (subTipo, subId) => somar(subTipo, subId, secao));
                 return;
             }
 
             if (tipoItem === 'refeicao') {
-                somarAlimentosRefeicao(buscarRefeicao(itemId), somar);
+                somarAlimentosRefeicao(buscarRefeicao(itemId), (subTipo, subId) => somar(subTipo, subId, secao));
             }
         });
 
     const pesoTipo = { alimento: 1, receita: 2, refeicao: 3 };
-    return obterItensBaseContagem()
+    const ordenarItens = itens => itens.sort((a, b) =>
+        b.vezes - a.vezes ||
+        (pesoTipo[a.itemTipo] - pesoTipo[b.itemTipo]) ||
+        a.nome.localeCompare(b.nome, 'pt-BR')
+    );
+
+    const itensBase = obterItensBaseContagem();
+    const total = ordenarItens(itensBase
         .map(item => ({
             ...item,
             vezes: contagem.get(criarChaveContagem(item.itemTipo, item.itemId)) || 0,
         }))
+    );
+
+    const secoesOrdenadas = Array.from(secoes.values())
         .sort((a, b) =>
-            b.vezes - a.vezes ||
-            (pesoTipo[a.itemTipo] - pesoTipo[b.itemTipo]) ||
-            a.nome.localeCompare(b.nome, 'pt-BR')
-        );
+            app.planejamentosGrupos.findIndex(grupo => grupo.id === a.grupo) -
+            app.planejamentosGrupos.findIndex(grupo => grupo.id === b.grupo) ||
+            a.origem.localeCompare(b.origem, 'pt-BR')
+        )
+        .map(secao => ({
+            ...secao,
+            itens: ordenarItens(itensBase.map(item => ({
+                ...item,
+                vezes: secao.contagem.get(criarChaveContagem(item.itemTipo, item.itemId)) || 0,
+            }))),
+        }));
+
+    return { total, secoes: secoesOrdenadas };
+}
+
+function filtrarItensContagem(itens, filtroTipo, filtroCategoria) {
+    return itens.filter(item =>
+        item.vezes > 0 &&
+        (!filtroTipo || item.itemTipo === filtroTipo) &&
+        (!filtroCategoria ||
+            (filtroCategoria === '__sem_categoria' ? !item.categoria : item.categoria === filtroCategoria))
+    );
+}
+
+function renderizarLinhaContagem(item) {
+    return `
+        <div class="linha-contagem linha-contagem-${item.itemTipo}">
+            <div>
+                <strong>${escaparHtml(item.nome)}</strong>
+                <div class="linha-metadados-card">
+                    <span class="badge-item badge-${item.itemTipo}">${obterRotuloTipoContagem(item.itemTipo)}</span>
+                    ${item.categoria ? renderizarBadgeCategoria(item.categoria, item.itemTipo) : '<span class="badge-neutra">Sem categoria</span>'}
+                    ${item.tags.map(tag => renderizarBadgeTag(tag)).join('')}
+                </div>
+            </div>
+            <div class="numero-contagem">${item.vezes}</div>
+        </div>
+    `;
+}
+
+function renderizarSecaoContagem(titulo, itens, classe = '') {
+    if (itens.length === 0) return '';
+
+    return `
+        <section class="secao-contagem ${classe}">
+            <div class="secao-contagem-header">
+                <h3>${escaparHtml(titulo)}</h3>
+                <span>${itens.reduce((total, item) => total + item.vezes, 0)} itens</span>
+            </div>
+            <div class="lista-contagem-itens">
+                ${itens.map(renderizarLinhaContagem).join('')}
+            </div>
+        </section>
+    `;
 }
 
 function renderizarContagemAlimentos() {
@@ -4588,6 +4730,8 @@ function renderizarContagemAlimentos() {
     const fim = document.getElementById('contagem-fim')?.value;
     const modo = document.getElementById('contagem-modo')?.value || 'direta';
     atualizarFiltrosContagem();
+    const filtroGrupo = document.getElementById('contagem-filtro-grupo')?.value || '';
+    const filtroOrigem = document.getElementById('contagem-filtro-origem')?.value || '';
     const filtroTipo = document.getElementById('contagem-filtro-tipo')?.value || '';
     const filtroCategoria = document.getElementById('contagem-filtro-categoria')?.value || '';
 
@@ -4596,30 +4740,27 @@ function renderizarContagemAlimentos() {
         return;
     }
 
-    const itens = contarItensNoPeriodo(inicio, fim, modo)
-        .filter(item =>
-            (!filtroTipo || item.itemTipo === filtroTipo) &&
-            (!filtroCategoria ||
-                (filtroCategoria === '__sem_categoria' ? !item.categoria : item.categoria === filtroCategoria))
-        );
-    if (itens.length === 0) {
+    const resultado = contarItensNoPeriodo(inicio, fim, modo, {
+        grupo: filtroGrupo,
+        origem: filtroOrigem,
+    });
+    const total = filtrarItensContagem(resultado.total, filtroTipo, filtroCategoria);
+    const secoes = resultado.secoes
+        .map(secao => ({
+            ...secao,
+            itens: filtrarItensContagem(secao.itens, filtroTipo, filtroCategoria),
+        }))
+        .filter(secao => secao.itens.length > 0);
+
+    if (total.length === 0 && secoes.length === 0) {
         container.innerHTML = '<div class="sem-resultados">Nenhum item encontrado para os filtros selecionados.</div>';
         return;
     }
 
-    container.innerHTML = itens.map(item => `
-        <div class="linha-contagem linha-contagem-${item.itemTipo}">
-            <div>
-                <strong>${item.nome}</strong>
-                <div class="linha-metadados-card">
-                    <span class="badge-item badge-${item.itemTipo}">${obterRotuloTipoContagem(item.itemTipo)}</span>
-                    ${item.categoria ? renderizarBadgeCategoria(item.categoria, item.itemTipo) : '<span class="badge-neutra">Sem categoria</span>'}
-                    ${item.tags.map(tag => renderizarBadgeTag(tag)).join('')}
-                </div>
-            </div>
-            <div class="numero-contagem">${item.vezes}</div>
-        </div>
-    `).join('');
+    container.innerHTML = [
+        renderizarSecaoContagem('Total geral', total, 'secao-contagem-total'),
+        ...secoes.map(secao => renderizarSecaoContagem(`${secao.grupoNome} - ${secao.origemNome}`, secao.itens)),
+    ].join('');
 }
 
 /* ==================== TAGS ====================
