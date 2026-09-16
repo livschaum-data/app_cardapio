@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Card&aacute;pio</title>
-    <link rel="stylesheet" href="css/style.css?v=20260909-contagem-grupos">
+    <link rel="stylesheet" href="css/style.css?v=20260916-atalhos-data-atual">
 </head>
 <body>
     <div id="app">
@@ -99,6 +99,8 @@
                 <h2 id="titulo-semana">Semana 1</h2>
                 <button onclick="proxSemana()">Proxima Semana</button>
                 <input type="number" id="numero-semana" min="1" max="52" onchange="mudarSemana(this.value)" style="width: 60px; padding: 8px; margin-left: 20px;">
+                <input type="date" id="data-semanal" onchange="mudarDataSemanal(this.value)" style="padding: 8px;">
+                <button onclick="irParaSemanaAtual()">Semana atual</button>
             </div>
 
             <div class="tabela-container">
@@ -125,6 +127,8 @@
                 <button onclick="mesAnterior()">Mes Anterior</button>
                 <h2 id="titulo-mes">Janeiro 2024</h2>
                 <button onclick="proxMes()">Proximo Mes</button>
+                <input type="date" id="data-mensal" onchange="mudarDataMensal(this.value)" style="padding: 8px; margin-left: 20px;">
+                <button onclick="irParaMesAtual()">Mes atual</button>
             </div>
             <div id="container-semanas-mensais" class="container-semanas"></div>
         </div>
@@ -135,6 +139,7 @@
                 <h2 id="titulo-dia">Segunda, 1 de Janeiro</h2>
                 <button onclick="proximoDia()">Proximo Dia</button>
                 <input type="date" id="data-diaria" onchange="mudarDataDiaria(this.value)" style="padding: 8px; margin-left: 20px;">
+                <button onclick="irParaDiaAtual()">Hoje</button>
             </div>
             <div id="container-diaria" class="container-diaria"></div>
         </div>
@@ -553,6 +558,6 @@
 
     <script src="js/supabase-config.js?v=20260803-supabase-url"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/app.js?v=20260909-contagem-grupos"></script>
+    <script src="js/app.js?v=20260916-atalhos-data-atual"></script>
 </body>
 </html>

@@ -2819,13 +2819,33 @@ function mudarSemana(numero) {
     renderizarSemanal();
 }
 
+function mudarDataSemanal(data) {
+    if (!data) return;
+
+    const dataSelecionada = criarDataLocal(data);
+    app.anoAtual = dataSelecionada.getFullYear();
+    app.semanaAtual = obterNumeroSemana(dataSelecionada);
+    atualizarTituloSemana();
+    renderizarSemanal();
+}
+
+function irParaSemanaAtual() {
+    const hoje = new Date();
+    app.anoAtual = hoje.getFullYear();
+    app.semanaAtual = obterNumeroSemana(hoje);
+    atualizarTituloSemana();
+    renderizarSemanal();
+}
+
 function atualizarTituloSemana() {
-    const inicio = obterInicioSemana(app.semanaAtual);
+    const inicio = obterInicioSemana(app.semanaAtual, app.anoAtual);
     const fim = new Date(inicio);
     fim.setDate(inicio.getDate() + 6);
     document.getElementById('titulo-semana').textContent =
         `${obterNomePlanejamentoAtivo()} - Semana ${app.semanaAtual} (${inicio.getDate()}/${inicio.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1})`;
     document.getElementById('numero-semana').value = app.semanaAtual;
+    const inputData = document.getElementById('data-semanal');
+    if (inputData) inputData.value = formatarDataChave(inicio);
 }
 
 /* ==================== VISAO MENSAL ====================
@@ -2930,6 +2950,8 @@ function atualizarTituloMes() {
                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     document.getElementById('titulo-mes').textContent = 
         `${obterNomePlanejamentoAtivo()} - ${meses[app.mesAtual]} ${app.anoAtual}`;
+    const inputData = document.getElementById('data-mensal');
+    if (inputData) inputData.value = formatarDataChave(new Date(app.anoAtual, app.mesAtual, 1));
 }
 
 function mesAnterior() {
@@ -2949,6 +2971,22 @@ function proxMes() {
     } else {
         app.mesAtual++;
     }
+    renderizarMensal();
+}
+
+function mudarDataMensal(data) {
+    if (!data) return;
+
+    const dataSelecionada = criarDataLocal(data);
+    app.mesAtual = dataSelecionada.getMonth();
+    app.anoAtual = dataSelecionada.getFullYear();
+    renderizarMensal();
+}
+
+function irParaMesAtual() {
+    const hoje = new Date();
+    app.mesAtual = hoje.getMonth();
+    app.anoAtual = hoje.getFullYear();
     renderizarMensal();
 }
 
@@ -3055,6 +3093,8 @@ function renderizarDiaria() {
 
     // Buscar refeicoes planejadas para essa data
     const dataString = formatarDataChave(dataDiaria);
+    const inputData = document.getElementById('data-diaria');
+    if (inputData) inputData.value = dataString;
 
     const blocoNotas = document.createElement('div');
     blocoNotas.className = 'card-diario card-notas-planejamento';
@@ -3092,6 +3132,11 @@ function proximoDia() {
 
 function mudarDataDiaria(data) {
     dataDiaria = new Date(data + 'T00:00:00');
+    renderizarDiaria();
+}
+
+function irParaDiaAtual() {
+    dataDiaria = new Date();
     renderizarDiaria();
 }
 
@@ -5701,6 +5746,11 @@ Object.assign(window, {
     removerLinhaIngredienteReceita,
     selecionarItemParaPlano,
     abrirModalPlanejarSemana,
+    mudarDataSemanal,
+    mudarDataMensal,
+    irParaSemanaAtual,
+    irParaMesAtual,
+    irParaDiaAtual,
     salvarNotaPlanejamentoData,
     renderizarContagemAlimentos,
     usarSemanaAtualContagem,
