@@ -331,9 +331,9 @@
                     <input type="text" id="busca-selecionar" placeholder="Buscar receita, refeicao ou alimento..." onkeyup="buscarReceitasModal()">
                     <div class="segmentos-selecao" role="group" aria-label="Tipo de item">
                         <button type="button" class="segmento ativo" data-filtro-item="" onclick="selecionarFiltroItemModal(this)">Todos</button>
+                        <button type="button" class="segmento" data-filtro-item="alimento" onclick="selecionarFiltroItemModal(this)">Alimentos</button>
                         <button type="button" class="segmento" data-filtro-item="receita" onclick="selecionarFiltroItemModal(this)">Receitas</button>
                         <button type="button" class="segmento" data-filtro-item="refeicao" onclick="selecionarFiltroItemModal(this)">Refei&ccedil;&otilde;es</button>
-                        <button type="button" class="segmento" data-filtro-item="alimento" onclick="selecionarFiltroItemModal(this)">Alimentos</button>
                     </div>
                     <input type="hidden" id="filtro-selecao-item" value="">
                     <details class="filtros-avancados">
