@@ -2330,15 +2330,23 @@ body {
 
 .modal-selecao-content .filtros-selecao {
     gap: 6px;
+    grid-template-areas:
+        "busca novo"
+        "segmentos segmentos"
+        "avancados avancados"
+        "contador contador";
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 190px);
     margin-bottom: 8px;
 }
 
 .modal-selecao-content .filtros-selecao > input {
+    grid-area: busca;
     min-height: 36px;
     padding: 6px 10px;
 }
 
 .modal-selecao-content .segmentos-selecao {
+    grid-area: segmentos;
     padding: 3px;
 }
 
@@ -2347,6 +2355,7 @@ body {
 }
 
 .modal-selecao-content .filtros-avancados {
+    grid-area: avancados;
     padding: 5px 8px;
 }
 
@@ -2360,8 +2369,23 @@ body {
     padding: 5px 12px;
 }
 
+.modal-selecao-content .novo-item-planejamento {
+    grid-area: novo;
+    position: relative;
+}
+
+.modal-selecao-content .opcoes-novo-item-planejamento {
+    box-shadow: var(--sombra);
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    width: min(360px, calc(100vw - 32px));
+    z-index: 5;
+}
+
 .modal-selecao-content #resultado-selecao-contador {
     font-size: 12px;
+    grid-area: contador;
     line-height: 18px;
 }
 
@@ -2570,6 +2594,7 @@ body {
 
     .modal-selecao-content .filtros-selecao {
         gap: 4px;
+        grid-template-columns: minmax(0, 1fr) minmax(130px, 38%);
         margin-bottom: 6px;
     }
 
