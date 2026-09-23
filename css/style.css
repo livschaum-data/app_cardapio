@@ -2144,6 +2144,44 @@ body {
     padding-right: 4px;
 }
 
+.cabecalho-lista-selecao {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1.4fr) minmax(110px, 0.75fr) minmax(88px, auto) 32px;
+    padding: 0 12px 6px;
+}
+
+.cabecalho-lista-selecao button {
+    background: transparent;
+    border: 0;
+    color: var(--cor-texto-cinza);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 2px 0;
+    text-align: left;
+}
+
+.cabecalho-lista-selecao button::after {
+    content: '';
+    display: inline-block;
+    margin-left: 4px;
+    width: 8px;
+}
+
+.cabecalho-lista-selecao button.ativo {
+    color: var(--cor-primaria);
+}
+
+.cabecalho-lista-selecao button[aria-sort="ascending"]::after {
+    content: '\2191';
+}
+
+.cabecalho-lista-selecao button[aria-sort="descending"]::after {
+    content: '\2193';
+}
+
 .linha-selecao {
     align-items: center;
     background: #fff;
@@ -2152,7 +2190,7 @@ body {
     border-radius: 8px;
     display: grid;
     gap: 8px;
-    grid-template-columns: minmax(0, 1fr) minmax(110px, 0.55fr) auto auto;
+    grid-template-columns: minmax(0, 1.4fr) minmax(110px, 0.75fr) minmax(88px, auto) 32px;
     min-height: 44px;
     padding: 6px 8px;
 }
@@ -2191,6 +2229,19 @@ body {
     white-space: nowrap;
 }
 
+.linha-selecao-nome {
+    min-width: 0;
+}
+
+.categoria-selecao {
+    color: var(--cor-texto-cinza);
+    font-size: 12px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .linha-selecao p {
     color: var(--cor-texto-cinza);
     font-size: 12px;
@@ -2207,6 +2258,7 @@ body {
     flex-wrap: wrap;
     gap: 4px;
     min-width: 0;
+    margin-top: 3px;
 }
 
 .tags-selecao .badge-tag {
@@ -2464,12 +2516,27 @@ body {
     .linha-selecao {
         align-items: center;
         gap: 7px;
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-columns: minmax(0, 1.25fr) minmax(72px, 0.75fr) 68px 32px;
         min-height: 42px;
         padding: 5px 7px;
     }
 
+    .cabecalho-lista-selecao {
+        gap: 7px;
+        grid-template-columns: minmax(0, 1.25fr) minmax(72px, 0.75fr) 68px 32px;
+        padding: 0 9px 5px;
+    }
+
+    .cabecalho-lista-selecao button {
+        font-size: 10px;
+    }
+
     .linha-selecao .tags-selecao {
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+
+    .linha-selecao .tags-selecao .badge-tag:nth-child(n+2) {
         display: none;
     }
 
@@ -2480,6 +2547,10 @@ body {
     .linha-selecao p {
         font-size: 11px;
         margin-top: 1px;
+    }
+
+    .categoria-selecao {
+        font-size: 10px;
     }
 
     .linha-selecao .badge-item {

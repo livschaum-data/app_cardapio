@@ -2601,7 +2601,33 @@ function renderizarReceitasModalSelecao() {
         lista.appendChild(criarLinhaModalSelecao(item));
     });
 
+    atualizarCabecalhoOrdenacaoModalSelecao();
     buscarReceitasModal();
+}
+
+function ordenarModalSelecao(campo) {
+    const ordenacao = document.getElementById('ordenacao-selecao');
+    if (!ordenacao) return;
+
+    if (ordenacao.value === campo) {
+        window.direcaoOrdenacaoSelecao = window.direcaoOrdenacaoSelecao === 'desc' ? 'asc' : 'desc';
+    } else {
+        ordenacao.value = campo;
+        window.direcaoOrdenacaoSelecao = 'asc';
+    }
+
+    renderizarReceitasModalSelecao();
+}
+
+function atualizarCabecalhoOrdenacaoModalSelecao() {
+    const campo = document.getElementById('ordenacao-selecao')?.value || 'tipo';
+    const direcao = window.direcaoOrdenacaoSelecao || 'asc';
+
+    document.querySelectorAll('[data-ordenacao-selecao]').forEach(botao => {
+        const ativo = botao.dataset.ordenacaoSelecao === campo;
+        botao.classList.toggle('ativo', ativo);
+        botao.setAttribute('aria-sort', ativo ? (direcao === 'asc' ? 'ascending' : 'descending') : 'none');
+    });
 }
 
 function obterItensOrdenadosModalSelecao() {
@@ -2612,21 +2638,22 @@ function obterItensOrdenadosModalSelecao() {
     ];
 
     const ordenacao = document.getElementById('ordenacao-selecao')?.value || 'tipo';
-    const pesoTipo = { receita: 1, refeicao: 2, alimento: 3 };
+    const direcao = window.direcaoOrdenacaoSelecao === 'desc' ? -1 : 1;
+    const pesoTipo = { alimento: 1, receita: 2, refeicao: 3 };
 
     return itens.sort((a, b) => {
         if (ordenacao === 'nome') {
-            return a.nome.localeCompare(b.nome, 'pt-BR') ||
-                (pesoTipo[a.itemTipo] - pesoTipo[b.itemTipo]);
+            return direcao * (a.nome.localeCompare(b.nome, 'pt-BR') ||
+                (pesoTipo[a.itemTipo] - pesoTipo[b.itemTipo]));
         }
 
         if (ordenacao === 'categoria') {
-            return a.categoria.localeCompare(b.categoria, 'pt-BR') ||
-                a.nome.localeCompare(b.nome, 'pt-BR');
+            return direcao * (a.categoria.localeCompare(b.categoria, 'pt-BR') ||
+                a.nome.localeCompare(b.nome, 'pt-BR'));
         }
 
-        return (pesoTipo[a.itemTipo] - pesoTipo[b.itemTipo]) ||
-            a.nome.localeCompare(b.nome, 'pt-BR');
+        return direcao * ((pesoTipo[a.itemTipo] - pesoTipo[b.itemTipo]) ||
+            a.nome.localeCompare(b.nome, 'pt-BR'));
     });
 }
 
@@ -2665,10 +2692,6 @@ function criarLinhaModalSelecao(item) {
         : item.itemTipo === 'refeicao'
             ? 'badge-refeicao'
             : 'badge-receita';
-    const detalhes = [
-        item.categoria || 'Sem categoria',
-        item.tipos.slice(0, 2).join(', '),
-    ].filter(Boolean).join(' - ');
     const tagsHtml = item.tags.length > 0
         ? `<div class="tags-selecao">${item.tags.slice(0, 3).map(tag => renderizarBadgeTag(tag)).join('')}</div>`
         : '<div class="tags-selecao tags-selecao-vazia">Sem tags</div>';
@@ -2676,12 +2699,12 @@ function criarLinhaModalSelecao(item) {
     div.innerHTML = `
         <div class="linha-selecao-identidade">
             <span class="icone-selecao" aria-hidden="true">${item.itemTipo === 'alimento' ? 'A' : item.itemTipo === 'refeicao' ? 'M' : 'R'}</span>
-            <div>
+            <div class="linha-selecao-nome">
                 <h3>${escaparHtml(item.nome)}</h3>
-                <p>${escaparHtml(detalhes)}</p>
+                ${tagsHtml}
             </div>
         </div>
-        ${tagsHtml}
+        <span class="categoria-selecao">${escaparHtml(item.categoria || 'Sem categoria')}</span>
         <span class="badge-item ${tipoClasse}">${obterRotuloItemModalSelecao(item.itemTipo)}</span>
         <button type="button" class="btn-principal btn-selecionar-linha" aria-label="Selecionar ${escaparHtml(item.nome)}" title="Selecionar">
             +
@@ -5722,6 +5745,7 @@ Object.assign(window, {
     alternarPlanoSeguido,
     alternarNovoItemPlanejamento,
     criarItemParaPlanejamento,
+    ordenarModalSelecao,
     alternarPainelNuvem,
     fecharPainelNuvem,
     entrarNuvem,
