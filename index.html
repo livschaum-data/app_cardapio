@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Card&aacute;pio</title>
-    <link rel="stylesheet" href="css/style.css?v=20260923-busca-novo-item">
+    <link rel="stylesheet" href="css/style.css?v=20261006-botoes-semana-linha">
 </head>
 <body>
     <div id="app">
@@ -94,13 +94,13 @@
         </div>
 
         <div id="visao-semanal" class="visao" style="display:none;">
-            <div class="controles">
-                <button onclick="semanaAnterior()">Semana Anterior</button>
+            <div class="controles controles-semana">
+                <button class="btn-semana-anterior" onclick="semanaAnterior()">Semana Anterior</button>
                 <h2 id="titulo-semana">Semana 1</h2>
-                <button onclick="proxSemana()">Proxima Semana</button>
-                <input type="number" id="numero-semana" min="1" max="52" onchange="mudarSemana(this.value)" style="width: 60px; padding: 8px; margin-left: 20px;">
+                <button class="btn-semana-proxima" onclick="proxSemana()">Proxima Semana</button>
+                <input type="number" id="numero-semana" min="1" max="52" onchange="mudarSemana(this.value)" style="width: 60px; padding: 8px;">
                 <input type="date" id="data-semanal" onchange="mudarDataSemanal(this.value)" style="padding: 8px;">
-                <button onclick="irParaSemanaAtual()">Semana atual</button>
+                <button class="btn-semana-atual" onclick="irParaSemanaAtual()">Semana atual</button>
             </div>
 
             <div class="tabela-container">

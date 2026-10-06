@@ -2700,6 +2700,60 @@ body {
         text-align: center;
     }
 
+    .controles-semana {
+        display: grid;
+        gap: 6px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .controles-semana .btn-semana-anterior,
+    .controles-semana .btn-semana-proxima,
+    .controles-semana .btn-semana-atual {
+        font-size: 11px;
+        min-width: 0;
+        padding: 6px 4px;
+        width: 100%;
+    }
+
+    .controles-semana .btn-semana-anterior {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .controles-semana .btn-semana-proxima {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .controles-semana .btn-semana-atual {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .controles-semana h2 {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        margin: 4px 0;
+        min-width: 0;
+    }
+
+    .controles-semana #numero-semana {
+        grid-column: 1;
+        grid-row: 3;
+        justify-self: end;
+        margin: 0;
+        width: 70px !important;
+    }
+
+    .controles-semana #data-semanal {
+        grid-column: 2 / -1;
+        grid-row: 3;
+        justify-self: start;
+        margin: 0;
+        width: min(100%, 180px);
+    }
+
+
     .tabela-semanal th:nth-child(n+3),
     .tabela-semanal td:nth-child(n+3) {
         font-size: 10px;
