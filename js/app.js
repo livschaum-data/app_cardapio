@@ -886,6 +886,10 @@ function chavePlanejamento(plano) {
         ].join('|');
     }
 
+    if (planejamentoEhNotaSemana(plano)) {
+        return ['nota-semana', plano?.data || ''].join('|');
+    }
+
     return plano?.id || [
         normalizarGrupoPlanejamento(plano?.grupo),
         plano?.data || '',
@@ -1443,7 +1447,7 @@ function normalizarDadosAlimentos() {
     app.planejamentos.forEach(plano => {
         if (!plano.itemTipo) plano.itemTipo = 'receita';
         if (!plano.itemId && plano.receitaId) plano.itemId = plano.receitaId;
-        if (planejamentoEhNotaDia(plano)) return;
+        if (planejamentoEhNotaDia(plano) || planejamentoEhNotaSemana(plano)) return;
         plano.grupo = normalizarGrupoPlanejamento(plano.grupo);
     });
 
@@ -1933,6 +1937,8 @@ const DIAS_SEMANA = [
 
 const TIPO_PLANEJAMENTO_NOTA_DIA = 'nota-dia';
 const REFEICAO_NOTA_DIA = '__nota_dia__';
+const TIPO_PLANEJAMENTO_NOTA_SEMANA = 'nota-semana';
+const REFEICAO_NOTA_SEMANA = '__nota_semana__';
 
 function normalizarDiaSemana(dia) {
     const valor = String(dia || '').toLowerCase();
@@ -2205,6 +2211,10 @@ function planejamentoEhNotaDia(plano) {
     return obterTipoItemPlano(plano || {}) === TIPO_PLANEJAMENTO_NOTA_DIA;
 }
 
+function planejamentoEhNotaSemana(plano) {
+    return obterTipoItemPlano(plano || {}) === TIPO_PLANEJAMENTO_NOTA_SEMANA;
+}
+
 function obterItemIdPlano(plano) {
     return plano.itemId || plano.receitaId;
 }
@@ -2402,6 +2412,7 @@ function buscarPlanejamentos(semana, dia, tipo) {
 function buscarPlanejamentosPorSemana(semana, tipo) {
     return app.planejamentos.filter(p =>
         !planejamentoEhNotaDia(p) &&
+        !planejamentoEhNotaSemana(p) &&
         p.tipo === 'mensal' &&
         Number(p.semana) === Number(semana) &&
         p.refeicao === tipo
@@ -3199,32 +3210,22 @@ function renderizarCalendario() {
 
     // Atualizar titulo
     document.getElementById('titulo-calendario').textContent = 
-        `${obterNomePlanejamentoAtivo()} - ${meses[mesCalendario]} ${anoCalendario}`;
+        `${meses[mesCalendario]} ${anoCalendario}`;
 
-    // Primeiro dia do mes
+    const cabecalho = document.createElement('div');
+    cabecalho.className = 'cabecalho-calendario';
+    cabecalho.innerHTML = DIAS_SEMANA.map(dia => `<span>${dia.nome}</span>`).join('');
+    container.appendChild(cabecalho);
+
+    // A grade usa semanas completas, de segunda a domingo.
     const primeiro = new Date(anoCalendario, mesCalendario, 1);
-    const ultimo = new Date(anoCalendario, mesCalendario + 1, 0);
-    const diasAnterior = primeiro.getDay();
+    const inicioGrade = new Date(primeiro);
+    inicioGrade.setDate(primeiro.getDate() - obterIndiceSemanaSegunda(primeiro));
 
-    // Dias do mes anterior
-    const diasMesAnterior = new Date(anoCalendario, mesCalendario, 0).getDate();
-    for (let i = diasAnterior - 1; i >= 0; i--) {
-        const dia = diasMesAnterior - i;
-        const div = criarDiaCalendario(dia, true);
-        container.appendChild(div);
-    }
-
-    // Dias do mes
-    for (let dia = 1; dia <= ultimo.getDate(); dia++) {
-        const div = criarDiaCalendario(dia, false);
-        container.appendChild(div);
-    }
-
-    // Dias do mes seguinte
-    const diasRestantes = 42 - (diasAnterior + ultimo.getDate());
-    for (let dia = 1; dia <= diasRestantes; dia++) {
-        const div = criarDiaCalendario(dia, true);
-        container.appendChild(div);
+    for (let indiceSemana = 0; indiceSemana < 6; indiceSemana++) {
+        const inicioSemana = new Date(inicioGrade);
+        inicioSemana.setDate(inicioGrade.getDate() + indiceSemana * 7);
+        container.appendChild(criarLinhaSemanaCalendario(inicioSemana));
     }
 
     // Atualizar detalhes se tem data selecionada
@@ -3233,40 +3234,131 @@ function renderizarCalendario() {
     }
 }
 
-function criarDiaCalendario(dia, outroMes) {
+function criarLinhaSemanaCalendario(inicioSemana) {
+    const secao = document.createElement('section');
+    secao.className = 'semana-calendario';
+
+    const dias = document.createElement('div');
+    dias.className = 'dias-semana-calendario';
+    for (let indice = 0; indice < 7; indice++) {
+        const data = new Date(inicioSemana);
+        data.setDate(inicioSemana.getDate() + indice);
+        dias.appendChild(criarDiaCalendario(data));
+    }
+
+    secao.appendChild(dias);
+    secao.insertAdjacentHTML('beforeend', renderizarFaixaSemanaCalendario(inicioSemana));
+    return secao;
+}
+
+function criarDiaCalendario(data) {
     const div = document.createElement('div');
     div.className = 'dia-calendario';
+    const outroMes = data.getMonth() !== mesCalendario;
 
     if (outroMes) {
         div.classList.add('outro-mes');
-        div.textContent = dia;
-    } else {
-        const hoje = new Date();
-        const data = new Date(anoCalendario, mesCalendario, dia);
-
-        if (hoje.toDateString() === data.toDateString()) {
-            div.classList.add('hoje');
-        }
-
-        if (dataSelecionada && dataSelecionada.toDateString() === data.toDateString()) {
-            div.classList.add('selecionado');
-        }
-
-        div.textContent = dia;
-        div.onclick = () => selecionarDataCalendario(data);
-
-        // Verificar se tem refeicao
-        const dataStr = formatarDataChave(data);
-        if (app.tiposRefeicao.some(tipo => buscarPlanejamentosPorData(dataStr, tipo).length > 0)) {
-            div.classList.add('com-refeicao');
-        }
-
-        if (buscarNotaPlanejamentoPorData(dataStr)) {
-            div.classList.add('com-nota');
-        }
     }
 
+    const hoje = new Date();
+    if (hoje.toDateString() === data.toDateString()) div.classList.add('hoje');
+    if (dataSelecionada && dataSelecionada.toDateString() === data.toDateString()) div.classList.add('selecionado');
+
+    div.textContent = data.getDate();
+    div.onclick = () => selecionarDataCalendario(data);
+
+    const dataStr = formatarDataChave(data);
+    if (app.tiposRefeicao.some(tipo => buscarPlanejamentosPorData(dataStr, tipo).length > 0)) {
+        div.classList.add('com-refeicao');
+    }
+    if (buscarNotaPlanejamentoPorData(dataStr)) div.classList.add('com-nota');
+
     return div;
+}
+
+function buscarNotaSemanaCalendario(inicioStr) {
+    return app.planejamentos.find(plano => planejamentoEhNotaSemana(plano) && plano.data === inicioStr) || null;
+}
+
+function salvarNotaSemanaCalendario(inicioStr, texto) {
+    const nota = buscarNotaSemanaCalendario(inicioStr);
+    const conteudo = String(texto || '');
+
+    if (!conteudo.trim()) {
+        if (nota) {
+            registrarExclusao('planejamentos', chavePlanejamento(nota));
+            app.planejamentos = app.planejamentos.filter(plano => plano !== nota);
+            salvarDados();
+        }
+        return;
+    }
+
+    const data = criarDataLocal(inicioStr);
+    const agora = new Date().toISOString();
+    if (nota) {
+        nota.nota = conteudo;
+        nota.dataAtualizacao = agora;
+    } else {
+        const novoPlano = {
+            id: `nota_semana_${inicioStr}`,
+            grupo: '',
+            itemTipo: TIPO_PLANEJAMENTO_NOTA_SEMANA,
+            itemId: '',
+            receitaId: '',
+            refeicao: REFEICAO_NOTA_SEMANA,
+            tipo: 'nota-semana',
+            data: inicioStr,
+            semana: obterNumeroSemana(data),
+            dia: '',
+            nota: conteudo,
+            dataCriacao: agora,
+            dataAtualizacao: agora,
+        };
+        app.planejamentos.push(novoPlano);
+        removerExclusao('planejamentos', chavePlanejamento(novoPlano));
+    }
+    salvarDados();
+}
+
+function adicionarItemSemanaCalendario(semana) {
+    if (app.tiposUso.length === 0) {
+        alert('Cadastre um tipo de uso antes de adicionar um item semanal.');
+        return;
+    }
+
+    const escolha = prompt(`Qual tipo de uso?\n${app.tiposUso.join(', ')}`, app.tiposUso[0]);
+    if (!escolha) return;
+    const tipo = app.tiposUso.find(item => item.toLowerCase() === escolha.trim().toLowerCase());
+    if (!tipo) {
+        alert('Tipo de uso nao encontrado.');
+        return;
+    }
+    abrirModalPlanejarSemana(semana, tipo);
+}
+
+function renderizarFaixaSemanaCalendario(inicioSemana) {
+    const inicioStr = formatarDataChave(inicioSemana);
+    const fim = new Date(inicioSemana);
+    fim.setDate(inicioSemana.getDate() + 6);
+    const semana = obterNumeroSemana(inicioSemana);
+    const nota = buscarNotaSemanaCalendario(inicioStr);
+    const planos = app.tiposUso.flatMap(tipo => buscarPlanejamentosPorSemana(semana, tipo));
+    const itens = planos.map(plano => {
+        const { item } = buscarItemPlanejamento(plano);
+        return item ? `<span>${escaparHtml(item.nome)}</span>` : '';
+    }).join('');
+
+    return `
+        <div class="faixa-semana-calendario">
+            <div class="identificacao-semana-calendario">
+                <strong>Semana ${semana}</strong>
+                <span>${inicioSemana.getDate()}/${inicioSemana.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1}</span>
+            </div>
+            <textarea placeholder="Nota para toda a semana" onblur="salvarNotaSemanaCalendario('${inicioStr}', this.value)">${escaparHtml(nota?.nota || '')}</textarea>
+            <div class="itens-semana-calendario">${itens || '<span class="sem-itens-semana">Sem itens</span>'}</div>
+            <button type="button" onclick="adicionarItemSemanaCalendario('${semana}')">Adicionar item</button>
+        </div>
+    `;
 }
 
 function selecionarDataCalendario(data) {
@@ -4694,6 +4786,7 @@ function contarItensNoPeriodo(dataInicio, dataFim, modo = 'direta', filtros = {}
             const origem = obterOrigemPlanoContagem(plano);
 
             return !planejamentoEhNotaDia(plano) &&
+                !planejamentoEhNotaSemana(plano) &&
                 (!filtros.grupo || grupo === filtros.grupo) &&
                 (!filtros.origem || origem === filtros.origem) &&
                 planoDentroPeriodoContagem(plano, dataInicio, dataFim);
@@ -5776,6 +5869,8 @@ Object.assign(window, {
     irParaMesAtual,
     irParaDiaAtual,
     salvarNotaPlanejamentoData,
+    salvarNotaSemanaCalendario,
+    adicionarItemSemanaCalendario,
     renderizarContagemAlimentos,
     usarSemanaAtualContagem,
     usarMesAtualContagem,
