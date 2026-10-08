@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Card&aacute;pio</title>
-    <link rel="stylesheet" href="css/style.css?v=20261008-titulos-data-mobile">
+    <link rel="stylesheet" href="css/style.css?v=20261008-ordem-controles">
 </head>
 <body>
     <div id="app">
@@ -95,12 +95,14 @@
 
         <div id="visao-semanal" class="visao" style="display:none;">
             <div class="controles controles-semana">
-                <button class="btn-semana-anterior" onclick="semanaAnterior()">Semana Anterior</button>
                 <h2 id="titulo-semana">Semana 1</h2>
-                <button class="btn-semana-proxima" onclick="proxSemana()">Proxima Semana</button>
                 <input type="number" id="numero-semana" min="1" max="52" onchange="mudarSemana(this.value)" style="width: 60px; padding: 8px;">
                 <input type="date" id="data-semanal" onchange="mudarDataSemanal(this.value)" style="padding: 8px;">
-                <button class="btn-semana-atual" onclick="irParaSemanaAtual()">Semana atual</button>
+                <div class="acoes-controles">
+                    <button onclick="semanaAnterior()">Semana Anterior</button>
+                    <button onclick="proxSemana()">Proxima Semana</button>
+                    <button onclick="irParaSemanaAtual()">Semana atual</button>
+                </div>
             </div>
 
             <div class="tabela-container">
@@ -124,31 +126,37 @@
 
         <div id="visao-mensal" class="visao" style="display:none;">
             <div class="controles controles-periodo">
-                <button class="btn-periodo-anterior" onclick="mesAnterior()">Mes Anterior</button>
                 <h2 id="titulo-mes">Janeiro 2024</h2>
-                <button class="btn-periodo-proximo" onclick="proxMes()">Proximo Mes</button>
                 <input class="seletor-periodo" type="date" id="data-mensal" onchange="mudarDataMensal(this.value)" style="padding: 8px;">
-                <button class="btn-periodo-atual" onclick="irParaMesAtual()">Mes atual</button>
+                <div class="acoes-controles">
+                    <button onclick="mesAnterior()">Mes Anterior</button>
+                    <button onclick="proxMes()">Proximo Mes</button>
+                    <button onclick="irParaMesAtual()">Mes atual</button>
+                </div>
             </div>
             <div id="container-semanas-mensais" class="container-semanas"></div>
         </div>
 
         <div id="visao-diaria" class="visao">
             <div class="controles controles-periodo">
-                <button class="btn-periodo-anterior" onclick="diaAnterior()">Dia Anterior</button>
                 <h2 id="titulo-dia">Segunda, 1 de Janeiro</h2>
-                <button class="btn-periodo-proximo" onclick="proximoDia()">Proximo Dia</button>
                 <input class="seletor-periodo" type="date" id="data-diaria" onchange="mudarDataDiaria(this.value)" style="padding: 8px;">
-                <button class="btn-periodo-atual" onclick="irParaDiaAtual()">Hoje</button>
+                <div class="acoes-controles">
+                    <button onclick="diaAnterior()">Dia Anterior</button>
+                    <button onclick="proximoDia()">Proximo Dia</button>
+                    <button onclick="irParaDiaAtual()">Hoje</button>
+                </div>
             </div>
             <div id="container-diaria" class="container-diaria"></div>
         </div>
 
         <div id="visao-calendario" class="visao" style="display:none;">
-            <div class="controles">
-                <button onclick="mesCalendarioAnterior()">Anterior</button>
+            <div class="controles controles-calendario">
                 <h2 id="titulo-calendario">Janeiro 2024</h2>
-                <button onclick="proxMesCalendario()">Proximo</button>
+                <div class="acoes-controles">
+                    <button onclick="mesCalendarioAnterior()">Anterior</button>
+                    <button onclick="proxMesCalendario()">Proximo</button>
+                </div>
             </div>
 
             <div class="calendario-container">

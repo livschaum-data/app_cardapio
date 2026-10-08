@@ -320,6 +320,11 @@ body {
     background: var(--cor-primaria);
 }
 
+.acoes-controles {
+    display: flex;
+    gap: 8px;
+}
+
 /* ==================== TABELA SEMANAL ====================
    Estilo inspirado nas imagens do cardpio */
 
@@ -2712,28 +2717,24 @@ body {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .controles-semana .btn-semana-anterior,
-    .controles-semana .btn-semana-proxima,
-    .controles-semana .btn-semana-atual {
+    .controles-semana .acoes-controles,
+    .controles-periodo .acoes-controles,
+    .controles-calendario .acoes-controles {
+        display: grid;
+        gap: 6px;
+        grid-column: 1 / -1;
+        grid-row: 3;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .controles-semana .acoes-controles button,
+    .controles-periodo .acoes-controles button,
+    .controles-calendario .acoes-controles button {
         font-size: 11px;
         min-width: 0;
         padding: 6px 4px;
         width: 100%;
-    }
-
-    .controles-semana .btn-semana-anterior {
-        grid-column: 1;
-        grid-row: 1;
-    }
-
-    .controles-semana .btn-semana-proxima {
-        grid-column: 2;
-        grid-row: 1;
-    }
-
-    .controles-semana .btn-semana-atual {
-        grid-column: 3;
-        grid-row: 1;
     }
 
     .controles-periodo {
@@ -2742,40 +2743,16 @@ body {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .controles-periodo .btn-periodo-anterior,
-    .controles-periodo .btn-periodo-proximo,
-    .controles-periodo .btn-periodo-atual {
-        font-size: 11px;
-        min-width: 0;
-        padding: 6px 4px;
-        width: 100%;
-    }
-
-    .controles-periodo .btn-periodo-anterior {
-        grid-column: 1;
-        grid-row: 1;
-    }
-
-    .controles-periodo .btn-periodo-proximo {
-        grid-column: 2;
-        grid-row: 1;
-    }
-
-    .controles-periodo .btn-periodo-atual {
-        grid-column: 3;
-        grid-row: 1;
-    }
-
     .controles-periodo h2 {
         grid-column: 1 / -1;
-        grid-row: 2;
+        grid-row: 1;
         margin: 4px 0;
         min-width: 0;
     }
 
     .controles-periodo .seletor-periodo {
         grid-column: 1 / -1;
-        grid-row: 3;
+        grid-row: 2;
         justify-self: center;
         margin: 0;
         width: min(100%, 190px);
@@ -2783,14 +2760,14 @@ body {
 
     .controles-semana h2 {
         grid-column: 1 / -1;
-        grid-row: 2;
+        grid-row: 1;
         margin: 4px 0;
         min-width: 0;
     }
 
     .controles-semana #numero-semana {
         grid-column: 1;
-        grid-row: 3;
+        grid-row: 2;
         justify-self: end;
         margin: 0;
         width: 70px !important;
@@ -2798,10 +2775,28 @@ body {
 
     .controles-semana #data-semanal {
         grid-column: 2 / -1;
-        grid-row: 3;
+        grid-row: 2;
         justify-self: start;
         margin: 0;
         width: min(100%, 180px);
+    }
+
+    .controles-calendario {
+        display: grid;
+        gap: 6px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .controles-calendario h2 {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        margin: 4px 0;
+        min-width: 0;
+    }
+
+    .controles-calendario .acoes-controles {
+        grid-row: 2;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
 
