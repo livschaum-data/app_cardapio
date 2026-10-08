@@ -2696,8 +2696,14 @@ body {
     }
 
     .controles h2 {
+        font-size: 20px;
+        line-height: 1.25;
         width: 100%;
         text-align: center;
+    }
+
+    #titulo-dia {
+        font-size: 18px;
     }
 
     .controles-semana {
@@ -2728,6 +2734,51 @@ body {
     .controles-semana .btn-semana-atual {
         grid-column: 3;
         grid-row: 1;
+    }
+
+    .controles-periodo {
+        display: grid;
+        gap: 6px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .controles-periodo .btn-periodo-anterior,
+    .controles-periodo .btn-periodo-proximo,
+    .controles-periodo .btn-periodo-atual {
+        font-size: 11px;
+        min-width: 0;
+        padding: 6px 4px;
+        width: 100%;
+    }
+
+    .controles-periodo .btn-periodo-anterior {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .controles-periodo .btn-periodo-proximo {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .controles-periodo .btn-periodo-atual {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .controles-periodo h2 {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        margin: 4px 0;
+        min-width: 0;
+    }
+
+    .controles-periodo .seletor-periodo {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        justify-self: center;
+        margin: 0;
+        width: min(100%, 190px);
     }
 
     .controles-semana h2 {
