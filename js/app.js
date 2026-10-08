@@ -3321,16 +3321,9 @@ function salvarNotaSemanaCalendario(inicioStr, texto) {
 }
 
 function adicionarItemSemanaCalendario(semana) {
-    if (app.tiposUso.length === 0) {
-        alert('Cadastre um tipo de uso antes de adicionar um item semanal.');
-        return;
-    }
-
-    const escolha = prompt(`Qual tipo de uso?\n${app.tiposUso.join(', ')}`, app.tiposUso[0]);
-    if (!escolha) return;
-    const tipo = app.tiposUso.find(item => item.toLowerCase() === escolha.trim().toLowerCase());
+    const tipo = app.tiposUso.find(item => item.trim().toLowerCase() === 'geral');
     if (!tipo) {
-        alert('Tipo de uso nao encontrado.');
+        alert('Cadastre o tipo de uso Geral antes de adicionar um item no calendario.');
         return;
     }
     abrirModalPlanejarSemana(semana, tipo);
@@ -3342,7 +3335,8 @@ function renderizarFaixaSemanaCalendario(inicioSemana) {
     fim.setDate(inicioSemana.getDate() + 6);
     const semana = obterNumeroSemana(inicioSemana);
     const nota = buscarNotaSemanaCalendario(inicioStr);
-    const planos = app.tiposUso.flatMap(tipo => buscarPlanejamentosPorSemana(semana, tipo));
+    const tipoGeral = app.tiposUso.find(tipo => tipo.trim().toLowerCase() === 'geral');
+    const planos = tipoGeral ? buscarPlanejamentosPorSemana(semana, tipoGeral) : [];
     const itens = planos.map(plano => {
         const { item } = buscarItemPlanejamento(plano);
         return item ? `<span>${escaparHtml(item.nome)}</span>` : '';
