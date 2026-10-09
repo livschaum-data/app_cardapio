@@ -2247,14 +2247,8 @@ function planejamentoPermiteCheck(plano) {
     return normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado';
 }
 
-function renderizarCheckPlanejamento(plano) {
-    if (!planejamentoPermiteCheck(plano)) return '';
-
-    return `
-        <label class="check-planejamento" onclick="event.stopPropagation()" title="Marcar como seguido">
-            <input type="checkbox" aria-label="Marcar como seguido" ${plano.seguido ? 'checked' : ''} onchange="alternarPlanoSeguido('${plano.id}', this.checked)">
-        </label>
-    `;
+function renderizarCheckPlanejamento() {
+    return '';
 }
 
 function alternarPlanoSeguido(id, seguido) {
