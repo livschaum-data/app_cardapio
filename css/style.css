@@ -987,9 +987,11 @@ body {
     align-items: stretch;
     display: grid;
     gap: 5px;
-    grid-template-rows: auto 1fr auto;
-    min-height: 116px;
+    grid-template-rows: auto minmax(0, 1fr) 24px;
+    justify-content: stretch;
+    min-height: 150px;
     padding: 6px;
+    width: 100%;
 }
 
 .numero-dia-calendario {
@@ -999,23 +1001,33 @@ body {
 }
 
 .itens-dia-calendario {
-    align-content: start;
+    align-content: stretch;
     display: grid;
     gap: 3px;
     min-width: 0;
+    width: 100%;
 }
 
 .itens-dia-calendario .lista-planejamentos-refeicao {
+    align-content: stretch;
+    display: grid;
     gap: 4px;
+    grid-auto-rows: minmax(48px, 1fr);
+    height: 100%;
+    width: 100%;
 }
 
 .itens-dia-calendario .celula-refeicao {
-    min-height: 0;
-    padding: 5px;
+    align-content: center;
+    height: 100%;
+    min-height: 48px;
+    padding: 7px 5px;
 }
 
 .itens-dia-calendario .nome-refeicao {
-    font-size: 10px;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.25;
     white-space: normal;
 }
 
@@ -1029,9 +1041,13 @@ body {
     border-radius: 4px;
     color: var(--cor-primaria);
     cursor: pointer;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 800;
-    min-height: 28px;
+    height: 24px;
+    justify-self: end;
+    min-height: 24px;
+    padding: 0;
+    width: 28px !important;
 }
 
 .dia-calendario:hover {
@@ -2747,12 +2763,14 @@ body {
 
     .dia-calendario-geral {
         gap: 3px;
-        min-height: 92px;
+        grid-template-rows: auto minmax(0, 1fr) 20px;
+        min-height: 118px;
         padding: 3px;
     }
 
     .itens-dia-calendario .celula-refeicao {
-        padding: 3px;
+        min-height: 38px;
+        padding: 4px 2px;
     }
 
     .itens-dia-calendario .nome-refeicao {
@@ -2765,9 +2783,11 @@ body {
     }
 
     .dia-calendario-geral > button {
-        font-size: 15px;
-        min-height: 23px;
+        font-size: 14px;
+        height: 20px;
+        min-height: 20px;
         padding: 0;
+        width: 22px !important;
     }
 
     .faixa-semana-calendario {
