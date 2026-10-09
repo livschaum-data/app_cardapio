@@ -1005,20 +1005,22 @@ body {
     min-width: 0;
 }
 
-.itens-dia-calendario button {
-    background: rgba(255, 255, 255, 0.88);
-    border: 0;
-    border-left: 3px solid var(--cor-destaque);
-    border-radius: 3px;
-    color: var(--cor-texto);
-    cursor: pointer;
+.itens-dia-calendario .lista-planejamentos-refeicao {
+    gap: 4px;
+}
+
+.itens-dia-calendario .celula-refeicao {
+    min-height: 0;
+    padding: 5px;
+}
+
+.itens-dia-calendario .nome-refeicao {
     font-size: 10px;
-    line-height: 1.2;
-    overflow: hidden;
-    padding: 3px 4px;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+}
+
+.itens-dia-calendario .acoes-planejamento-mini {
+    margin-top: 4px;
 }
 
 .dia-calendario-geral > button {
@@ -2749,9 +2751,17 @@ body {
         padding: 3px;
     }
 
-    .itens-dia-calendario button {
+    .itens-dia-calendario .celula-refeicao {
+        padding: 3px;
+    }
+
+    .itens-dia-calendario .nome-refeicao {
         font-size: 8px;
-        padding: 2px;
+    }
+
+    .itens-dia-calendario .acoes-planejamento-mini button {
+        font-size: 8px;
+        padding: 2px 3px;
     }
 
     .dia-calendario-geral > button {

@@ -3285,10 +3285,7 @@ function criarDiaCalendario(data, exibirItensGerais = false) {
         div.innerHTML = `
             <span class="numero-dia-calendario">${data.getDate()}</span>
             <div class="itens-dia-calendario">
-                ${planosGerais.map(plano => {
-                    const { item } = buscarItemPlanejamento(plano);
-                    return item ? `<button type="button" onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')" title="Editar ${escaparHtml(item.nome)}">${escaparHtml(item.nome)}</button>` : '';
-                }).join('')}
+                ${planosGerais.length > 0 ? renderizarListaPlanejamentos(planosGerais, true) : ''}
             </div>
             <button type="button" onclick="event.stopPropagation(); adicionarItemDiaCalendario('${dataStr}')" aria-label="Adicionar item em ${data.getDate()}">+</button>
         `;
