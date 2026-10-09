@@ -908,6 +908,32 @@ body {
     margin-top: 20px;
 }
 
+.modos-calendario {
+    background: #f1ece4;
+    border-radius: 6px;
+    display: grid;
+    gap: 3px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 10px;
+    padding: 3px;
+}
+
+.modos-calendario button {
+    background: transparent;
+    border: 0;
+    border-radius: 5px;
+    color: var(--cor-texto-cinza);
+    cursor: pointer;
+    font-weight: 800;
+    min-height: 34px;
+}
+
+.modos-calendario button.ativo {
+    background: white;
+    box-shadow: var(--sombra);
+    color: var(--cor-primaria);
+}
+
 .calendario {
     background: white;
     padding: 20px;
@@ -955,6 +981,55 @@ body {
     color: var(--cor-texto-cinza);
     padding-top: 7px;
     transition: all 0.3s;
+}
+
+.dia-calendario-geral {
+    align-items: stretch;
+    display: grid;
+    gap: 5px;
+    grid-template-rows: auto 1fr auto;
+    min-height: 116px;
+    padding: 6px;
+}
+
+.numero-dia-calendario {
+    font-size: 12px;
+    font-weight: 800;
+    text-align: right;
+}
+
+.itens-dia-calendario {
+    align-content: start;
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.itens-dia-calendario button {
+    background: rgba(255, 255, 255, 0.88);
+    border: 0;
+    border-left: 3px solid var(--cor-destaque);
+    border-radius: 3px;
+    color: var(--cor-texto);
+    cursor: pointer;
+    font-size: 10px;
+    line-height: 1.2;
+    overflow: hidden;
+    padding: 3px 4px;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dia-calendario-geral > button {
+    background: transparent;
+    border: 1px dashed var(--cor-borda);
+    border-radius: 4px;
+    color: var(--cor-primaria);
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 800;
+    min-height: 28px;
 }
 
 .dia-calendario:hover {
@@ -2666,6 +2741,23 @@ body {
         font-size: 11px;
         min-height: 32px;
         padding-top: 5px;
+    }
+
+    .dia-calendario-geral {
+        gap: 3px;
+        min-height: 92px;
+        padding: 3px;
+    }
+
+    .itens-dia-calendario button {
+        font-size: 8px;
+        padding: 2px;
+    }
+
+    .dia-calendario-geral > button {
+        font-size: 15px;
+        min-height: 23px;
+        padding: 0;
     }
 
     .faixa-semana-calendario {

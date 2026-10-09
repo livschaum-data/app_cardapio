@@ -3200,10 +3200,22 @@ function selecionarReceitaParaPlanoDia(receitaId) {
 let mesCalendario = new Date().getMonth();
 let anoCalendario = new Date().getFullYear();
 let dataSelecionada = null;
+let modoCalendario = 'semana';
+
+function alterarModoCalendario(modo) {
+    modoCalendario = modo === 'dia' ? 'dia' : 'semana';
+    renderizarCalendario();
+}
 
 function renderizarCalendario() {
     const container = document.getElementById('calendario');
     container.innerHTML = '';
+
+    document.querySelectorAll('[data-modo-calendario]').forEach(botao => {
+        botao.classList.toggle('ativo', botao.dataset.modoCalendario === modoCalendario);
+    });
+    const detalhes = document.getElementById('detalhes-data');
+    if (detalhes) detalhes.style.display = modoCalendario === 'dia' ? 'none' : '';
 
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -3243,15 +3255,17 @@ function criarLinhaSemanaCalendario(inicioSemana) {
     for (let indice = 0; indice < 7; indice++) {
         const data = new Date(inicioSemana);
         data.setDate(inicioSemana.getDate() + indice);
-        dias.appendChild(criarDiaCalendario(data));
+        dias.appendChild(criarDiaCalendario(data, modoCalendario === 'dia'));
     }
 
     secao.appendChild(dias);
-    secao.insertAdjacentHTML('beforeend', renderizarFaixaSemanaCalendario(inicioSemana));
+    if (modoCalendario === 'semana') {
+        secao.insertAdjacentHTML('beforeend', renderizarFaixaSemanaCalendario(inicioSemana));
+    }
     return secao;
 }
 
-function criarDiaCalendario(data) {
+function criarDiaCalendario(data, exibirItensGerais = false) {
     const div = document.createElement('div');
     div.className = 'dia-calendario';
     const outroMes = data.getMonth() !== mesCalendario;
@@ -3264,8 +3278,24 @@ function criarDiaCalendario(data) {
     if (hoje.toDateString() === data.toDateString()) div.classList.add('hoje');
     if (dataSelecionada && dataSelecionada.toDateString() === data.toDateString()) div.classList.add('selecionado');
 
-    div.textContent = data.getDate();
-    div.onclick = () => selecionarDataCalendario(data);
+    if (exibirItensGerais) {
+        div.classList.add('dia-calendario-geral');
+        const dataStr = formatarDataChave(data);
+        const planosGerais = buscarPlanejamentosGeraisCalendarioData(dataStr);
+        div.innerHTML = `
+            <span class="numero-dia-calendario">${data.getDate()}</span>
+            <div class="itens-dia-calendario">
+                ${planosGerais.map(plano => {
+                    const { item } = buscarItemPlanejamento(plano);
+                    return item ? `<button type="button" onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')" title="Editar ${escaparHtml(item.nome)}">${escaparHtml(item.nome)}</button>` : '';
+                }).join('')}
+            </div>
+            <button type="button" onclick="event.stopPropagation(); adicionarItemDiaCalendario('${dataStr}')" aria-label="Adicionar item em ${data.getDate()}">+</button>
+        `;
+    } else {
+        div.textContent = data.getDate();
+        div.onclick = () => selecionarDataCalendario(data);
+    }
 
     const dataStr = formatarDataChave(data);
     if (app.tiposRefeicao.some(tipo => buscarPlanejamentosPorData(dataStr, tipo).length > 0)) {
@@ -3274,6 +3304,43 @@ function criarDiaCalendario(data) {
     if (buscarNotaPlanejamentoPorData(dataStr)) div.classList.add('com-nota');
 
     return div;
+}
+
+function obterTipoUsoGeral() {
+    return app.tiposUso.find(tipo => tipo.trim().toLowerCase() === 'geral') || '';
+}
+
+function buscarPlanejamentosGeraisCalendarioData(dataStr) {
+    const tipoGeral = obterTipoUsoGeral();
+    if (!tipoGeral) return [];
+
+    return app.planejamentos.filter(plano =>
+        plano.tipo === 'calendario' &&
+        plano.data === dataStr &&
+        String(plano.refeicao || '').trim().toLowerCase() === tipoGeral.trim().toLowerCase()
+    );
+}
+
+function adicionarItemDiaCalendario(dataStr) {
+    const tipoGeral = obterTipoUsoGeral();
+    if (!tipoGeral) {
+        alert('Cadastre o tipo de uso Geral antes de adicionar um item no calendario.');
+        return;
+    }
+
+    const data = criarDataLocal(dataStr);
+    const semanaDia = obterSemanaDiaPorData(data);
+    window.contextoPlanejar = {
+        modo: 'calendario',
+        grupo: '',
+        semana: semanaDia.semana,
+        dia: semanaDia.dia,
+        data: dataStr,
+        refeicao: tipoGeral,
+        planejamentoId: null,
+    };
+    renderizarReceitasModalSelecao();
+    abrirModal('modal-selecionar-receita');
 }
 
 function buscarNotaSemanaCalendario(inicioStr) {
@@ -3321,7 +3388,7 @@ function salvarNotaSemanaCalendario(inicioStr, texto) {
 }
 
 function adicionarItemSemanaCalendario(semana) {
-    const tipo = app.tiposUso.find(item => item.trim().toLowerCase() === 'geral');
+    const tipo = obterTipoUsoGeral();
     if (!tipo) {
         alert('Cadastre o tipo de uso Geral antes de adicionar um item no calendario.');
         return;
@@ -3335,7 +3402,7 @@ function renderizarFaixaSemanaCalendario(inicioSemana) {
     fim.setDate(inicioSemana.getDate() + 6);
     const semana = obterNumeroSemana(inicioSemana);
     const nota = buscarNotaSemanaCalendario(inicioStr);
-    const tipoGeral = app.tiposUso.find(tipo => tipo.trim().toLowerCase() === 'geral');
+    const tipoGeral = obterTipoUsoGeral();
     const planos = tipoGeral ? buscarPlanejamentosPorSemana(semana, tipoGeral) : [];
     const itens = planos.map(plano => {
         const { item } = buscarItemPlanejamento(plano);
@@ -5865,6 +5932,8 @@ Object.assign(window, {
     salvarNotaPlanejamentoData,
     salvarNotaSemanaCalendario,
     adicionarItemSemanaCalendario,
+    alterarModoCalendario,
+    adicionarItemDiaCalendario,
     renderizarContagemAlimentos,
     usarSemanaAtualContagem,
     usarMesAtualContagem,
