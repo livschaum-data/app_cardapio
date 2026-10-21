@@ -3369,10 +3369,9 @@ function renderizarFaixaSemanaCalendario(inicioSemana) {
     const nota = buscarNotaSemanaCalendario(inicioStr);
     const tipoGeral = obterTipoUsoGeral();
     const planos = tipoGeral ? buscarPlanejamentosPorSemana(semana, tipoGeral) : [];
-    const itens = planos.map(plano => {
-        const { item } = buscarItemPlanejamento(plano);
-        return item ? `<span>${escaparHtml(item.nome)}</span>` : '';
-    }).join('');
+    const itens = planos.length > 0
+        ? renderizarListaPlanejamentos(planos, true)
+        : '<span class="sem-itens-semana">Sem itens</span>';
 
     return `
         <div class="faixa-semana-calendario">
@@ -3380,8 +3379,8 @@ function renderizarFaixaSemanaCalendario(inicioSemana) {
                 <strong>Semana ${semana}</strong>
                 <span>${inicioSemana.getDate()}/${inicioSemana.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1}</span>
             </div>
-            <button type="button" onclick="adicionarItemSemanaCalendario('${semana}')" aria-label="Adicionar item na semana ${semana}" title="Adicionar item">Adicionar item</button>
-            <div class="itens-semana-calendario" aria-label="Itens planejados">${itens || '<span class="sem-itens-semana">Sem itens</span>'}</div>
+            <button type="button" onclick="adicionarItemSemanaCalendario('${semana}')" aria-label="Adicionar item na semana ${semana}" title="Adicionar item"><span aria-hidden="true">+</span></button>
+            <div class="itens-semana-calendario" aria-label="Itens planejados">${itens}</div>
             <div class="nota-semana-calendario">
                 <textarea aria-label="Nota para toda a semana ${semana}" placeholder="Nota para toda a semana" onblur="salvarNotaSemanaCalendario('${inicioStr}', this.value)">${escaparHtml(nota?.nota || '')}</textarea>
             </div>

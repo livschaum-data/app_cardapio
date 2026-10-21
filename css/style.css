@@ -1284,11 +1284,25 @@ body {
 }
 
 .itens-semana-calendario {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
     grid-column: 1 / -1;
     min-width: 0;
+    width: 100%;
+}
+
+.itens-semana-calendario .lista-planejamentos-refeicao {
+    width: 100%;
+}
+
+.itens-semana-calendario .celula-refeicao {
+    border-bottom: 1px solid var(--cor-borda);
+    min-height: 44px;
+    padding: 10px 32px 10px 8px;
+    width: 100%;
+}
+
+.itens-semana-calendario .nome-refeicao {
+    font-size: 16px;
+    line-height: 1.35;
 }
 
 .nota-semana-calendario {
@@ -1296,14 +1310,6 @@ body {
     gap: 4px;
     grid-column: 1 / -1;
     min-width: 0;
-}
-
-.itens-semana-calendario > span:not(.sem-itens-semana) {
-    background: white;
-    border: 1px solid rgba(139, 69, 19, 0.16);
-    border-radius: 4px;
-    font-size: 11px;
-    padding: 4px 6px;
 }
 
 .faixa-semana-calendario > button {
@@ -1315,6 +1321,11 @@ body {
     font-weight: 700;
     min-height: 34px;
     padding: 6px 10px;
+}
+
+.faixa-semana-calendario > button span {
+    font-size: 18px;
+    line-height: 1;
 }
 
 .secao-contagem {
@@ -2312,6 +2323,10 @@ body {
     content: '+';
     font-size: 16px;
     line-height: 1;
+}
+
+.faixa-semana-calendario > button::after {
+    content: none;
 }
 
 .btn-adicionar-mini:hover,
