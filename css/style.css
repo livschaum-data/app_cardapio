@@ -2,18 +2,20 @@
    Inspirado em imagens que voc enviou */
 
 :root {
-    --cor-primaria: #8B4513;      /* Marrom escuro */
-    --cor-secundaria: #D2691E;    /* Chocolate */
-    --cor-destaque: #FF8C00;      /* Laranja */
-    --cor-fundo: #FFF8F0;         /* Creme claro */
-    --cor-fundo-card: #FFFFFF;    /* Branco */
-    --cor-borda: #D2B48C;         /* Tan */
-    --cor-texto: #333;
-    --cor-texto-cinza: #666;
-    --cor-sucesso: #2ecc71;
-    --cor-alerta: #e74c3c;
+    --cor-primaria: #C95F4A;
+    --cor-secundaria: #A94837;
+    --cor-destaque: #719A83;
+    --cor-fundo: #F6F6F3;
+    --cor-fundo-card: #FFFFFF;
+    --cor-borda: #DADFDA;
+    --cor-texto: #303432;
+    --cor-texto-cinza: #737975;
+    --cor-sucesso: #56836B;
+    --cor-alerta: #B83E49;
+    --cor-selecionado: #E4F0E8;
+    --cor-sidebar: #FBFCFA;
     --radius: 8px;
-    --sombra: 0 2px 8px rgba(0,0,0,0.1);
+    --sombra: 0 2px 8px rgba(48, 52, 50, 0.08);
 }
 
 /* ==================== RESET E PADROES ====================
@@ -77,7 +79,7 @@ body {
     border-radius: 18px;
     color: white;
     cursor: pointer;
-    display: inline-flex;
+    display: flex;
     font: inherit;
     font-size: 13px;
     font-weight: 700;
@@ -517,58 +519,6 @@ body {
     justify-content: flex-start;
 }
 
-.acoes-planejamento-mini {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 64px;
-}
-
-.acoes-planejamento,
-.acoes-planejamento-mini {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.acoes-planejamento-mini {
-    position: absolute;
-    right: 6px;
-    top: 50%;
-    transform: translateY(-50%) translateX(4px);
-    z-index: 2;
-}
-
-.celula-refeicao:focus-within .acoes-planejamento-mini,
-.item-planejamento-diario:focus-within .acoes-planejamento,
-.linha-planejamento-data:focus-within .acoes-planejamento,
-.celula-refeicao.mostrar-acoes .acoes-planejamento-mini,
-.item-planejamento-diario.mostrar-acoes .acoes-planejamento,
-.linha-planejamento-data.mostrar-acoes .acoes-planejamento {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(-50%) translateX(0);
-}
-
-@media (hover: hover) {
-    .celula-refeicao:hover .acoes-planejamento-mini,
-    .item-planejamento-diario:hover .acoes-planejamento,
-    .linha-planejamento-data:hover .acoes-planejamento {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateY(-50%) translateX(0);
-    }
-}
-
-@media (hover: none) {
-    .celula-refeicao,
-    .item-planejamento-diario,
-    .linha-planejamento-data {
-        -webkit-user-select: none;
-        user-select: none;
-    }
-}
-
 .data-cabecalho {
     display: inline-block;
     margin-top: 3px;
@@ -909,7 +859,7 @@ body {
 }
 
 .modos-calendario {
-    background: #f1ece4;
+    background: #EFF1EE;
     border-radius: 6px;
     display: grid;
     gap: 3px;
@@ -1303,7 +1253,7 @@ body {
     border-top: 1px solid rgba(139, 69, 19, 0.14);
     display: grid;
     gap: 8px;
-    grid-template-columns: minmax(110px, auto) minmax(160px, 1.2fr) minmax(180px, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     padding: 8px;
 }
 
@@ -1330,12 +1280,22 @@ body {
     min-height: 36px;
     padding: 7px 8px;
     resize: vertical;
+    width: 100%;
 }
 
 .itens-semana-calendario {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+    grid-column: 1 / -1;
+    min-width: 0;
+}
+
+.nota-semana-calendario {
+    display: grid;
+    gap: 4px;
+    grid-column: 1 / -1;
+    min-width: 0;
 }
 
 .itens-semana-calendario > span:not(.sem-itens-semana) {
@@ -1769,7 +1729,7 @@ body {
 .controle-cor-configuravel {
     align-items: center;
     cursor: pointer;
-    display: inline-flex;
+    display: flex;
     gap: 6px;
 }
 
@@ -1842,9 +1802,9 @@ body {
 /* ==================== LAYOUT APP / SIDEBAR ==================== */
 
 #app {
-    background: #f6f3ee;
+    background: var(--cor-fundo);
     display: grid;
-    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-columns: 232px minmax(0, 1fr);
     height: 100vh;
     margin: 0;
     max-width: none;
@@ -1865,7 +1825,7 @@ body {
 .planejamento-switch {
     align-items: center;
     background: white;
-    border: 1px solid rgba(139, 69, 19, 0.16);
+    border: 1px solid var(--cor-borda);
     border-radius: 8px;
     box-shadow: var(--sombra);
     display: flex;
@@ -1879,16 +1839,8 @@ body {
     z-index: 12;
 }
 
-.planejamento-switch span {
-    color: var(--cor-texto-cinza);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
 .planejamento-switch-opcoes {
-    background: #f1ece4;
+    background: #EFF1EE;
     border-radius: 8px;
     display: grid;
     gap: 4px;
@@ -1896,8 +1848,7 @@ body {
     padding: 4px;
 }
 
-.btn-planejamento-opcao,
-.btn-planejamento-alternar {
+.btn-planejamento-opcao {
     border: 0;
     border-radius: 6px;
     cursor: pointer;
@@ -1918,15 +1869,11 @@ body {
     color: white;
 }
 
-.btn-planejamento-alternar {
-    background: var(--cor-secundaria);
-    color: white;
-}
-
 .header.sidebar {
-    background: #161616;
-    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.16);
-    color: white;
+    background: var(--cor-sidebar);
+    border-right: 1px solid var(--cor-borda);
+    box-shadow: 4px 0 18px rgba(48, 52, 50, 0.06);
+    color: var(--cor-texto);
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -1934,7 +1881,7 @@ body {
     overflow-y: auto;
     padding: 18px 14px;
     transition: opacity 0.18s ease, transform 0.22s ease;
-    width: 248px;
+    width: 232px;
 }
 
 #app.sidebar-oculta .header.sidebar {
@@ -1945,7 +1892,7 @@ body {
 
 .sidebar-brand {
     align-items: flex-start;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--cor-borda);
     display: flex;
     gap: 10px;
     justify-content: space-between;
@@ -1964,9 +1911,9 @@ body {
 }
 
 .btn-sidebar-toggle {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    color: white;
+    background: #F0F2EF;
+    border: 1px solid var(--cor-borda);
+    color: var(--cor-texto-cinza);
     flex: 0 0 32px;
     font-size: 22px;
     height: 32px;
@@ -1974,14 +1921,15 @@ body {
 }
 
 .btn-sidebar-toggle:hover {
-    background: rgba(255, 255, 255, 0.16);
+    background: var(--cor-selecionado);
+    color: var(--cor-primaria);
 }
 
 .btn-sidebar-expandir {
-    background: #161616;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
-    color: white;
+    background: white;
+    border: 1px solid var(--cor-borda);
+    box-shadow: var(--sombra);
+    color: var(--cor-primaria);
     display: none;
     left: 14px;
     min-height: 36px;
@@ -2001,7 +1949,7 @@ body {
 
 .sidebar-brand span,
 .sidebar-label {
-    color: rgba(255, 255, 255, 0.56);
+    color: var(--cor-texto-cinza);
     display: block;
     font-size: 11px;
     font-weight: 800;
@@ -2010,6 +1958,7 @@ body {
 }
 
 .header h1 {
+    color: var(--cor-primaria);
     font-size: 28px;
     letter-spacing: 0;
     margin: 2px 0 0;
@@ -2023,10 +1972,10 @@ body {
 
 .btn-nuvem-toggle,
 #btn-conectar-nuvem {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #F0F2EF;
+    border: 1px solid var(--cor-borda);
     border-radius: 8px;
-    color: white;
+    color: var(--cor-texto-cinza);
     justify-content: flex-start;
     min-height: 34px;
     padding: 7px 9px;
@@ -2035,8 +1984,8 @@ body {
 
 .btn-nuvem-toggle:hover,
 .btn-nuvem-toggle[aria-expanded="true"] {
-    background: rgba(255, 255, 255, 0.14);
-    color: white;
+    background: var(--cor-selecionado);
+    color: var(--cor-primaria);
 }
 
 .abas,
@@ -2056,11 +2005,13 @@ body {
 
 .aba-btn,
 .menu-btn {
+    align-items: center;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 8px;
-    color: rgba(255, 255, 255, 0.82);
+    color: var(--cor-texto-cinza);
     font-size: 14px;
+    display: flex;
     justify-content: flex-start;
     min-height: 36px;
     padding: 8px 10px;
@@ -2068,22 +2019,74 @@ body {
     width: 100%;
 }
 
+.aba-btn::before,
+.menu-btn::before {
+    background: #B9C2BC;
+    border-radius: 50%;
+    content: '';
+    flex: 0 0 6px;
+    height: 6px;
+    margin-right: 9px;
+    width: 6px;
+}
+
+.aba-btn.ativo::before {
+    background: var(--cor-primaria);
+}
+
 .aba-btn:hover,
 .menu-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: white;
+    background: #F0F2EF;
+    border-color: var(--cor-borda);
+    color: var(--cor-texto);
 }
 
 .aba-btn.ativo {
-    background: white;
-    border-color: white;
-    color: #161616;
+    background: var(--cor-selecionado);
+    border-color: #C9DBD0;
+    box-shadow: inset 3px 0 0 var(--cor-primaria);
+    color: var(--cor-primaria);
+}
+
+.sidebar-configuracoes {
+    border-top: 1px solid var(--cor-borda);
+    margin-top: 2px;
+    padding-top: 8px;
+}
+
+.sidebar-configuracoes summary {
+    color: var(--cor-texto-cinza);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    list-style: none;
+    padding: 6px 10px;
+    text-transform: uppercase;
+}
+
+.sidebar-configuracoes summary::-webkit-details-marker {
+    display: none;
+}
+
+.sidebar-configuracoes summary::after {
+    content: '+';
+    float: right;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.sidebar-configuracoes[open] summary::after {
+    content: '\2212';
+}
+
+.sidebar-configuracoes .menu-principal {
+    margin-top: 4px;
 }
 
 .painel-nuvem {
     right: auto;
-    left: 264px;
+    left: 248px;
     top: 16px;
 }
 
@@ -2234,26 +2237,136 @@ body {
 
 .btn-add-celula {
     align-items: center;
-    background: rgba(139, 69, 19, 0.08);
-    border: 1px dashed rgba(139, 69, 19, 0.32);
+    background: transparent;
+    border: 1px dashed #B8C1BB;
     border-radius: 6px;
     color: var(--cor-primaria);
     display: inline-flex;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 800;
-    height: 32px;
+    height: 22px;
     justify-content: center;
-    width: 32px;
+    width: 22px;
 }
 
 .celula-vazia:hover .btn-add-celula {
-    background: var(--cor-primaria);
-    color: white;
+    background: var(--cor-selecionado);
+    border-color: var(--cor-destaque);
+    color: #456C58;
 }
 
 .celula-refeicao {
-    background: color-mix(in srgb, var(--categoria-cor, var(--cor-destaque)) 16%, white);
-    border-left: 4px solid var(--categoria-cor, var(--cor-destaque));
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 28px;
+    padding: 4px 2px;
+}
+
+.celula-refeicao:hover {
+    background: transparent;
+    box-shadow: none;
+}
+
+.celula-refeicao .nome-refeicao {
+    align-items: flex-start;
+    color: var(--cor-texto);
+    display: inline-flex;
+    font-weight: 800;
+    gap: 6px;
+}
+
+.celula-refeicao .nome-refeicao::before {
+    background: var(--categoria-cor, var(--cor-destaque));
+    border-radius: 50%;
+    content: '';
+    flex: 0 0 6px;
+    height: 6px;
+    margin-top: 0.5em;
+    width: 6px;
+}
+
+.btn-adicionar-mini,
+.grupo-diaria > button,
+.coluna-semana-diaria > button,
+.faixa-semana-calendario > button {
+    background: transparent;
+    border: 1px dashed #B8C1BB;
+    color: var(--cor-texto-cinza);
+    display: inline-flex;
+    font-size: 0;
+    font-weight: 700;
+    height: 26px;
+    justify-content: center;
+    margin: 6px 0 0 auto;
+    min-height: 26px;
+    padding: 0;
+    width: 28px;
+}
+
+.btn-adicionar-mini::after,
+.grupo-diaria > button::after,
+.coluna-semana-diaria > button::after,
+.faixa-semana-calendario > button::after {
+    content: '+';
+    font-size: 16px;
+    line-height: 1;
+}
+
+.btn-adicionar-mini:hover,
+.grupo-diaria > button:hover,
+.coluna-semana-diaria > button:hover,
+.faixa-semana-calendario > button:hover {
+    background: var(--cor-selecionado);
+    border-color: var(--cor-destaque);
+    color: #456C58;
+}
+
+.grupo-diaria,
+.coluna-semana-diaria {
+    background: #F8F9F7;
+    border-color: var(--cor-borda);
+}
+
+.grupo-diaria .celula-refeicao,
+.planejamentos-semana-diaria .celula-refeicao,
+.item-planejamento-diario {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 28px;
+    margin-bottom: 4px;
+    padding: 4px 2px;
+}
+
+.item-planejamento-diario p,
+.grupo-diaria .nome-refeicao,
+.planejamentos-semana-diaria .nome-refeicao {
+    color: var(--cor-texto);
+}
+
+.item-planejamento-diario p {
+    align-items: flex-start;
+    display: inline-flex;
+    gap: 6px;
+}
+
+.item-planejamento-diario p::before {
+    background: var(--categoria-cor, var(--cor-destaque));
+    border-radius: 50%;
+    content: '';
+    flex: 0 0 6px;
+    height: 6px;
+    margin-top: 0.55em;
+    width: 6px;
+}
+
+.tabela-semanal tbody tr:not(.linha-notas-planejamento) .celula-vazia {
+    height: 48px;
+    min-height: 48px;
+    padding: 6px;
 }
 
 .celula-alimento {
@@ -2627,7 +2740,7 @@ body {
 }
 
 .segmentos-selecao {
-    background: #f1ece4;
+    background: #EFF1EE;
     border-radius: 8px;
     display: grid;
     gap: 4px;
@@ -2791,17 +2904,11 @@ body {
     }
 
     .faixa-semana-calendario {
-        grid-template-columns: minmax(82px, auto) minmax(0, 1fr) auto;
         padding: 6px;
     }
 
     .faixa-semana-calendario textarea {
         min-width: 0;
-    }
-
-    .itens-semana-calendario {
-        grid-column: 1 / -1;
-        grid-row: 2;
     }
 
     .faixa-semana-calendario > button {
@@ -2952,94 +3059,6 @@ body {
         font-size: 18px;
     }
 
-    .controles-semana {
-        display: grid;
-        gap: 6px;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .controles-semana .acoes-controles,
-    .controles-periodo .acoes-controles,
-    .controles-calendario .acoes-controles {
-        display: grid;
-        gap: 6px;
-        grid-column: 1 / -1;
-        grid-row: 3;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        width: 100%;
-    }
-
-    .controles-semana .acoes-controles button,
-    .controles-periodo .acoes-controles button,
-    .controles-calendario .acoes-controles button {
-        font-size: 11px;
-        min-width: 0;
-        padding: 6px 4px;
-        width: 100%;
-    }
-
-    .controles-periodo {
-        display: grid;
-        gap: 6px;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .controles-periodo h2 {
-        grid-column: 1 / -1;
-        grid-row: 1;
-        margin: 4px 0;
-        min-width: 0;
-    }
-
-    .controles-periodo .seletor-periodo {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        justify-self: center;
-        margin: 0;
-        width: min(100%, 190px);
-    }
-
-    .controles-semana h2 {
-        grid-column: 1 / -1;
-        grid-row: 1;
-        margin: 4px 0;
-        min-width: 0;
-    }
-
-    .controles-semana #numero-semana {
-        grid-column: 1;
-        grid-row: 2;
-        justify-self: end;
-        margin: 0;
-        width: 70px !important;
-    }
-
-    .controles-semana #data-semanal {
-        grid-column: 2 / -1;
-        grid-row: 2;
-        justify-self: start;
-        margin: 0;
-        width: min(100%, 180px);
-    }
-
-    .controles-calendario {
-        display: grid;
-        gap: 6px;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .controles-calendario h2 {
-        grid-column: 1 / -1;
-        grid-row: 1;
-        margin: 4px 0;
-        min-width: 0;
-    }
-
-    .controles-calendario .acoes-controles {
-        grid-row: 2;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
 
     .tabela-semanal th:nth-child(n+3),
     .tabela-semanal td:nth-child(n+3) {
@@ -3053,6 +3072,148 @@ body {
 
 .oculto {
     display: none !important;
+}
+
+/* Cabecalho compacto das visoes de planejamento */
+.controles.cabecalho-planejamento {
+    display: grid;
+    padding: 12px 14px;
+}
+
+.planejamento-switch[hidden] {
+    display: none !important;
+}
+
+.cabecalho-planejamento h2 {
+    grid-area: titulo;
+    margin: 0;
+    min-width: 0;
+}
+
+.cabecalho-planejamento .planejamento-switch {
+    align-self: center;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    grid-area: planejamento;
+    margin: 0;
+    max-width: none;
+    padding: 0;
+    z-index: auto;
+}
+
+.cabecalho-planejamento .acoes-controles {
+    grid-area: acoes;
+    justify-content: flex-end;
+}
+
+/* Menu discreto para as acoes de cada item planejado */
+.celula-refeicao,
+.item-planejamento-diario,
+.linha-planejamento-data {
+    position: relative;
+}
+
+.btn-menu-planejamento {
+    align-items: center;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 4px !important;
+    color: var(--cor-texto-cinza) !important;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 20px !important;
+    font-weight: 800;
+    height: 26px !important;
+    justify-content: center;
+    line-height: 1;
+    min-height: 26px !important;
+    padding: 0 !important;
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    width: 24px !important;
+    z-index: 4;
+}
+
+.btn-menu-planejamento:hover,
+.btn-menu-planejamento:focus-visible {
+    background: var(--cor-selecionado) !important;
+    color: var(--cor-secundaria) !important;
+}
+
+.celula-refeicao .conteudo-planejamento,
+.item-planejamento-diario .conteudo-planejamento,
+.linha-planejamento-data > span {
+    padding-right: 24px;
+}
+
+.celula-refeicao .acoes-planejamento-mini,
+.item-planejamento-diario .acoes-planejamento,
+.linha-planejamento-data .acoes-planejamento {
+    align-items: stretch;
+    background: white;
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(48, 52, 50, 0.16);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 112px;
+    opacity: 0;
+    padding: 4px;
+    pointer-events: none;
+    visibility: hidden;
+    position: absolute;
+    right: 2px;
+    top: 28px;
+    transform: translateY(-3px);
+    z-index: 20;
+}
+
+.celula-refeicao .acoes-planejamento-mini button,
+.item-planejamento-diario .acoes-planejamento button,
+.linha-planejamento-data .acoes-planejamento button {
+    background: transparent;
+    border: 0;
+    color: var(--cor-texto);
+    font-size: 12px;
+    justify-content: flex-start;
+    min-height: 28px;
+    padding: 5px 8px;
+    text-align: left;
+    width: 100%;
+}
+
+.celula-refeicao .acoes-planejamento-mini button:hover,
+.item-planejamento-diario .acoes-planejamento button:hover,
+.linha-planejamento-data .acoes-planejamento button:hover {
+    background: var(--cor-selecionado);
+}
+
+.celula-refeicao.menu-acoes-aberto .acoes-planejamento-mini,
+.item-planejamento-diario.menu-acoes-aberto .acoes-planejamento,
+.linha-planejamento-data.menu-acoes-aberto .acoes-planejamento {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+@media (max-width: 760px) {
+    .cabecalho-planejamento .planejamento-switch {
+        display: flex;
+        width: 100%;
+    }
+
+    .cabecalho-planejamento .planejamento-switch-opcoes {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cabecalho-planejamento h2 {
+        text-align: left;
+    }
+
 }
 
 .desabilitado {
@@ -3124,10 +3285,6 @@ body {
         padding: 4px;
     }
 
-    .planejamento-switch span {
-        display: none;
-    }
-
     .planejamento-switch-opcoes {
         flex: 1 1 auto;
         gap: 3px;
@@ -3135,19 +3292,10 @@ body {
         padding: 3px;
     }
 
-    .btn-planejamento-opcao,
-    .btn-planejamento-alternar {
+    .btn-planejamento-opcao {
         font-size: 12px;
         min-height: 28px;
         padding: 4px 8px;
-    }
-
-    .btn-planejamento-alternar {
-        flex: 0 0 auto;
-        max-width: 64px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
 
     .sidebar-brand {
@@ -3230,6 +3378,214 @@ body {
     }
 }
 
+/* Identidade Coral e Verde Cha */
+.grupo-diaria,
+.coluna-semana-diaria,
+.form-secao,
+.filtros-avancados,
+.linha-selecao,
+.card-receita,
+.item-historico {
+    border: 1px solid var(--cor-borda);
+    box-shadow: none;
+}
+
+.tabela-semanal th,
+.tabela-mensal-semanas th {
+    box-shadow: inset 0 2px 0 color-mix(in srgb, var(--cor-primaria) 72%, white);
+    color: var(--cor-texto);
+}
+
+.tabela-semanal th.coluna-hoje,
+.tabela-semanal td.coluna-hoje,
+.dia-calendario.hoje {
+    background: color-mix(in srgb, var(--cor-primaria) 10%, white);
+}
+
+.dia-calendario.hoje {
+    color: var(--cor-secundaria);
+    font-weight: 800;
+}
+
+.tabela-semanal th.coluna-hoje {
+    box-shadow: inset 0 2px 0 var(--cor-primaria), inset 0 -1px 0 var(--cor-borda);
+    color: var(--cor-secundaria);
+}
+
+.tabela-semanal th.coluna-hoje::after,
+.badge-hoje {
+    background: var(--cor-primaria);
+}
+
+.tabela-mensal-semanas th.coluna-hoje::after {
+    content: none;
+}
+
+.tabela-semanal td.coluna-hoje {
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--cor-primaria) 55%, white);
+}
+
+.card-receita-header,
+.card-receita-header.header-alimento,
+.card-receita-header.header-refeicao {
+    background: var(--cor-fundo-card);
+    border-bottom: 1px solid var(--cor-borda);
+    color: var(--cor-texto);
+}
+
+.card-receita-header {
+    box-shadow: inset 4px 0 0 var(--cor-primaria);
+}
+
+.card-receita-header.header-alimento {
+    box-shadow: inset 4px 0 0 var(--cor-destaque);
+}
+
+.card-receita-header.header-refeicao {
+    box-shadow: inset 4px 0 0 var(--cor-secundaria);
+}
+
+.card-receita-header .badge-item {
+    background: var(--cor-selecionado);
+    color: var(--cor-sucesso);
+}
+
+.linha-selecao-receita,
+.linha-selecao-refeicao {
+    border-left-color: var(--cor-primaria);
+}
+
+.linha-selecao-alimento {
+    border-left-color: var(--cor-destaque);
+}
+
+.linha-selecao .icone-selecao,
+.linha-selecao-refeicao .icone-selecao {
+    background: color-mix(in srgb, var(--cor-primaria) 12%, white);
+    color: var(--cor-secundaria);
+}
+
+.linha-selecao-alimento .icone-selecao {
+    background: var(--cor-selecionado);
+    color: var(--cor-sucesso);
+}
+
+.btn-acao-remover,
+.btn-remover-mini,
+.btn-excluir {
+    color: var(--cor-alerta) !important;
+}
+
+/* Componentes equivalentes com a mesma altura e acabamento */
+button,
+input,
+select,
+textarea {
+    border-radius: 6px;
+}
+
+.controles input,
+.controles select,
+.controles button,
+.form-grupo input,
+.form-grupo select,
+.linha-form input,
+.filtros-selecao input,
+.filtros-selecao select,
+.btn-principal,
+.btn-secundario {
+    min-height: 36px;
+}
+
+.btn-principal {
+    background: var(--cor-primaria);
+    color: white;
+}
+
+.btn-secundario {
+    background: transparent;
+    border: 1px solid var(--cor-borda);
+    color: var(--cor-texto);
+}
+
+.modal-content,
+.painel-nuvem,
+.opcoes-novo-item-planejamento,
+.acoes-planejamento,
+.acoes-planejamento-mini {
+    box-shadow: 0 8px 24px rgba(48, 52, 50, 0.16);
+}
+
+/* Hierarquia tipografica */
+.controles h2,
+.visao-header h2 {
+    color: var(--cor-texto);
+    font-size: 21px;
+    font-weight: 650;
+    letter-spacing: 0;
+    line-height: 1.25;
+}
+
+.card-diario h3,
+.semana-mensal h3,
+.detalhes-data h3,
+.secao-contagem-header h3 {
+    color: var(--cor-texto);
+    font-size: 18px;
+    font-weight: 650;
+    letter-spacing: 0;
+    line-height: 1.3;
+}
+
+.card-diario h3 span,
+.data-cabecalho,
+.categoria-selecao,
+.card-receita-content p,
+.texto-ajuda,
+.sem-planejamento-diario {
+    color: var(--cor-texto-cinza);
+    font-weight: 500;
+}
+
+.grupo-diaria h4,
+.tipo-uso-semana-diaria,
+.visao-header span {
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.grupo-diaria h4,
+.tipo-uso-semana-diaria {
+    color: var(--cor-texto-cinza);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.nome-refeicao,
+.item-planejamento-diario strong,
+.linha-planejamento-data > span {
+    color: var(--cor-texto);
+    font-weight: 700;
+}
+
+@media (max-width: 680px) {
+    .controles h2,
+    .visao-header h2,
+    #titulo-dia {
+        font-size: 18px;
+    }
+
+    .card-diario h3,
+    .semana-mensal h3,
+    .detalhes-data h3 {
+        font-size: 16px;
+    }
+
+    .controles {
+        padding-bottom: 10px;
+    }
+}
+
 @media (max-width: 640px) {
     .visao {
         padding: 70px 14px 14px;
@@ -3254,15 +3610,376 @@ body {
     }
 }
 
-@media (max-width: 480px) {
-    .planejamento-switch {
-        align-items: stretch;
-        display: grid;
-        grid-template-columns: 1fr auto;
-        margin: 12px 10px 0;
+/* O seletor passa a fazer parte do cabecalho em telas pequenas. */
+@media (max-width: 680px) {
+    .visao,
+    #app.sidebar-oculta .visao,
+    #app:not(.sidebar-oculta) .visao {
+        padding-top: 14px;
     }
 
-    .planejamento-switch-opcoes {
-        grid-template-columns: 1fr;
+    .cabecalho-planejamento .planejamento-switch {
+        align-items: center;
+        display: flex;
+        margin: 0;
+        padding: 0;
+    }
+
+    .cabecalho-planejamento .planejamento-switch-opcoes {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* ==================== EQUILIBRIO DE SUPERFICIES ==================== */
+
+body {
+    background: #F5F4F0;
+}
+
+.controles {
+    background: var(--cor-fundo-card);
+    border: 1px solid color-mix(in srgb, var(--cor-borda) 82%, white);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 7px rgba(48, 52, 50, 0.06);
+    padding: 12px 14px;
+}
+
+.card-diario,
+.semana-mensal,
+.secao-contagem,
+.detalhes-data {
+    background: var(--cor-fundo-card);
+    border: 1px solid color-mix(in srgb, var(--cor-borda) 82%, white);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 7px rgba(48, 52, 50, 0.055);
+}
+
+.card-diario {
+    padding: 14px;
+}
+
+.card-diario + .card-diario,
+.semana-mensal + .semana-mensal,
+.secao-contagem + .secao-contagem {
+    border-top: 1px solid color-mix(in srgb, var(--cor-borda) 82%, white);
+    padding-top: 14px;
+}
+
+.grupo-diaria,
+.coluna-semana-diaria {
+    background: color-mix(in srgb, var(--cor-selecionado) 38%, white);
+    border: 0;
+    border-radius: 6px;
+    box-shadow: none;
+}
+
+.grupo-diaria:nth-child(2n),
+.coluna-semana-diaria:nth-child(2n) {
+    background: #F7F7F4;
+}
+
+.grupo-diaria h4 {
+    border-bottom: 1px solid color-mix(in srgb, var(--cor-destaque) 22%, transparent);
+    color: var(--cor-sucesso);
+    padding-bottom: 6px;
+}
+
+.tipo-uso-semana-diaria {
+    background: transparent;
+    border-left: 3px solid var(--tipo-cor, var(--cor-destaque));
+    border-radius: 0;
+    color: var(--cor-texto);
+    justify-content: flex-start;
+    min-height: 30px;
+    padding: 4px 8px;
+    text-transform: none;
+}
+
+.card-diario {
+    overflow: visible;
+}
+
+.tabela-container,
+.calendario-container {
+    background: var(--cor-fundo-card);
+    border: 1px solid color-mix(in srgb, var(--cor-borda) 86%, white);
+    box-shadow: 0 2px 8px rgba(48, 52, 50, 0.06);
+}
+
+.card-receita,
+.linha-selecao,
+.item-historico {
+    background: var(--cor-fundo-card);
+    border-color: color-mix(in srgb, var(--cor-borda) 86%, white);
+    box-shadow: 0 1px 4px rgba(48, 52, 50, 0.045);
+}
+
+.card-receita:hover,
+.linha-selecao:hover {
+    box-shadow: 0 3px 9px rgba(48, 52, 50, 0.08);
+}
+
+.controles h2,
+.visao-header h2,
+.card-diario h3,
+.semana-mensal h3,
+.detalhes-data h3,
+.secao-contagem-header h3 {
+    color: var(--cor-secundaria);
+}
+
+.controles h2,
+.visao-header h2 {
+    font-weight: 700;
+}
+
+.card-diario h3,
+.semana-mensal h3,
+.detalhes-data h3,
+.secao-contagem-header h3 {
+    font-weight: 700;
+}
+
+.segmento.ativo,
+.modos-calendario button.ativo,
+.btn-planejamento-opcao.ativo {
+    box-shadow: 0 1px 4px rgba(48, 52, 50, 0.08);
+}
+
+.segmentos-selecao,
+.modos-calendario,
+.planejamento-switch-opcoes {
+    background: #ECEFEB;
+}
+
+.form-secao,
+.filtros-avancados {
+    background: #FAFAF8;
+    border-color: color-mix(in srgb, var(--cor-borda) 82%, white);
+}
+
+@media (max-width: 680px) {
+    .controles {
+        padding: 10px;
+    }
+
+    .card-diario {
+        padding: 11px;
+    }
+
+    .grupo-diaria,
+    .coluna-semana-diaria {
+        padding: 9px;
+    }
+}
+
+/* Navegacao compacta de datas em todas as visoes */
+.controles.cabecalho-planejamento,
+.controles-semana.cabecalho-planejamento {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "titulo planejamento"
+        "acoes acoes";
+    align-items: center;
+}
+
+.controles-calendario.cabecalho-planejamento {
+    grid-template-areas:
+        "titulo titulo"
+        "acoes acoes";
+}
+
+.cabecalho-planejamento .navegacao-data {
+    align-items: center;
+    display: grid;
+    gap: 6px;
+    grid-area: acoes;
+    grid-template-columns: 36px minmax(0, 1fr) 36px auto;
+    justify-content: center;
+    justify-self: center;
+    max-width: 560px;
+    width: 100%;
+}
+
+.cabecalho-planejamento .navegacao-data button {
+    min-height: 36px;
+    padding: 0;
+}
+
+.cabecalho-planejamento .navegacao-data .nav-data-seta {
+    background: #F0F3EF;
+    border: 1px solid var(--cor-borda);
+    color: var(--cor-secundaria);
+    font-size: 25px;
+    font-weight: 500;
+    line-height: 1;
+    width: 36px;
+}
+
+.cabecalho-planejamento .navegacao-data .nav-data-seta:hover {
+    background: var(--cor-selecionado);
+    color: var(--cor-secundaria);
+}
+
+.nav-data-periodo {
+    align-items: center;
+    background: white;
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    color: var(--cor-texto);
+    cursor: pointer;
+    display: flex;
+    font-size: 14px;
+    font-weight: 650;
+    justify-content: center;
+    line-height: 1.25;
+    min-height: 36px;
+    min-width: 0;
+    padding: 5px 10px;
+    position: relative;
+    text-align: center;
+}
+
+.nav-data-periodo:hover,
+.nav-data-periodo:focus-within {
+    border-color: var(--cor-destaque);
+    outline: 2px solid color-mix(in srgb, var(--cor-destaque) 18%, transparent);
+}
+
+.nav-data-periodo input[type="date"] {
+    cursor: pointer;
+    height: 100%;
+    inset: 0;
+    min-height: 0;
+    opacity: 0;
+    padding: 0;
+    position: absolute;
+    width: 100%;
+}
+
+.cabecalho-planejamento .navegacao-data .nav-data-atual {
+    background: transparent;
+    border: 1px solid var(--cor-borda);
+    color: var(--cor-secundaria);
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 48px;
+    padding: 0 8px;
+}
+
+.cabecalho-planejamento .navegacao-data .nav-data-atual:hover {
+    background: var(--cor-selecionado);
+    color: var(--cor-secundaria);
+}
+
+@media (max-width: 760px) {
+    .controles.cabecalho-planejamento,
+    .controles-semana.cabecalho-planejamento {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "titulo"
+            "planejamento"
+            "acoes";
+    }
+
+    .cabecalho-planejamento .navegacao-data {
+        margin: 0;
+        max-width: none;
+        width: 100%;
+    }
+
+    .controles-calendario.cabecalho-planejamento {
+        grid-template-areas:
+            "titulo"
+            "acoes";
+    }
+}
+
+@media (max-width: 680px) {
+    .cabecalho-planejamento h2,
+    .visao-header > div:first-child {
+        padding-left: 72px;
+    }
+
+    .cabecalho-planejamento h2 {
+        align-items: center;
+        display: flex;
+        min-height: 36px;
+    }
+}
+
+@media (max-width: 480px) {
+    .cabecalho-planejamento .navegacao-data {
+        display: grid;
+        gap: 4px;
+        grid-template-columns: 32px minmax(0, 1fr) 32px 42px;
+    }
+
+    .cabecalho-planejamento .navegacao-data button {
+        min-height: 34px;
+        width: auto;
+    }
+
+    .cabecalho-planejamento .navegacao-data .nav-data-seta {
+        width: 32px;
+    }
+
+    .nav-data-periodo {
+        font-size: 12px;
+        min-height: 34px;
+        padding: 4px 6px;
+    }
+
+    .cabecalho-planejamento .navegacao-data .nav-data-atual {
+        font-size: 11px;
+        min-width: 0;
+        padding: 0 3px;
+    }
+}
+
+/* Seletor de grupos no cabecalho */
+.cabecalho-planejamento .planejamento-switch {
+    justify-self: end;
+    min-width: 0;
+}
+
+.cabecalho-planejamento .planejamento-switch-opcoes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    min-width: 0;
+    width: min(420px, 46vw);
+}
+
+.cabecalho-planejamento .btn-planejamento-opcao {
+    background: transparent;
+    color: var(--cor-texto-cinza);
+    font-size: 12px;
+    min-height: 34px;
+    padding: 5px 8px;
+    white-space: nowrap;
+}
+
+.cabecalho-planejamento .btn-planejamento-opcao:hover {
+    background: var(--cor-selecionado);
+    color: var(--cor-sucesso);
+}
+
+.cabecalho-planejamento .btn-planejamento-opcao.ativo,
+.cabecalho-planejamento .btn-planejamento-opcao.ativo:hover {
+    background: var(--cor-primaria);
+    color: white;
+}
+
+@media (max-width: 760px) {
+    .cabecalho-planejamento .planejamento-switch,
+    .cabecalho-planejamento .planejamento-switch-opcoes {
+        justify-self: stretch;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .cabecalho-planejamento .btn-planejamento-opcao {
+        font-size: 11px;
+        padding: 4px 3px;
     }
 }

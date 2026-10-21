@@ -120,8 +120,6 @@ async function inicializar() {
         formRefeicao.addEventListener('submit', salvarRefeicao);
     }
 
-    configurarAcoesPlanejamentoMobile();
-
     const btnCategorias = document.getElementById('btn-categorias');
     if (btnCategorias) {
         btnCategorias.addEventListener('click', abrirCategorias);
@@ -268,78 +266,6 @@ function configurarEventosNuvem() {
         if (!botao || botao.dataset.eventoConfigurado === 'true') return;
         botao.addEventListener('click', acao);
         botao.dataset.eventoConfigurado = 'true';
-    });
-}
-
-function configurarAcoesPlanejamentoMobile() {
-    if (document.body.dataset.acoesPlanejamentoMobile === 'true') return;
-    document.body.dataset.acoesPlanejamentoMobile = 'true';
-
-    const seletorItem = '.celula-refeicao, .item-planejamento-diario, .linha-planejamento-data';
-    let timerPressionar = null;
-    let itemPressionado = null;
-    let inicioX = 0;
-    let inicioY = 0;
-
-    const limparTimer = () => {
-        if (timerPressionar) {
-            clearTimeout(timerPressionar);
-            timerPressionar = null;
-        }
-    };
-
-    const esconderAcoes = (exceto = null) => {
-        document.querySelectorAll(`${seletorItem}.mostrar-acoes`).forEach(item => {
-            if (item !== exceto) item.classList.remove('mostrar-acoes');
-        });
-    };
-
-    document.addEventListener('pointerdown', (evento) => {
-        if (!window.matchMedia('(hover: none)').matches || evento.pointerType === 'mouse') return;
-
-        const item = evento.target.closest(seletorItem);
-        if (!item) {
-            esconderAcoes();
-            return;
-        }
-
-        if (evento.target.closest('button')) return;
-
-        itemPressionado = item;
-        inicioX = evento.clientX;
-        inicioY = evento.clientY;
-        limparTimer();
-
-        timerPressionar = setTimeout(() => {
-            esconderAcoes(itemPressionado);
-            itemPressionado.classList.add('mostrar-acoes');
-            timerPressionar = null;
-        }, 450);
-    });
-
-    document.addEventListener('pointermove', (evento) => {
-        if (!itemPressionado || !timerPressionar) return;
-
-        const distanciaX = Math.abs(evento.clientX - inicioX);
-        const distanciaY = Math.abs(evento.clientY - inicioY);
-        if (distanciaX > 12 || distanciaY > 12) {
-            limparTimer();
-            itemPressionado = null;
-        }
-    });
-
-    ['pointerup', 'pointercancel'].forEach(tipoEvento => {
-        document.addEventListener(tipoEvento, () => {
-            limparTimer();
-            itemPressionado = null;
-        });
-    });
-
-    document.addEventListener('contextmenu', (evento) => {
-        if (!window.matchMedia('(hover: none)').matches) return;
-        if (evento.target.closest(seletorItem)) {
-            evento.preventDefault();
-        }
     });
 }
 
@@ -1897,6 +1823,8 @@ function mostrarVisao(nomeVisao) {
         visao.style.display = 'block';
     }
 
+    posicionarSeletorPlanejamento(nomeVisao, visao);
+
     const alvoEvento = window.event?.target;
     const botaoAtivo = alvoEvento?.classList?.contains('aba-btn')
         ? alvoEvento
@@ -1923,6 +1851,54 @@ function mostrarVisao(nomeVisao) {
     } else if (nomeVisao === 'contagem') {
         renderizarContagemAlimentos();
     }
+}
+
+function posicionarSeletorPlanejamento(nomeVisao, visao) {
+    const seletor = document.querySelector('.planejamento-switch');
+    const controle = visao?.querySelector('.controles');
+    const visoesComPlanejamento = ['diaria', 'semanal', 'mensal', 'calendario'];
+
+    if (!seletor) return;
+
+    if (controle && visoesComPlanejamento.includes(nomeVisao)) {
+        controle.classList.add('cabecalho-planejamento');
+        const titulo = controle.querySelector('h2');
+        titulo?.insertAdjacentElement('afterend', seletor);
+        seletor.hidden = nomeVisao === 'calendario';
+        return;
+    }
+
+    seletor.hidden = true;
+}
+
+function abrirCalendarioNavegacao(rotulo) {
+    const input = rotulo.querySelector('input[type="date"]');
+    if (!input) return;
+    try {
+        input.showPicker();
+    } catch {
+        input.focus();
+    }
+}
+
+function alternarMenuPlanejamento(botao) {
+    const item = botao.closest('.celula-refeicao, .item-planejamento-diario, .linha-planejamento-data');
+    if (!item) return;
+
+    const abrir = !item.classList.contains('menu-acoes-aberto');
+    fecharMenusPlanejamento();
+
+    if (abrir) {
+        item.classList.add('menu-acoes-aberto');
+        botao.setAttribute('aria-expanded', 'true');
+    }
+}
+
+function fecharMenusPlanejamento() {
+    document.querySelectorAll('.menu-acoes-aberto').forEach(item => {
+        item.classList.remove('menu-acoes-aberto');
+        item.querySelector('.btn-menu-planejamento')?.setAttribute('aria-expanded', 'false');
+    });
 }
 
 const DIAS_SEMANA = [
@@ -1963,7 +1939,8 @@ function obterNumeroSemana(data) {
     const inicioAno = new Date(data.getFullYear(), 0, 1);
     const inicioPrimeiraSemana = new Date(inicioAno);
     inicioPrimeiraSemana.setDate(inicioAno.getDate() - obterIndiceSemanaSegunda(inicioAno));
-    const diferencaDias = Math.floor((data - inicioPrimeiraSemana) / 86400000);
+    const diferencaDias = (Date.UTC(data.getFullYear(), data.getMonth(), data.getDate()) -
+        Date.UTC(inicioPrimeiraSemana.getFullYear(), inicioPrimeiraSemana.getMonth(), inicioPrimeiraSemana.getDate())) / 86400000;
     return Math.floor(diferencaDias / 7) + 1;
 }
 
@@ -1996,11 +1973,6 @@ function obterGrupoPlanejamentoAtivo() {
     return app.planejamentoAtivo;
 }
 
-function obterNomePlanejamentoAtivo() {
-    const grupo = app.planejamentosGrupos.find(item => item.id === obterGrupoPlanejamentoAtivo());
-    return grupo?.nome || 'Adulto';
-}
-
 function planejamentoPertenceAoAtivo(plano) {
     return normalizarGrupoPlanejamento(plano?.grupo) === obterGrupoPlanejamentoAtivo();
 }
@@ -2013,6 +1985,7 @@ function atualizarControlePlanejamentoAtivo() {
     container.innerHTML = app.planejamentosGrupos.map(grupo => `
         <button type="button"
                 class="btn-planejamento-opcao ${grupo.id === ativo ? 'ativo' : ''}"
+                aria-pressed="${grupo.id === ativo}"
                 onclick="selecionarPlanejamentoAtivo('${grupo.id}')">
             ${escaparHtml(grupo.nome)}
         </button>
@@ -2031,13 +2004,6 @@ function selecionarPlanejamentoAtivo(grupo) {
     renderizarDiaria();
     renderizarCalendario();
     renderizarContagemAlimentos();
-}
-
-function alternarPlanejamentoAtivo() {
-    const ativo = obterGrupoPlanejamentoAtivo();
-    const indiceAtual = app.planejamentosGrupos.findIndex(grupo => grupo.id === ativo);
-    const proximo = app.planejamentosGrupos[(indiceAtual + 1) % app.planejamentosGrupos.length];
-    selecionarPlanejamentoAtivo(proximo.id);
 }
 
 function obterSemanaDiaPorData(data) {
@@ -2275,12 +2241,13 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
                     <div class="nome-refeicao">Item removido</div>
                     ${renderizarCheckPlanejamento(plano)}
                 </div>
+                <button type="button" class="btn-menu-planejamento" aria-label="Acoes do item" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
                 <div class="acoes-planejamento-mini">
-                    <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
+                    <button onclick="event.stopPropagation(); fecharMenusPlanejamento(); abrirEdicaoPlanejamento('${plano.id}')"
                             class="btn-editar-mini">
                         Editar
                     </button>
-                    <button onclick="event.stopPropagation(); removerPlanejamento('${plano.id}')"
+                    <button onclick="event.stopPropagation(); fecharMenusPlanejamento(); removerPlanejamento('${plano.id}')"
                             class="btn-remover-mini">
                         Remover
                     </button>
@@ -2295,12 +2262,13 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
                 <div class="nome-refeicao">${escaparHtml(item.nome)}</div>
                 ${renderizarCheckPlanejamento(plano)}
             </div>
+            <button type="button" class="btn-menu-planejamento" aria-label="Acoes de ${escaparHtml(item.nome)}" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
             <div class="acoes-planejamento-mini">
-                <button onclick="event.stopPropagation(); abrirEdicaoPlanejamento('${plano.id}')"
+                <button onclick="event.stopPropagation(); fecharMenusPlanejamento(); abrirEdicaoPlanejamento('${plano.id}')"
                         class="btn-editar-mini">
                     Editar
                 </button>
-                <button onclick="event.stopPropagation(); removerPlanejamento('${plano.id}')"
+                <button onclick="event.stopPropagation(); fecharMenusPlanejamento(); removerPlanejamento('${plano.id}')"
                         class="btn-remover-mini">
                     Remover
                 </button>
@@ -2342,8 +2310,8 @@ function renderizarSemanal() {
                 html += `
                     <td class="${classeHoje}">
                         ${renderizarListaPlanejamentos(planos)}
-                        <button class="btn-adicionar-mini" onclick="abrirModalPlanejar('${app.semanaAtual}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
-                            Adicionar
+                        <button class="btn-adicionar-mini" aria-label="Adicionar item" title="Adicionar item" onclick="abrirModalPlanejar('${app.semanaAtual}', '${diaInfo.chave}', '${tipo}', '${dataStr}')">
+                            +
                         </button>
                     </td>
                 `;
@@ -2830,21 +2798,20 @@ function removerPlanejamento(id) {
 
 /* Navegacao de semanas */
 function semanaAnterior() {
-    app.semanaAtual = Math.max(1, app.semanaAtual - 1);
-    atualizarTituloSemana();
+    navegarSemana(-1);
     renderizarSemanal();
 }
 
 function proxSemana() {
-    app.semanaAtual = Math.min(52, app.semanaAtual + 1);
-    atualizarTituloSemana();
+    navegarSemana(1);
     renderizarSemanal();
 }
 
-function mudarSemana(numero) {
-    app.semanaAtual = parseInt(numero) || 1;
-    atualizarTituloSemana();
-    renderizarSemanal();
+function navegarSemana(direcao) {
+    const domingo = obterInicioSemana(app.semanaAtual, app.anoAtual);
+    domingo.setDate(domingo.getDate() + (direcao * 7) + 6);
+    app.anoAtual = domingo.getFullYear();
+    app.semanaAtual = obterNumeroSemana(domingo);
 }
 
 function mudarDataSemanal(data) {
@@ -2869,9 +2836,12 @@ function atualizarTituloSemana() {
     const inicio = obterInicioSemana(app.semanaAtual, app.anoAtual);
     const fim = new Date(inicio);
     fim.setDate(inicio.getDate() + 6);
-    document.getElementById('titulo-semana').textContent =
-        `${obterNomePlanejamentoAtivo()} - Semana ${app.semanaAtual} (${inicio.getDate()}/${inicio.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1})`;
-    document.getElementById('numero-semana').value = app.semanaAtual;
+    const mesmoMes = inicio.getMonth() === fim.getMonth() && inicio.getFullYear() === fim.getFullYear();
+    const inicioTexto = mesmoMes
+        ? String(inicio.getDate())
+        : `${inicio.getDate()} ${inicio.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}`;
+    document.getElementById('periodo-semanal').textContent =
+        `${inicioTexto}–${fim.getDate()} de ${fim.toLocaleDateString('pt-BR', { month: 'long' })} de ${fim.getFullYear()}`;
     const inputData = document.getElementById('data-semanal');
     if (inputData) inputData.value = formatarDataChave(inicio);
 }
@@ -2917,6 +2887,10 @@ function renderizarMensal() {
     atualizarTituloMes();
 
     const semanas = obterSemanasMesPlanejamento();
+    const hoje = formatarDataChave(new Date());
+    const semanaAtual = semanas.find(semana =>
+        formatarDataChave(semana.inicio) <= hoje && hoje <= formatarDataChave(semana.fim)
+    );
     const wrapper = document.createElement('div');
     wrapper.className = 'semana-mensal planejamento-mensal-semanas';
 
@@ -2927,7 +2901,7 @@ function renderizarMensal() {
             <tr>
                 <th>Semana</th>
                 ${semanas.map(semana => `
-                    <th>
+                    <th class="${semana === semanaAtual ? 'coluna-hoje' : ''}">
                         ${semana.indice}
                         <br>
                         <span class="data-cabecalho">(${formatarIntervaloSemanaCurto(semana)})</span>
@@ -2947,19 +2921,20 @@ function renderizarMensal() {
         semanas.forEach(semana => {
             const planos = buscarPlanejamentosPorSemana(semana.numero, tipo);
             const tipoParam = encodeURIComponent(tipo);
+            const classeSemanaAtual = semana === semanaAtual ? 'coluna-hoje' : '';
 
             if (planos.length > 0) {
                 html += `
-                    <td>
+                    <td class="${classeSemanaAtual}">
                         ${renderizarListaPlanejamentos(planos, true)}
-                        <button class="btn-adicionar-mini" onclick="abrirModalPlanejarSemana('${semana.numero}', decodeURIComponent('${tipoParam}'))">
-                            Adicionar
+                        <button class="btn-adicionar-mini" aria-label="Adicionar item" title="Adicionar item" onclick="abrirModalPlanejarSemana('${semana.numero}', decodeURIComponent('${tipoParam}'))">
+                            +
                         </button>
                     </td>
                 `;
             } else {
                 html += `
-                    <td class="celula-vazia" onclick="abrirModalPlanejarSemana('${semana.numero}', decodeURIComponent('${tipoParam}'))">
+                    <td class="celula-vazia ${classeSemanaAtual}" onclick="abrirModalPlanejarSemana('${semana.numero}', decodeURIComponent('${tipoParam}'))">
                         <span class="btn-add-celula">+</span>
                     </td>
                 `;
@@ -2974,10 +2949,8 @@ function renderizarMensal() {
     container.appendChild(wrapper);
 }
 function atualizarTituloMes() {
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    document.getElementById('titulo-mes').textContent = 
-        `${obterNomePlanejamentoAtivo()} - ${meses[app.mesAtual]} ${app.anoAtual}`;
+    document.getElementById('periodo-mensal').textContent =
+        new Date(app.anoAtual, app.mesAtual, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     const inputData = document.getElementById('data-mensal');
     if (inputData) inputData.value = formatarDataChave(new Date(app.anoAtual, app.mesAtual, 1));
 }
@@ -3033,6 +3006,7 @@ function renderizarItemPlanejamentoDiario(plano) {
                     <p><strong>Item removido</strong></p>
                     ${renderizarCheckPlanejamento(plano)}
                 </div>
+                <button type="button" class="btn-menu-planejamento" aria-label="Acoes do item" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
                 <div class="acoes-planejamento">
                     <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
                     <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
@@ -3047,6 +3021,7 @@ function renderizarItemPlanejamentoDiario(plano) {
                 <p><strong>${escaparHtml(item.nome)}</strong></p>
                 ${renderizarCheckPlanejamento(plano)}
             </div>
+            <button type="button" class="btn-menu-planejamento" aria-label="Acoes de ${escaparHtml(item.nome)}" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
             <div class="acoes-planejamento">
                 <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
                 ${tipoItem === 'receita' ? `<button onclick="marcarComoConsumida('${item.id}')">Consumida</button>` : ''}
@@ -3111,13 +3086,13 @@ function renderizarResumoSemanaDiaria(data) {
 
 function renderizarDiaria() {
     const container = document.getElementById('container-diaria');
-    const titulo = document.getElementById('titulo-dia');
     container.innerHTML = '';
 
     // Formatar data
     const opcoes = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const dataFormatada = dataDiaria.toLocaleDateString('pt-BR', opcoes);
-    titulo.textContent = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
+    document.getElementById('periodo-diario').textContent =
+        dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
 
     // Buscar refeicoes planejadas para essa data
     const dataString = formatarDataChave(dataDiaria);
@@ -3159,6 +3134,7 @@ function proximoDia() {
 }
 
 function mudarDataDiaria(data) {
+    if (!data) return;
     dataDiaria = new Date(data + 'T00:00:00');
     renderizarDiaria();
 }
@@ -3211,12 +3187,10 @@ function renderizarCalendario() {
     const detalhes = document.getElementById('detalhes-data');
     if (detalhes) detalhes.style.display = modoCalendario === 'dia' ? 'none' : '';
 
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-
-    // Atualizar titulo
-    document.getElementById('titulo-calendario').textContent = 
-        `${meses[mesCalendario]} ${anoCalendario}`;
+    document.getElementById('periodo-calendario').textContent =
+        new Date(anoCalendario, mesCalendario, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    document.getElementById('data-calendario').value =
+        formatarDataChave(new Date(anoCalendario, mesCalendario, 1));
 
     const cabecalho = document.createElement('div');
     cabecalho.className = 'cabecalho-calendario';
@@ -3406,9 +3380,11 @@ function renderizarFaixaSemanaCalendario(inicioSemana) {
                 <strong>Semana ${semana}</strong>
                 <span>${inicioSemana.getDate()}/${inicioSemana.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1}</span>
             </div>
-            <textarea placeholder="Nota para toda a semana" onblur="salvarNotaSemanaCalendario('${inicioStr}', this.value)">${escaparHtml(nota?.nota || '')}</textarea>
-            <div class="itens-semana-calendario">${itens || '<span class="sem-itens-semana">Sem itens</span>'}</div>
-            <button type="button" onclick="adicionarItemSemanaCalendario('${semana}')">Adicionar item</button>
+            <button type="button" onclick="adicionarItemSemanaCalendario('${semana}')" aria-label="Adicionar item na semana ${semana}" title="Adicionar item">Adicionar item</button>
+            <div class="itens-semana-calendario" aria-label="Itens planejados">${itens || '<span class="sem-itens-semana">Sem itens</span>'}</div>
+            <div class="nota-semana-calendario">
+                <textarea aria-label="Nota para toda a semana ${semana}" placeholder="Nota para toda a semana" onblur="salvarNotaSemanaCalendario('${inicioStr}', this.value)">${escaparHtml(nota?.nota || '')}</textarea>
+            </div>
         </div>
     `;
 }
@@ -3449,6 +3425,7 @@ function atualizarDetalhesData(data) {
                             <div class="linha-planejamento-data">
                                 <span>${item ? escaparHtml(item.nome) : 'Item removido'}</span>
                                 ${renderizarCheckPlanejamento(plano)}
+                                <button type="button" class="btn-menu-planejamento" aria-label="Acoes do item" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
                                 <div class="acoes-planejamento">
                                     <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
                                     <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
@@ -3511,6 +3488,21 @@ function proxMesCalendario() {
     } else {
         mesCalendario++;
     }
+    renderizarCalendario();
+}
+
+function mudarDataCalendario(data) {
+    if (!data) return;
+    const escolhida = criarDataLocal(data);
+    mesCalendario = escolhida.getMonth();
+    anoCalendario = escolhida.getFullYear();
+    renderizarCalendario();
+}
+
+function irParaMesCalendarioAtual() {
+    const hoje = new Date();
+    mesCalendario = hoje.getMonth();
+    anoCalendario = hoje.getFullYear();
     renderizarCalendario();
 }
 
@@ -5863,9 +5855,18 @@ function fecharModal(id) {
 
 // Fechar modal clicando fora
 document.addEventListener('click', (e) => {
+    if (!e.target.closest('.celula-refeicao, .item-planejamento-diario, .linha-planejamento-data') ||
+        e.target.closest('.acoes-planejamento button, .acoes-planejamento-mini button')) {
+        fecharMenusPlanejamento();
+    }
+
     if (e.target.classList.contains('modal')) {
         e.target.style.display = 'none';
     }
+});
+
+document.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Escape') fecharMenusPlanejamento();
 });
 
 Object.assign(window, {
@@ -5886,7 +5887,9 @@ Object.assign(window, {
     conectarNuvem,
     alternarSidebar,
     selecionarPlanejamentoAtivo,
-    alternarPlanejamentoAtivo,
+    alternarMenuPlanejamento,
+    fecharMenusPlanejamento,
+    abrirCalendarioNavegacao,
     alternarPlanoSeguido,
     alternarNovoItemPlanejamento,
     criarItemParaPlanejamento,
@@ -5917,8 +5920,10 @@ Object.assign(window, {
     abrirModalPlanejarSemana,
     mudarDataSemanal,
     mudarDataMensal,
+    mudarDataCalendario,
     irParaSemanaAtual,
     irParaMesAtual,
+    irParaMesCalendarioAtual,
     irParaDiaAtual,
     salvarNotaPlanejamentoData,
     salvarNotaSemanaCalendario,
