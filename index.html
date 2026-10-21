@@ -332,6 +332,11 @@
                             <h3>Ingredientes</h3>
                             <div id="lista-ingredientes-receita" class="lista-ingredientes"></div>
                             <button type="button" class="btn-secundario btn-ingrediente" onclick="adicionarLinhaIngredienteReceita()">Adicionar ingrediente</button>
+                            <div class="form-grupo">
+                                <label for="ingredientes-texto-receita">Ingredientes em texto livre</label>
+                                <textarea id="ingredientes-texto-receita" rows="5" placeholder="Ex:&#10;2 ovos&#10;1 xícara de farinha&#10;Sal a gosto" aria-describedby="ajuda-ingredientes-texto"></textarea>
+                                <p id="ajuda-ingredientes-texto" class="texto-ajuda">Use este campo no lugar da seleção acima ou como complemento. Os ingredientes escritos aqui não entram na contagem de alimentos.</p>
+                            </div>
                         </section>
                         <section class="form-secao">
                             <h3>Preparo</h3>
@@ -590,6 +595,6 @@
 
     <script src="js/supabase-config.js?v=20260803-supabase-url"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/app.js?v=20261021-botao-mais-calendario"></script>
+    <script src="js/app.js?v=20261021-ingredientes-texto"></script>
 </body>
 </html>

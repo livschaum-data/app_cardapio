@@ -3630,9 +3630,15 @@ function formatarIngredienteReceita(ingrediente) {
 }
 
 function obterIngredientesReceita(receita) {
-    if (!receita || !Array.isArray(receita.ingredientes)) return [];
+    if (!receita) return [];
 
-    return receita.ingredientes.map(formatarIngredienteReceita).filter(Boolean);
+    const selecionados = Array.isArray(receita.ingredientes)
+        ? receita.ingredientes.map(formatarIngredienteReceita).filter(Boolean)
+        : [];
+    const texto = typeof receita.ingredientesTexto === 'string'
+        ? receita.ingredientesTexto.split(/\r?\n/).map(linha => linha.trim()).filter(Boolean)
+        : [];
+    return [...selecionados, ...texto];
 }
 
 function criarOpcaoAlimento(alimentoIdSelecionado = '') {
@@ -3726,6 +3732,7 @@ function salvarReceita(e) {
         categoria: document.getElementById('categoria-receita').value,
         tags: obterTagsSelecionadasReceita(),
         ingredientes: obterIngredientesSelecionadosReceita(),
+        ingredientesTexto: document.getElementById('ingredientes-texto-receita').value.trim(),
         modoPreparo: document.getElementById('preparo-receita').value,
         dataCriacao: existente?.dataCriacao || agora,
         dataAtualizacao: agora,
@@ -3780,7 +3787,7 @@ function renderizarReceitas() {
                 ${renderizarBadgeCategoria(receita.categoria, 'receita')}
                 ${renderizarBadgesTags(receita)}
                 ${obterIngredientesReceita(receita).length > 0 ? `
-                    <p><strong>Ingredientes:</strong><br>${obterIngredientesReceita(receita).slice(0, 3).join('<br>')}</p>
+                    <p><strong>Ingredientes:</strong><br>${obterIngredientesReceita(receita).slice(0, 3).map(escaparHtml).join('<br>')}</p>
                 ` : ''}
                 <div class="card-receita-actions">
                     <button class="btn-editar" onclick="editarReceita('${receita.id}')">Editar</button>
@@ -3803,6 +3810,7 @@ function editarReceita(id) {
     atualizarSelectTags(obterTagsReceita(receita));
     document.getElementById('categoria-receita').value = receita.categoria;
     renderizarIngredientesReceita(receita.ingredientes || []);
+    document.getElementById('ingredientes-texto-receita').value = receita.ingredientesTexto || '';
     document.getElementById('preparo-receita').value = receita.modoPreparo;
     document.querySelector('#modal-receita h2').textContent = 'Editar Receita';
 
