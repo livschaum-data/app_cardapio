@@ -131,6 +131,13 @@ function fecharFichaLivro() {
     livroReceitaAberta = null;
     livroFocoAnterior?.focus();
 }
+function editarReceitaLivro() {
+    const id = livroReceitaAberta;
+    if (!id || !buscarReceita(id)) return;
+    fecharFichaLivro();
+    editarReceita(id);
+    document.getElementById('nome-receita').focus();
+}
 document.getElementById('modal-ficha-livro').addEventListener('click', evento => {
     if (evento.target.id === 'modal-ficha-livro') fecharFichaLivro();
 });
@@ -138,5 +145,13 @@ document.addEventListener('keydown', evento => {
     const modal = document.getElementById('modal-ficha-livro');
     if (modal.style.display !== 'flex') return;
     if (evento.key === 'Escape') fecharFichaLivro();
-    if (evento.key === 'Tab') { evento.preventDefault(); modal.querySelector('.btn-fechar').focus(); }
+    if (evento.key === 'Tab') {
+        const botoes = modal.querySelectorAll('button');
+        const primeiro = botoes[0], ultimo = botoes[botoes.length - 1];
+        if (evento.shiftKey && document.activeElement === primeiro) {
+            evento.preventDefault(); ultimo.focus();
+        } else if (!evento.shiftKey && document.activeElement === ultimo) {
+            evento.preventDefault(); primeiro.focus();
+        }
+    }
 });

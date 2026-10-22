@@ -4000,9 +4000,21 @@ body {
 }
 
 /* Livro de receitas: estilos exclusivos da consulta e da ficha. */
-#visao-livro .livro-controles { margin-top: 18px; align-items: end; flex-wrap: wrap; }
-#visao-livro .livro-controles label { display: grid; gap: 5px; font-size: 13px; flex: 1 1 150px; min-width: 0; }
-#visao-livro .livro-controles input, #visao-livro .livro-controles select { width: 100%; min-width: 0; }
+#visao-livro .livro-controles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; align-items: end; gap: 12px; height: auto; }
+#visao-livro .livro-controles label { display: flex; flex-direction: column; align-items: stretch; gap: 5px; font-size: 13px; font-weight: 600; flex: none; min-width: 0; margin: 0; text-align: left; }
+#visao-livro .livro-controles label:first-child { grid-column: 1 / -1; }
+#visao-livro .livro-controles input, #visao-livro .livro-controles select { width: 100%; min-width: 0; height: 42px; min-height: 42px; flex: none; margin: 0; padding: 8px 10px; font: inherit; font-size: 16px; background: white; color: var(--cor-texto); }
+#visao-livro .livro-controles > button { grid-column: 1 / -1; justify-self: end; min-height: 40px; background: transparent; color: var(--cor-secundaria); border: 1px solid var(--cor-borda); }
+#modal-ficha-livro .livro-ficha-acoes { display: flex; justify-content: flex-end; padding-right: 36px; margin-bottom: 14px; }
+#modal-ficha-livro .livro-editar { min-height: 40px; padding: 8px 14px; border: 1px solid #98aa91; border-radius: 8px; background: #faf8ef; color: #334b3c; font: 600 14px 'Segoe UI', sans-serif; cursor: pointer; }
+#modal-ficha-livro .livro-editar:focus-visible { outline: 2px solid #334b3c; outline-offset: 3px; }
+@media (max-width: 680px) {
+    #visao-livro .livro-controles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+    #visao-livro .visao-header { padding-left: 64px; min-height: 44px; }
+}
+@media (max-width: 360px) {
+    #visao-livro .livro-controles { grid-template-columns: minmax(0, 1fr); }
+}
 .livro-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; padding: 16px 0 36px; }
 .livro-cartao { background: #fffdf8; border: 1px solid #d9d0c2; border-radius: 8px; padding: 24px; text-align: left; color: #37352e; font: inherit; cursor: pointer; }
 .livro-cartao:hover { border-color: #8b4513; box-shadow: 0 4px 16px #392c1714; }
