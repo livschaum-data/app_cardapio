@@ -919,6 +919,7 @@ async function enviarDadosSupabase({ silencioso = false, mesclarAntes = false } 
 }
 
 function renderizarTudoAposSync() {
+    if (typeof renderizarLivro === 'function') renderizarLivro();
     atualizarControlePlanejamentoAtivo();
     atualizarSelectTipos();
     atualizarSelectCategorias();
@@ -1842,6 +1843,8 @@ function mostrarVisao(nomeVisao) {
         renderizarDiaria();
     } else if (nomeVisao === 'calendario') {
         renderizarCalendario();
+    } else if (nomeVisao === 'livro') {
+        renderizarLivro();
     } else if (nomeVisao === 'receitas') {
         renderizarReceitas();
     } else if (nomeVisao === 'refeicoes') {
