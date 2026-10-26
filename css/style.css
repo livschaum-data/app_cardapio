@@ -4057,3 +4057,100 @@ body {
     .livro-ficha-meta > div { padding: 12px 8px; }
     .livro-ficha-meta span, .livro-ficha-meta strong { font-size: 13px; }
 }
+
+@media (max-width: 680px) {
+    #visao-semanal {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    #visao-semanal > .tabela-container {
+        max-width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #visao-semanal .tabela-semanal {
+        table-layout: fixed;
+        width: 1100px;
+    }
+
+    #visao-semanal .tabela-semanal th,
+    #visao-semanal .tabela-semanal td {
+        font-size: 13px;
+        padding: 10px 8px;
+        width: 140px;
+    }
+
+    #visao-semanal .tabela-semanal th:first-child,
+    #visao-semanal .tabela-semanal td:first-child {
+        width: 120px;
+    }
+
+    #visao-semanal .tabela-semanal th:first-child {
+        z-index: 7;
+    }
+
+    #visao-semanal .tabela-semanal .nome-refeicao,
+    #visao-semanal .tabela-semanal .refeicao-nome {
+        hyphens: none;
+        overflow-wrap: normal;
+        white-space: normal;
+        word-break: normal;
+    }
+
+    #visao-semanal .tabela-semanal .nota-planejamento textarea {
+        overflow-wrap: break-word;
+    }
+}
+
+@media (max-width: 768px) {
+    #visao-calendario .calendario-container {
+        min-width: 0;
+    }
+
+    #visao-calendario .calendario-modo-dia {
+        grid-template-columns: 980px;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #visao-calendario .calendario-modo-dia .cabecalho-calendario {
+        font-size: 13px;
+    }
+
+    #visao-calendario .calendario-modo-dia .dia-calendario-geral {
+        gap: 5px;
+        grid-template-rows: auto minmax(0, 1fr) 28px;
+        min-height: 150px;
+        padding: 6px;
+    }
+
+    #visao-calendario .calendario-modo-dia .numero-dia-calendario,
+    #visao-calendario .calendario-modo-dia .nome-refeicao {
+        font-size: 13px;
+    }
+
+    #visao-calendario .calendario-modo-dia .nome-refeicao {
+        hyphens: none;
+        overflow-wrap: normal;
+        white-space: normal;
+        word-break: normal;
+    }
+
+    #visao-calendario .calendario-modo-dia .itens-dia-calendario .celula-refeicao {
+        min-height: 46px;
+        padding: 6px 3px;
+    }
+
+    #visao-calendario .calendario-modo-dia .dia-calendario-geral > button {
+        font-size: 16px;
+        height: 28px;
+        min-height: 28px;
+        width: 28px !important;
+    }
+}

@@ -3183,6 +3183,7 @@ function alterarModoCalendario(modo) {
 function renderizarCalendario() {
     const container = document.getElementById('calendario');
     container.innerHTML = '';
+    container.classList.toggle('calendario-modo-dia', modoCalendario === 'dia');
 
     document.querySelectorAll('[data-modo-calendario]').forEach(botao => {
         botao.classList.toggle('ativo', botao.dataset.modoCalendario === modoCalendario);
