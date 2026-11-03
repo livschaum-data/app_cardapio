@@ -4109,3 +4109,288 @@ body {
         width: 28px !important;
     }
 }
+/* ==================== REGISTROS INDEPENDENTES ==================== */
+.registros-ajuda {
+    margin: -8px 0 18px;
+}
+
+.registros-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.registros-modos,
+.registros-navegacao {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.registros-modos {
+    padding: 4px;
+    border: 1px solid var(--cor-borda, #ddd5c8);
+    border-radius: 10px;
+    background: var(--cor-superficie, #fffaf3);
+}
+
+.registros-modos button,
+.registros-navegacao button {
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: inherit;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.registros-modos button.ativo,
+.registros-modos button:hover {
+    background: var(--cor-destaque, #e59b62);
+    color: #fff;
+}
+
+.registros-navegacao strong {
+    min-width: 145px;
+    text-align: center;
+    text-transform: capitalize;
+}
+
+.registros-tabela-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--cor-borda, #ddd5c8);
+    border-radius: 12px;
+    background: var(--cor-superficie, #fffaf3);
+}
+
+.registros-tabela {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.registros-tabela th,
+.registros-tabela td {
+    padding: 13px 15px;
+    border-bottom: 1px solid var(--cor-borda, #e5ddd1);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.registros-tabela th {
+    color: var(--cor-texto-suave, #7b7469);
+    font-size: .77rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.registros-tabela tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.registros-tabela tbody tr:hover {
+    background: color-mix(in srgb, var(--cor-destaque, #e59b62) 8%, transparent);
+}
+
+.registro-item-link {
+    display: block;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.registros-tabela td small {
+    display: block;
+    margin-top: 4px;
+    color: var(--cor-texto-suave, #7b7469);
+    font-size: .78rem;
+}
+
+.badge-tipo-registro {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 9px;
+    color: #fff;
+    font-size: .75rem;
+    white-space: nowrap;
+}
+
+.registro-tipo-refeicao { background: #4d8b68; }
+.registro-tipo-receita { background: #8066b4; }
+.registro-tipo-especial { background: #c66d3f; }
+
+.acoes-registro {
+    display: flex;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.acoes-registro button {
+    border: 0;
+    background: transparent;
+    color: var(--cor-texto-suave, #7b7469);
+    cursor: pointer;
+    font-size: .8rem;
+}
+
+.acoes-registro button:hover {
+    color: var(--cor-destaque-escuro, #a85e2c);
+    text-decoration: underline;
+}
+
+.registros-calendario {
+    overflow: hidden;
+    border: 1px solid var(--cor-borda, #ddd5c8);
+    border-radius: 12px;
+    background: var(--cor-superficie, #fffaf3);
+}
+
+.registros-calendario-cabecalho,
+.registros-calendario-grade {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.registros-calendario-cabecalho span {
+    padding: 11px 8px;
+    border-right: 1px solid var(--cor-borda, #e5ddd1);
+    border-bottom: 1px solid var(--cor-borda, #e5ddd1);
+    color: var(--cor-texto-suave, #7b7469);
+    font-size: .73rem;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.registro-dia-calendario {
+    min-height: 112px;
+    padding: 7px;
+    border-right: 1px solid var(--cor-borda, #e5ddd1);
+    border-bottom: 1px solid var(--cor-borda, #e5ddd1);
+    background: var(--cor-superficie, #fffaf3);
+}
+
+.registro-dia-calendario.dia-hoje {
+    box-shadow: inset 0 0 0 2px var(--cor-destaque, #e59b62);
+}
+
+.registro-dia-calendario.fora-mes {
+    opacity: .45;
+}
+
+.numero-dia {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--cor-texto-suave, #7b7469);
+    font-size: .78rem;
+    font-weight: 600;
+}
+
+.evento-registro-calendario {
+    display: block;
+    width: 100%;
+    margin: 4px 0;
+    overflow: hidden;
+    border: 0;
+    border-left: 3px solid;
+    border-radius: 4px;
+    padding: 5px 6px;
+    background: color-mix(in srgb, var(--cor-fundo, #f4efe7) 88%, var(--cor-texto, #2f2b25));
+    color: var(--cor-texto, #2f2b25);
+    text-align: left;
+    cursor: pointer;
+}
+
+.evento-registro-calendario strong,
+.evento-registro-calendario small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.evento-registro-calendario strong { font-size: .76rem; font-weight: 600; }
+.evento-registro-calendario small { margin-top: 2px; color: var(--cor-texto-suave, #7b7469); font-size: .67rem; }
+.evento-registro-calendario.registro-tipo-refeicao { border-color: #4d8b68; }
+.evento-registro-calendario.registro-tipo-receita { border-color: #8066b4; }
+.evento-registro-calendario.registro-tipo-especial { border-color: #c66d3f; }
+
+.registro-detalhe-item {
+    max-width: 880px;
+}
+
+.btn-voltar-registros {
+    border: 0;
+    background: transparent;
+    color: var(--cor-texto-suave, #7b7469);
+    cursor: pointer;
+    padding: 0;
+}
+
+.registro-detalhe-cabecalho {
+    margin: 22px 0;
+}
+
+.registro-detalhe-cabecalho h3 {
+    margin: 9px 0 4px;
+    font-size: 1.55rem;
+}
+
+.registro-detalhe-cabecalho p {
+    margin: 0;
+    color: var(--cor-texto-suave, #7b7469);
+}
+
+.registro-ocorrencias {
+    border-top: 1px solid var(--cor-borda, #ddd5c8);
+}
+
+.registro-ocorrencias article {
+    display: grid;
+    grid-template-columns: minmax(190px, 1fr) minmax(220px, 2fr) auto;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--cor-borda, #e5ddd1);
+}
+
+.registro-ocorrencias article > div:first-child {
+    display: flex;
+    flex-direction: column;
+}
+
+.registro-ocorrencias article small,
+.registro-ocorrencias article p {
+    display: block;
+    margin: 4px 0 0;
+    color: var(--cor-texto-suave, #7b7469);
+    font-size: .83rem;
+}
+
+.modal-registro-content {
+    max-width: 540px;
+}
+
+.registros-vazio {
+    padding: 45px 20px;
+    text-align: center;
+}
+
+@media (max-width: 760px) {
+    .registros-toolbar { align-items: stretch; flex-direction: column; }
+    .registros-navegacao { justify-content: space-between; }
+    .registros-calendario { overflow-x: auto; }
+    .registros-calendario-cabecalho,
+    .registros-calendario-grade { min-width: 680px; }
+    .registro-ocorrencias article { grid-template-columns: 1fr; gap: 9px; }
+    .registro-ocorrencias .acoes-registro { justify-content: flex-start; }
+}
+

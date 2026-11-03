@@ -25,6 +25,12 @@ const app = {
     // Array de historico de consumo
     historico: [],
 
+    // Estado da area independente de registros
+    registrosModo: 'tabela',
+    registrosAno: new Date().getFullYear(),
+    registrosMes: new Date().getMonth(),
+    registroItemAtual: null,
+
     // Tipos de refeicao customizaveis
     tiposRefeicao: ['Café da Manhã', 'Almoço', 'Lanche', 'Jantar', 'Ceia'],
 
@@ -113,6 +119,11 @@ async function inicializar() {
     const formReceita = document.getElementById('form-receita');
     if (formReceita) {
         formReceita.addEventListener('submit', salvarReceita);
+    }
+
+    const formRegistro = document.getElementById('form-registro');
+    if (formRegistro) {
+        formRegistro.addEventListener('submit', salvarRegistro);
     }
 
     const formRefeicao = document.getElementById('form-refeicao');
@@ -941,6 +952,7 @@ function renderizarTudoAposSync() {
     renderizarAlimentos();
     renderizarCategoriasAlimentos();
     renderizarContagemAlimentos();
+    renderizarRegistros();
 }
 
 function aplicarDados(dados) {
@@ -1853,6 +1865,8 @@ function mostrarVisao(nomeVisao) {
         renderizarAlimentos();
     } else if (nomeVisao === 'contagem') {
         renderizarContagemAlimentos();
+    } else if (nomeVisao === 'registros') {
+        renderizarRegistros();
     }
 }
 
@@ -5797,6 +5811,222 @@ function renderizarAposAlterarTiposUso() {
 /* ==================== MODAIS ====================
    Abrir e fechar popups */
 
+/* ==================== REGISTROS ====================
+   Histórico independente do planejamento */
+
+function gerarIdRegistro() {
+    return `registro_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function obterRegistros() {
+    return (Array.isArray(app.historico) ? app.historico : []).filter(registro =>
+        registro && registro.data && registro.tipo && registro.nome
+    );
+}
+
+function formatarDataRegistro(dataStr, opcoes = {}) {
+    if (!dataStr) return '';
+    return criarDataLocal(dataStr).toLocaleDateString('pt-BR', opcoes);
+}
+
+function rotuloTipoRegistro(tipo) {
+    return tipo === 'refeicao' ? 'Refeição' : tipo === 'receita' ? 'Receita' : 'Especial';
+}
+
+function classeTipoRegistro(tipo) {
+    return tipo === 'refeicao' ? 'registro-tipo-refeicao' : tipo === 'receita' ? 'registro-tipo-receita' : 'registro-tipo-especial';
+}
+
+function atualizarSelectsRegistro() {
+    const refeicao = document.getElementById('registro-refeicao');
+    const receita = document.getElementById('registro-receita');
+    if (refeicao) {
+        refeicao.innerHTML = app.refeicoes.length
+            ? app.refeicoes.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(item => `<option value="${escaparHtml(item.id)}">${escaparHtml(item.nome)}</option>`).join('')
+            : '<option value="">Nenhuma refeição cadastrada</option>';
+    }
+    if (receita) {
+        receita.innerHTML = app.receitas.length
+            ? app.receitas.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(item => `<option value="${escaparHtml(item.id)}">${escaparHtml(item.nome)}</option>`).join('')
+            : '<option value="">Nenhuma receita cadastrada</option>';
+    }
+}
+
+function atualizarCamposRegistro() {
+    const tipo = document.getElementById('registro-tipo')?.value || 'refeicao';
+    document.getElementById('campo-registro-refeicao')?.style.setProperty('display', tipo === 'refeicao' ? '' : 'none');
+    document.getElementById('campo-registro-receita')?.style.setProperty('display', tipo === 'receita' ? '' : 'none');
+    document.getElementById('campo-registro-especial')?.style.setProperty('display', tipo === 'especial' ? '' : 'none');
+}
+
+function abrirModalRegistro(id = '') {
+    const form = document.getElementById('form-registro');
+    if (!form) return;
+    atualizarSelectsRegistro();
+    form.reset();
+    document.getElementById('registro-id').value = id;
+    document.getElementById('registro-data').value = id
+        ? (app.historico.find(item => item.id === id)?.data || formatarDataChave(new Date()))
+        : formatarDataChave(new Date());
+    const registro = id ? app.historico.find(item => item.id === id) : null;
+    if (registro) {
+        document.getElementById('registro-tipo').value = registro.tipo;
+        if (registro.tipo === 'refeicao') document.getElementById('registro-refeicao').value = registro.itemId || '';
+        if (registro.tipo === 'receita') document.getElementById('registro-receita').value = registro.itemId || '';
+        document.getElementById('registro-especial').value = registro.tipo === 'especial' ? registro.nome : '';
+        document.getElementById('registro-observacao').value = registro.observacao || '';
+    }
+    document.getElementById('titulo-modal-registro').textContent = id ? 'Editar registro' : 'Adicionar registro';
+    atualizarCamposRegistro();
+    abrirModal('modal-registro');
+}
+
+function salvarRegistro(evento) {
+    evento.preventDefault();
+    const tipo = document.getElementById('registro-tipo').value;
+    const data = document.getElementById('registro-data').value;
+    let itemId = '';
+    let nome = '';
+    if (tipo === 'refeicao') {
+        itemId = document.getElementById('registro-refeicao').value;
+        nome = app.refeicoes.find(item => item.id === itemId)?.nome || '';
+    } else if (tipo === 'receita') {
+        itemId = document.getElementById('registro-receita').value;
+        nome = app.receitas.find(item => item.id === itemId)?.nome || '';
+    } else {
+        nome = document.getElementById('registro-especial').value.trim();
+    }
+    if (!data || !nome) {
+        alert(tipo === 'especial' ? 'Descreva o que aconteceu.' : 'Selecione um item para registrar.');
+        return;
+    }
+    const id = document.getElementById('registro-id').value || gerarIdRegistro();
+    const registro = {
+        id,
+        data,
+        tipo,
+        itemId,
+        nome,
+        observacao: document.getElementById('registro-observacao').value.trim(),
+        criadoEm: new Date().toISOString(),
+    };
+    const indice = app.historico.findIndex(item => item.id === id);
+    if (indice >= 0) app.historico[indice] = { ...app.historico[indice], ...registro };
+    else app.historico.push(registro);
+    removerExclusao('historico', chaveHistorico(registro));
+    salvarDados();
+    fecharModal('modal-registro');
+    app.registrosAno = criarDataLocal(data).getFullYear();
+    app.registrosMes = criarDataLocal(data).getMonth();
+    app.registrosModo = 'tabela';
+    renderizarRegistros();
+}
+
+function alternarModoRegistros(modo) {
+    app.registrosModo = modo;
+    app.registroItemAtual = null;
+    renderizarRegistros();
+}
+
+function mudarPeriodoRegistros(direcao) {
+    if (app.registrosModo === 'calendario') {
+        const data = new Date(app.registrosAno, app.registrosMes + direcao, 1);
+        app.registrosAno = data.getFullYear();
+        app.registrosMes = data.getMonth();
+    } else {
+        app.registrosAno += direcao;
+    }
+    renderizarRegistros();
+}
+
+function irParaPeriodoRegistros() {
+    const hoje = new Date();
+    app.registrosAno = hoje.getFullYear();
+    app.registrosMes = hoje.getMonth();
+    renderizarRegistros();
+}
+
+function abrirDetalhesRegistroItem(tipo, itemId, nome) {
+    app.registroItemAtual = { tipo, itemId, nome };
+    renderizarRegistros();
+}
+
+function fecharDetalhesRegistroItem() {
+    app.registroItemAtual = null;
+    renderizarRegistros();
+}
+
+function editarRegistro(id) {
+    abrirModalRegistro(id);
+}
+
+function excluirRegistro(id) {
+    const registro = app.historico.find(item => item.id === id);
+    if (!registro || !confirm(`Excluir o registro "${registro.nome}"?`)) return;
+    registrarExclusao('historico', chaveHistorico(registro));
+    app.historico = app.historico.filter(item => item.id !== id);
+    salvarDados();
+    renderizarRegistros();
+}
+
+function renderizarRegistros() {
+    const container = document.getElementById('registros-conteudo');
+    if (!container) return;
+    atualizarSelectsRegistro();
+    document.querySelectorAll('[data-modo-registros]').forEach(botao => botao.classList.toggle('ativo', botao.dataset.modoRegistros === app.registrosModo));
+    const titulo = document.getElementById('titulo-periodo-registros');
+    if (titulo) titulo.textContent = app.registroItemAtual
+        ? app.registroItemAtual.nome
+        : app.registrosModo === 'calendario'
+            ? new Date(app.registrosAno, app.registrosMes, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+            : String(app.registrosAno);
+    if (app.registroItemAtual) {
+        renderizarDetalhesRegistroItem(container);
+    } else if (app.registrosModo === 'calendario') {
+        renderizarCalendarioRegistros(container);
+    } else {
+        renderizarTabelaRegistros(container);
+    }
+}
+
+function criarAcoesRegistro(registro) {
+    return `<div class="acoes-registro"><button type="button" onclick="editarRegistro('${escaparAtributoJs(registro.id)}')">Editar</button><button type="button" onclick="excluirRegistro('${escaparAtributoJs(registro.id)}')">Excluir</button></div>`;
+}
+
+function renderizarTabelaRegistros(container) {
+    const registros = obterRegistros().sort((a, b) => b.data.localeCompare(a.data) || String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')));
+    if (!registros.length) {
+        container.innerHTML = '<div class="sem-resultados registros-vazio">Nenhum registro ainda. Adicione o primeiro acontecimento.</div>';
+        return;
+    }
+    container.innerHTML = `<div class="registros-tabela-wrapper"><table class="registros-tabela"><thead><tr><th>Item</th><th>Tipo</th><th>Data</th><th>Ações</th></tr></thead><tbody>${registros.map(registro => `<tr><td><button type="button" class="registro-item-link" onclick="abrirDetalhesRegistroItem('${escaparAtributoJs(registro.tipo)}','${escaparAtributoJs(registro.itemId || '')}','${escaparAtributoJs(registro.nome)}')">${escaparHtml(registro.nome)}</button>${registro.observacao ? `<small>${escaparHtml(registro.observacao)}</small>` : ''}</td><td><span class="badge-tipo-registro ${classeTipoRegistro(registro.tipo)}">${rotuloTipoRegistro(registro.tipo)}</span></td><td>${formatarDataRegistro(registro.data)}</td><td>${criarAcoesRegistro(registro)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderizarCalendarioRegistros(container) {
+    const inicio = new Date(app.registrosAno, app.registrosMes, 1);
+    const primeiro = new Date(inicio);
+    primeiro.setDate(1 - obterIndiceSemanaSegunda(inicio));
+    const registros = obterRegistros();
+    const nomesDias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    let html = `<div class="registros-calendario"><div class="registros-calendario-cabecalho">${nomesDias.map(nome => `<span>${nome}</span>`).join('')}</div><div class="registros-calendario-grade">`;
+    for (let indice = 0; indice < 42; indice++) {
+        const data = new Date(primeiro);
+        data.setDate(primeiro.getDate() + indice);
+        const dataStr = formatarDataChave(data);
+        const doMes = data.getMonth() === app.registrosMes;
+        const doDia = registros.filter(item => item.data === dataStr);
+        html += `<div class="registro-dia-calendario ${doMes ? '' : 'fora-mes'} ${dataStr === formatarDataChave(new Date()) ? 'dia-hoje' : ''}"><span class="numero-dia">${data.getDate()}</span>${doDia.map(item => `<button type="button" class="evento-registro-calendario ${classeTipoRegistro(item.tipo)}" onclick="abrirDetalhesRegistroItem('${escaparAtributoJs(item.tipo)}','${escaparAtributoJs(item.itemId || '')}','${escaparAtributoJs(item.nome)}')"><strong>${escaparHtml(item.nome)}</strong><small>${rotuloTipoRegistro(item.tipo)}</small></button>`).join('')}</div>`;
+    }
+    html += '</div></div>';
+    container.innerHTML = html;
+}
+
+function renderizarDetalhesRegistroItem(container) {
+    const atual = app.registroItemAtual;
+    const ocorrencias = obterRegistros().filter(item => item.tipo === atual.tipo && (atual.tipo === 'especial' ? item.nome === atual.nome : item.itemId === atual.itemId)).sort((a, b) => b.data.localeCompare(a.data));
+    container.innerHTML = `<div class="registro-detalhe-item"><button type="button" class="btn-voltar-registros" onclick="fecharDetalhesRegistroItem()">&lsaquo; Voltar para registros</button><div class="registro-detalhe-cabecalho"><span class="badge-tipo-registro ${classeTipoRegistro(atual.tipo)}">${rotuloTipoRegistro(atual.tipo)}</span><h3>${escaparHtml(atual.nome)}</h3><p>${ocorrencias.length} ocorrência${ocorrencias.length === 1 ? '' : 's'}</p></div><div class="registro-ocorrencias">${ocorrencias.map(item => `<article><div><strong>${formatarDataRegistro(item.data, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><small>${formatarDataRegistro(item.data, { weekday: 'long' })}</small></div><div><span>${rotuloTipoRegistro(item.tipo)} registrado</span>${item.observacao ? `<p>${escaparHtml(item.observacao)}</p>` : ''}</div>${criarAcoesRegistro(item)}</article>`).join('')}</div></div>`;
+}
+
 function abrirModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
@@ -5907,6 +6137,17 @@ Object.assign(window, {
     renderizarAposAlterarTiposUso,
     moverItemConfiguravel,
     alterarCorConfiguravel,
+    abrirModalRegistro,
+    salvarRegistro,
+    atualizarCamposRegistro,
+    alternarModoRegistros,
+    mudarPeriodoRegistros,
+    irParaPeriodoRegistros,
+    abrirDetalhesRegistroItem,
+    fecharDetalhesRegistroItem,
+    editarRegistro,
+    excluirRegistro,
+    renderizarRegistros,
 });
 
 /* ==================== INICIAR ====================
