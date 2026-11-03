@@ -391,7 +391,15 @@ body {
     cursor: pointer;
 }
 
+.cabecalho-navegavel-semana {
+    cursor: pointer;
+}
+
 .cabecalho-navegavel-dia:hover {
+    filter: brightness(0.98);
+}
+
+.cabecalho-navegavel-semana:hover {
     filter: brightness(0.98);
 }
 

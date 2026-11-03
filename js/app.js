@@ -2362,6 +2362,7 @@ function buscarPlanejamentosPorSemana(semana, tipo) {
     return app.planejamentos.filter(p =>
         !planejamentoEhNotaDia(p) &&
         !planejamentoEhNotaSemana(p) &&
+        normalizarGrupoPlanejamento(p?.grupo) === 'simplificado' &&
         p.tipo === 'mensal' &&
         Number(p.semana) === Number(semana) &&
         p.refeicao === tipo
@@ -2391,7 +2392,7 @@ function abrirModalPlanejar(semana, dia, tipo, data = '') {
 function abrirModalPlanejarSemana(semana, tipo) {
     window.contextoPlanejar = {
         modo: 'mensal',
-        grupo: obterGrupoPlanejamentoAtivo(),
+        grupo: 'simplificado',
         semana,
         dia: '',
         data: '',
@@ -2888,7 +2889,7 @@ function renderizarMensal() {
             <tr>
                 <th>Semana</th>
                 ${semanas.map(semana => `
-                    <th class="${semana === semanaAtual ? 'coluna-hoje' : ''}">
+                    <th class="${semana === semanaAtual ? 'coluna-hoje ' : ''}cabecalho-navegavel-semana" onclick="abrirSemanaNaVisaoSemanal('${formatarDataChave(semana.inicio)}')" title="Abrir visão semanal">
                         ${semana.indice}
                         <br>
                         <span class="data-cabecalho">(${formatarIntervaloSemanaCurto(semana)})</span>
@@ -2969,6 +2970,14 @@ function mudarDataMensal(data) {
     app.mesAtual = dataSelecionada.getMonth();
     app.anoAtual = dataSelecionada.getFullYear();
     renderizarMensal();
+}
+
+function abrirSemanaNaVisaoSemanal(data) {
+    if (!data) return;
+    const dataSelecionada = criarDataLocal(data);
+    app.anoAtual = dataSelecionada.getFullYear();
+    app.semanaAtual = obterNumeroSemana(dataSelecionada);
+    mostrarVisao('semanal');
 }
 
 function irParaMesAtual() {
@@ -3138,7 +3147,7 @@ function abrirModalPlanejarData(data, tipo, grupo = '') {
     const semanaDia = obterSemanaDiaPorData(criarDataLocal(data));
     window.contextoPlanejar = {
         modo: 'calendario',
-        grupo: grupo ? normalizarGrupoPlanejamento(grupo) : obterGrupoPlanejamentoAtivo(),
+        grupo: grupo ? normalizarGrupoPlanejamento(grupo) : 'simplificado',
         data,
         semana: semanaDia.semana,
         dia: semanaDia.dia,
@@ -3254,7 +3263,7 @@ function criarDiaCalendario(data, exibirItensGerais = false) {
     }
 
     const dataStr = formatarDataChave(data);
-    if (app.tiposRefeicao.some(tipo => buscarPlanejamentosPorData(dataStr, tipo).length > 0)) {
+    if (app.tiposRefeicao.some(tipo => buscarPlanejamentosPorDataGrupo(dataStr, tipo, 'simplificado').length > 0)) {
         div.classList.add('com-refeicao');
     }
     if (buscarNotaPlanejamentoPorData(dataStr)) div.classList.add('com-nota');
@@ -3271,8 +3280,18 @@ function buscarPlanejamentosGeraisCalendarioData(dataStr) {
     if (!tipoGeral) return [];
 
     return app.planejamentos.filter(plano =>
+        normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado' &&
         plano.tipo === 'calendario' &&
         plano.data === dataStr &&
+        String(plano.refeicao || '').trim().toLowerCase() === tipoGeral.trim().toLowerCase()
+    );
+}
+
+function buscarPlanejamentosGeraisCalendarioSemana(semana, tipoGeral) {
+    return app.planejamentos.filter(plano =>
+        normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado' &&
+        plano.tipo === 'calendario' &&
+        Number(plano.semana) === Number(semana) &&
         String(plano.refeicao || '').trim().toLowerCase() === tipoGeral.trim().toLowerCase()
     );
 }
@@ -3288,7 +3307,7 @@ function adicionarItemDiaCalendario(dataStr) {
     const semanaDia = obterSemanaDiaPorData(data);
     window.contextoPlanejar = {
         modo: 'calendario',
-        grupo: '',
+        grupo: 'simplificado',
         semana: semanaDia.semana,
         dia: semanaDia.dia,
         data: dataStr,
@@ -3349,7 +3368,18 @@ function adicionarItemSemanaCalendario(semana) {
         alert('Cadastre o tipo de uso Geral antes de adicionar um item no calendario.');
         return;
     }
-    abrirModalPlanejarSemana(semana, tipo);
+    window.contextoPlanejar = {
+        modo: 'calendario',
+        grupo: 'simplificado',
+        semana,
+        dia: '',
+        data: '',
+        refeicao: tipo,
+        planejamentoId: null,
+    };
+
+    renderizarReceitasModalSelecao();
+    abrirModal('modal-selecionar-receita');
 }
 
 function renderizarFaixaSemanaCalendario(inicioSemana) {
@@ -3359,7 +3389,7 @@ function renderizarFaixaSemanaCalendario(inicioSemana) {
     const semana = obterNumeroSemana(inicioSemana);
     const nota = buscarNotaSemanaCalendario(inicioStr);
     const tipoGeral = obterTipoUsoGeral();
-    const planos = tipoGeral ? buscarPlanejamentosPorSemana(semana, tipoGeral) : [];
+    const planos = tipoGeral ? buscarPlanejamentosGeraisCalendarioSemana(semana, tipoGeral) : [];
     const itens = planos.length > 0
         ? renderizarListaPlanejamentos(planos, true)
         : '<span class="sem-itens-semana">Sem itens</span>';
@@ -3400,7 +3430,7 @@ function atualizarDetalhesData(data) {
     refeicoes.appendChild(blocoNotas);
 
     app.tiposRefeicao.forEach(tipo => {
-        const planos = buscarPlanejamentosPorData(dataStr, tipo);
+        const planos = buscarPlanejamentosPorDataGrupo(dataStr, tipo, 'simplificado');
 
         const div = document.createElement('div');
         div.className = 'item-refeicao-data';
