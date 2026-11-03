@@ -3306,7 +3306,7 @@ body {
     white-space: nowrap;
 }
 
-.cadastro-linha-titulo > span {
+.cadastro-linha-titulo > .cadastro-propriedade-vazia {
     color: var(--cor-secundaria);
     font-size: .78rem;
 }
@@ -3336,6 +3336,41 @@ body {
 }
 
 .cadastro-linha-tags > span {
+    opacity: .7;
+}
+
+.cadastro-linha .badge-categoria {
+    margin: 0;
+    padding: 3px 7px;
+    font-size: .72rem;
+}
+
+.cadastro-linha .badges-tipos,
+.cadastro-linha .badges-tags {
+    gap: 5px;
+    margin: 0;
+}
+
+.cadastro-linha .badge-tipo,
+.cadastro-linha .badge-tag {
+    padding: 3px 7px;
+    font-size: .7rem;
+}
+
+.cadastro-linha-tags {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.cadastro-contagem-itens {
+    flex: 0 0 auto;
+    color: var(--cor-texto-suave);
+}
+
+.cadastro-propriedade-vazia {
+    color: var(--cor-texto-suave);
+    font-size: .76rem;
     opacity: .7;
 }
 

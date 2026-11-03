@@ -3818,9 +3818,9 @@ function renderizarReceitas() {
         linha.className = 'cadastro-linha cadastro-linha-receita';
         linha.dataset.categoria = receita.categoria || '';
         linha.innerHTML = `
-            <div class="cadastro-linha-titulo"><h3>${escaparHtml(receita.nome)}</h3><span>${escaparHtml(receita.categoria || 'Sem categoria')}</span></div>
-            <div class="cadastro-linha-tipos">${obterTiposReceita(receita).length ? obterTiposReceita(receita).map(tipo => `<span>${escaparHtml(tipo)}</span>`).join('') : '<small>Sem tipo de refeição</small>'}</div>
-            <div class="cadastro-linha-tags">${obterTagsReceita(receita).length ? escaparHtml(obterTagsReceita(receita).join(' · ')) : '<span>Sem tags</span>'}</div>
+            <div class="cadastro-linha-titulo"><h3>${escaparHtml(receita.nome)}</h3>${renderizarBadgeCategoria(receita.categoria, 'receita') || '<span class="cadastro-propriedade-vazia">Sem categoria</span>'}</div>
+            <div class="cadastro-linha-tipos">${renderizarBadgesTipos(receita)}</div>
+            <div class="cadastro-linha-tags">${renderizarBadgesTags(receita) || '<span class="cadastro-propriedade-vazia">Sem tags</span>'}</div>
             <details class="cadastro-menu-acoes"><summary aria-label="Ações para ${escaparHtml(receita.nome)}">•••</summary><div><button type="button" onclick="editarReceita('${escaparAtributoJs(receita.id)}')">Editar</button><button type="button" class="acao-excluir" onclick="deletarReceita('${escaparAtributoJs(receita.id)}')">Excluir</button></div></details>
         `;
         container.appendChild(linha);
@@ -4209,9 +4209,9 @@ function renderizarRefeicoes() {
         linha.className = 'cadastro-linha cadastro-linha-refeicao card-refeicao';
         linha.dataset.categoria = refeicao.categoria || '';
         linha.innerHTML = `
-            <div class="cadastro-linha-titulo"><h3>${escaparHtml(refeicao.nome)}</h3><span>${escaparHtml(refeicao.categoria || 'Sem categoria')}</span></div>
-            <div class="cadastro-linha-tipos">${obterTiposReceita(refeicao).length ? obterTiposReceita(refeicao).map(tipo => `<span>${escaparHtml(tipo)}</span>`).join('') : '<small>Sem tipo de refeição</small>'}</div>
-            <div class="cadastro-linha-tags">${itens.length ? `${itens.length} ${itens.length === 1 ? 'item' : 'itens'}` : 'Sem itens'}${obterTagsReceita(refeicao).length ? ` · ${escaparHtml(obterTagsReceita(refeicao).join(' · '))}` : ''}</div>
+            <div class="cadastro-linha-titulo"><h3>${escaparHtml(refeicao.nome)}</h3>${renderizarBadgeCategoria(refeicao.categoria, 'refeicao') || '<span class="cadastro-propriedade-vazia">Sem categoria</span>'}</div>
+            <div class="cadastro-linha-tipos">${renderizarBadgesTipos(refeicao)}</div>
+            <div class="cadastro-linha-tags"><small class="cadastro-contagem-itens">${itens.length ? `${itens.length} ${itens.length === 1 ? 'item' : 'itens'}` : 'Sem itens'}</small>${renderizarBadgesTags(refeicao)}</div>
             <details class="cadastro-menu-acoes"><summary aria-label="Ações para ${escaparHtml(refeicao.nome)}">•••</summary><div><button type="button" onclick="abrirModalRefeicao('${escaparAtributoJs(refeicao.id)}')">Editar</button><button type="button" class="acao-excluir" onclick="deletarRefeicao('${escaparAtributoJs(refeicao.id)}')">Excluir</button></div></details>
         `;
         container.appendChild(linha);
@@ -4540,9 +4540,9 @@ function renderizarAlimentos() {
             linha.className = 'cadastro-linha cadastro-linha-alimento card-alimento';
             linha.dataset.categoria = alimento.categoria || '';
             linha.innerHTML = `
-                <div class="cadastro-linha-titulo"><h3>${escaparHtml(alimento.nome)}</h3><span>${escaparHtml(alimento.categoria || 'Sem categoria')}</span></div>
+                <div class="cadastro-linha-titulo"><h3>${escaparHtml(alimento.nome)}</h3>${renderizarBadgeCategoria(alimento.categoria, 'alimento') || '<span class="cadastro-propriedade-vazia">Sem categoria</span>'}</div>
                 <div class="cadastro-linha-tipos"><small>${alimento.unidadePadrao ? `Unidade padrão: ${escaparHtml(alimento.unidadePadrao)}` : 'Sem unidade padrão'}</small></div>
-                <div class="cadastro-linha-tags">${obterTagsReceita(alimento).length ? escaparHtml(obterTagsReceita(alimento).join(' · ')) : '<span>Sem tags</span>'}</div>
+                <div class="cadastro-linha-tags">${renderizarBadgesTags(alimento) || '<span class="cadastro-propriedade-vazia">Sem tags</span>'}</div>
                 <details class="cadastro-menu-acoes"><summary aria-label="Ações para ${escaparHtml(alimento.nome)}">•••</summary><div><button type="button" onclick="abrirModalAlimento('${escaparAtributoJs(alimento.id)}')">Editar</button><button type="button" class="acao-excluir" onclick="deletarAlimento('${escaparAtributoJs(alimento.id)}')">Excluir</button></div></details>
             `;
             container.appendChild(linha);
