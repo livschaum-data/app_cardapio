@@ -2270,6 +2270,7 @@ function renderizarListaPlanejamentos(planos, compacto = false) {
 function renderizarSemanal() {
     const tbody = document.getElementById('corpo-tabela-semanal');
     tbody.innerHTML = '';
+    document.querySelector('#visao-semanal .card-semana-diaria')?.remove();
     atualizarTituloSemana();
     atualizarCabecalhoSemanal();
     const hojeStr = formatarDataChave(new Date());
@@ -2314,6 +2315,12 @@ function renderizarSemanal() {
         return `<td>${renderizarCampoNotaPlanejamento(dataStr, true)}</td>`;
     }).join('');
     tbody.appendChild(trNotas);
+
+    const dataInicioSemana = obterDataSemanaDia(app.semanaAtual, 'segunda');
+    document.querySelector('#visao-semanal .tabela-container')?.insertAdjacentHTML(
+        'afterend',
+        renderizarResumoSemanaDiaria(dataInicioSemana)
+    );
 }
 
 function atualizarCabecalhoSemanal() {
@@ -2325,8 +2332,9 @@ function atualizarCabecalhoSemanal() {
     tabela.innerHTML = '<th>Refeicao</th>' + DIAS_SEMANA.map((dia, indice) => {
         const data = new Date(inicio);
         data.setDate(inicio.getDate() + indice);
-        const classeHoje = formatarDataChave(data) === hojeStr ? ' class="coluna-hoje"' : '';
-        return `<th${classeHoje}>${dia.nome}<br><span class="data-cabecalho">${data.getDate()}/${data.getMonth() + 1}</span></th>`;
+        const classeHoje = formatarDataChave(data) === hojeStr ? 'coluna-hoje ' : '';
+        const dataStr = formatarDataChave(data);
+        return `<th class="${classeHoje}cabecalho-navegavel-dia" onclick="abrirDiaNaVisaoDiaria('${dataStr}')" title="Abrir visão diária">${dia.nome}<br><span class="data-cabecalho">${data.getDate()}/${data.getMonth() + 1}</span></th>`;
     }).join('');
 }
 
@@ -3118,6 +3126,12 @@ function mudarDataDiaria(data) {
 function irParaDiaAtual() {
     dataDiaria = new Date();
     renderizarDiaria();
+}
+
+function abrirDiaNaVisaoDiaria(data) {
+    if (!data) return;
+    dataDiaria = criarDataLocal(data);
+    mostrarVisao('diaria');
 }
 
 function abrirModalPlanejarData(data, tipo, grupo = '') {

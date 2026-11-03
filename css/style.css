@@ -387,6 +387,14 @@ body {
     margin-top: 4px;
 }
 
+.cabecalho-navegavel-dia {
+    cursor: pointer;
+}
+
+.cabecalho-navegavel-dia:hover {
+    filter: brightness(0.98);
+}
+
 .tabela-semanal tbody tr:nth-child(odd) {
     background: rgba(139, 69, 19, 0.02);
 }
