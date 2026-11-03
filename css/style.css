@@ -3257,6 +3257,178 @@ body {
     .livro-linha-abrir { grid-column: 2; grid-row: 1 / span 2; }
 }
 
+/* Cadastros: linhas detalhadas compactas */
+#lista-receitas,
+#lista-refeicoes,
+#lista-alimentos {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: visible;
+    border: 1px solid var(--cor-borda);
+    border-radius: 10px;
+    background: var(--cor-card, #fff);
+}
+
+.cadastro-linha {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(210px, 1.25fr) minmax(240px, 1.6fr) minmax(130px, .8fr) 34px;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 72px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--cor-borda);
+    background: transparent;
+}
+
+.cadastro-linha:last-child {
+    border-bottom: 0;
+}
+
+.cadastro-linha:hover {
+    background: color-mix(in srgb, var(--cor-secundaria) 5%, transparent);
+}
+
+.cadastro-linha-titulo {
+    min-width: 0;
+}
+
+.cadastro-linha-titulo h3 {
+    margin: 0 0 4px;
+    overflow: hidden;
+    color: var(--cor-texto);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cadastro-linha-titulo > span {
+    color: var(--cor-secundaria);
+    font-size: .78rem;
+}
+
+.cadastro-linha-tipos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-width: 0;
+}
+
+.cadastro-linha-tipos > span {
+    padding: 4px 7px;
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--cor-secundaria) 10%, transparent);
+    color: var(--cor-texto);
+    font-size: .73rem;
+}
+
+.cadastro-linha-tipos small,
+.cadastro-linha-tags {
+    overflow: hidden;
+    color: var(--cor-texto-suave);
+    font-size: .78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cadastro-linha-tags > span {
+    opacity: .7;
+}
+
+.cadastro-menu-acoes {
+    position: relative;
+    justify-self: end;
+}
+
+.cadastro-menu-acoes summary {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    color: var(--cor-texto-suave);
+    cursor: pointer;
+    font-weight: 700;
+    letter-spacing: 1px;
+    list-style: none;
+}
+
+.cadastro-menu-acoes summary::-webkit-details-marker {
+    display: none;
+}
+
+.cadastro-menu-acoes summary:hover,
+.cadastro-menu-acoes[open] summary {
+    background: color-mix(in srgb, var(--cor-secundaria) 10%, transparent);
+    color: var(--cor-secundaria);
+}
+
+.cadastro-menu-acoes > div {
+    position: absolute;
+    z-index: 30;
+    top: 36px;
+    right: 0;
+    display: grid;
+    min-width: 120px;
+    overflow: hidden;
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+    background: var(--cor-card, #fff);
+    box-shadow: 0 8px 24px rgba(44, 38, 30, .14);
+}
+
+.cadastro-menu-acoes > div button {
+    border: 0;
+    border-bottom: 1px solid var(--cor-borda);
+    background: transparent;
+    color: var(--cor-texto);
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cadastro-menu-acoes > div button:last-child {
+    border-bottom: 0;
+}
+
+.cadastro-menu-acoes > div button:hover {
+    background: color-mix(in srgb, var(--cor-secundaria) 8%, transparent);
+}
+
+.cadastro-menu-acoes > div .acao-excluir {
+    color: #b63c48;
+}
+
+@media (max-width: 760px) {
+    .cadastro-linha {
+        grid-template-columns: minmax(0, 1fr) 34px;
+        gap: 5px 12px;
+        min-height: 0;
+        padding: 12px 14px;
+    }
+
+    .cadastro-linha-titulo,
+    .cadastro-linha-tipos,
+    .cadastro-linha-tags {
+        grid-column: 1;
+    }
+
+    .cadastro-menu-acoes {
+        grid-column: 2;
+        grid-row: 1 / span 3;
+        align-self: start;
+    }
+
+    .cadastro-linha-titulo h3,
+    .cadastro-linha-tags {
+        white-space: normal;
+    }
+}
+
 /* Livro de receitas: lista simples e compacta */
 #visao-livro .livro-controles {
     display: flex;

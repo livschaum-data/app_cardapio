@@ -3814,28 +3814,16 @@ function renderizarReceitas() {
     }
 
     app.receitas.forEach(receita => {
-        const card = document.createElement('div');
-        card.className = 'card-receita';
-        card.innerHTML = `
-            <div class="card-receita-header">
-                <div>
-                    <h3>${receita.nome}</h3>
-                    ${renderizarBadgesTipos(receita)}
-                </div>
-            </div>
-            <div class="card-receita-content">
-                ${renderizarBadgeCategoria(receita.categoria, 'receita')}
-                ${renderizarBadgesTags(receita)}
-                ${obterIngredientesReceita(receita).length > 0 ? `
-                    <p><strong>Ingredientes:</strong><br>${obterIngredientesReceita(receita).slice(0, 3).map(escaparHtml).join('<br>')}</p>
-                ` : ''}
-                <div class="card-receita-actions">
-                    <button class="btn-editar" onclick="editarReceita('${receita.id}')">Editar</button>
-                    <button class="btn-deletar" onclick="deletarReceita('${receita.id}')">Deletar</button>
-                </div>
-            </div>
+        const linha = document.createElement('div');
+        linha.className = 'cadastro-linha cadastro-linha-receita';
+        linha.dataset.categoria = receita.categoria || '';
+        linha.innerHTML = `
+            <div class="cadastro-linha-titulo"><h3>${escaparHtml(receita.nome)}</h3><span>${escaparHtml(receita.categoria || 'Sem categoria')}</span></div>
+            <div class="cadastro-linha-tipos">${obterTiposReceita(receita).length ? obterTiposReceita(receita).map(tipo => `<span>${escaparHtml(tipo)}</span>`).join('') : '<small>Sem tipo de refeição</small>'}</div>
+            <div class="cadastro-linha-tags">${obterTagsReceita(receita).length ? escaparHtml(obterTagsReceita(receita).join(' · ')) : '<span>Sem tags</span>'}</div>
+            <details class="cadastro-menu-acoes"><summary aria-label="Ações para ${escaparHtml(receita.nome)}">•••</summary><div><button type="button" onclick="editarReceita('${escaparAtributoJs(receita.id)}')">Editar</button><button type="button" class="acao-excluir" onclick="deletarReceita('${escaparAtributoJs(receita.id)}')">Excluir</button></div></details>
         `;
-        container.appendChild(card);
+        container.appendChild(linha);
     });
 }
 
@@ -3883,13 +3871,13 @@ function filtrarReceitas() {
     const termo = document.getElementById('busca-receitas').value.toLowerCase();
     const categoria = document.getElementById('filtro-categoria').value;
 
-    const cards = document.querySelectorAll('.card-receita');
+    const cards = document.querySelectorAll('#lista-receitas .cadastro-linha-receita');
     cards.forEach(card => {
         const nome = card.querySelector('h3').textContent.toLowerCase();
         const temCategoria = !categoria || card.textContent.includes(categoria);
         const temTermo = nome.includes(termo);
 
-        card.style.display = temTermo && temCategoria ? 'block' : 'none';
+        card.style.display = temTermo && temCategoria ? '' : 'none';
     });
 }
 
@@ -4217,28 +4205,16 @@ function renderizarRefeicoes() {
 
     app.refeicoes.forEach(refeicao => {
         const itens = Array.isArray(refeicao.itens) ? refeicao.itens.map(formatarItemRefeicao).filter(Boolean) : [];
-        const card = document.createElement('div');
-        card.className = 'card-receita card-refeicao';
-        card.dataset.categoria = refeicao.categoria || '';
-        card.innerHTML = `
-            <div class="card-receita-header header-refeicao">
-                <div>
-                    <h3>${refeicao.nome}</h3>
-                    ${renderizarBadgesTipos(refeicao)}
-                </div>
-            </div>
-            <div class="card-receita-content">
-                ${renderizarBadgeCategoria(refeicao.categoria, 'refeicao')}
-                ${renderizarBadgesTags(refeicao)}
-                ${itens.length > 0 ? `<p><strong>Itens:</strong><br>${itens.slice(0, 4).join('<br>')}</p>` : ''}
-                ${refeicao.observacoes ? `<p>${escaparHtml(refeicao.observacoes)}</p>` : ''}
-                <div class="card-receita-actions">
-                    <button class="btn-editar" onclick="abrirModalRefeicao('${refeicao.id}')">Editar</button>
-                    <button class="btn-deletar" onclick="deletarRefeicao('${refeicao.id}')">Deletar</button>
-                </div>
-            </div>
+        const linha = document.createElement('div');
+        linha.className = 'cadastro-linha cadastro-linha-refeicao card-refeicao';
+        linha.dataset.categoria = refeicao.categoria || '';
+        linha.innerHTML = `
+            <div class="cadastro-linha-titulo"><h3>${escaparHtml(refeicao.nome)}</h3><span>${escaparHtml(refeicao.categoria || 'Sem categoria')}</span></div>
+            <div class="cadastro-linha-tipos">${obterTiposReceita(refeicao).length ? obterTiposReceita(refeicao).map(tipo => `<span>${escaparHtml(tipo)}</span>`).join('') : '<small>Sem tipo de refeição</small>'}</div>
+            <div class="cadastro-linha-tags">${itens.length ? `${itens.length} ${itens.length === 1 ? 'item' : 'itens'}` : 'Sem itens'}${obterTagsReceita(refeicao).length ? ` · ${escaparHtml(obterTagsReceita(refeicao).join(' · '))}` : ''}</div>
+            <details class="cadastro-menu-acoes"><summary aria-label="Ações para ${escaparHtml(refeicao.nome)}">•••</summary><div><button type="button" onclick="abrirModalRefeicao('${escaparAtributoJs(refeicao.id)}')">Editar</button><button type="button" class="acao-excluir" onclick="deletarRefeicao('${escaparAtributoJs(refeicao.id)}')">Excluir</button></div></details>
         `;
-        container.appendChild(card);
+        container.appendChild(linha);
     });
 
     filtrarRefeicoes();
@@ -4253,7 +4229,7 @@ function filtrarRefeicoes() {
     document.querySelectorAll('#lista-refeicoes .card-refeicao').forEach(card => {
         const passaBusca = card.textContent.toLowerCase().includes(termo);
         const passaCategoria = !categoria || card.dataset.categoria === categoria;
-        card.style.display = passaBusca && passaCategoria ? 'block' : 'none';
+        card.style.display = passaBusca && passaCategoria ? '' : 'none';
     });
 }
 
@@ -4560,26 +4536,16 @@ function renderizarAlimentos() {
         .slice()
         .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
         .forEach(alimento => {
-            const card = document.createElement('div');
-            card.className = 'card-receita card-alimento';
-            card.dataset.categoria = alimento.categoria || '';
-            card.innerHTML = `
-                <div class="card-receita-header header-alimento">
-                    <div>
-                        <h3>${alimento.nome}</h3>
-                    </div>
-                </div>
-                <div class="card-receita-content">
-                    ${renderizarBadgeCategoria(alimento.categoria, 'alimento')}
-                    ${renderizarBadgesTags(alimento)}
-                    ${alimento.unidadePadrao ? `<p>Unidade padrao: ${alimento.unidadePadrao}</p>` : ''}
-                    <div class="card-receita-actions">
-                        <button class="btn-editar" onclick="abrirModalAlimento('${alimento.id}')">Editar</button>
-                        <button class="btn-deletar" onclick="deletarAlimento('${alimento.id}')">Deletar</button>
-                    </div>
-                </div>
+            const linha = document.createElement('div');
+            linha.className = 'cadastro-linha cadastro-linha-alimento card-alimento';
+            linha.dataset.categoria = alimento.categoria || '';
+            linha.innerHTML = `
+                <div class="cadastro-linha-titulo"><h3>${escaparHtml(alimento.nome)}</h3><span>${escaparHtml(alimento.categoria || 'Sem categoria')}</span></div>
+                <div class="cadastro-linha-tipos"><small>${alimento.unidadePadrao ? `Unidade padrão: ${escaparHtml(alimento.unidadePadrao)}` : 'Sem unidade padrão'}</small></div>
+                <div class="cadastro-linha-tags">${obterTagsReceita(alimento).length ? escaparHtml(obterTagsReceita(alimento).join(' · ')) : '<span>Sem tags</span>'}</div>
+                <details class="cadastro-menu-acoes"><summary aria-label="Ações para ${escaparHtml(alimento.nome)}">•••</summary><div><button type="button" onclick="abrirModalAlimento('${escaparAtributoJs(alimento.id)}')">Editar</button><button type="button" class="acao-excluir" onclick="deletarAlimento('${escaparAtributoJs(alimento.id)}')">Excluir</button></div></details>
             `;
-            container.appendChild(card);
+            container.appendChild(linha);
         });
 
     filtrarAlimentos();
@@ -4594,7 +4560,7 @@ function filtrarAlimentos() {
     document.querySelectorAll('#lista-alimentos .card-alimento').forEach(card => {
         const passaBusca = card.textContent.toLowerCase().includes(termo);
         const passaCategoria = !categoria || card.dataset.categoria === categoria;
-        card.style.display = passaBusca && passaCategoria ? 'block' : 'none';
+        card.style.display = passaBusca && passaCategoria ? '' : 'none';
     });
 }
 
