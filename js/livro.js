@@ -81,8 +81,8 @@ function renderizarLivro() {
     receitas.forEach(receita => {
         const botao = document.createElement('button');
         botao.type = 'button';
-        botao.className = 'livro-cartao';
-        botao.innerHTML = `<span class="livro-cartao-categoria">${escaparHtml(receita.categoria || 'Receita')}</span><h3>${escaparHtml(receita.nome)}</h3><p>${escaparHtml(obterTiposReceita(receita).join(' · '))}</p><p>${escaparHtml(textoLivro(receita.tags))}</p><span class="livro-cartao-abrir">Ver receita →</span>`;
+        botao.className = 'livro-linha';
+        botao.innerHTML = `<span class="livro-linha-nome">${escaparHtml(receita.nome)}</span><span class="livro-linha-categoria">${escaparHtml(receita.categoria || 'Receita')}</span><span class="livro-linha-tipos">${escaparHtml(obterTiposReceita(receita).join(' · '))}</span><span class="livro-linha-abrir" aria-hidden="true">›</span>`;
         botao.addEventListener('click', () => abrirFichaLivro(receita.id));
         container.appendChild(botao);
     });

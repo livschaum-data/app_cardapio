@@ -19,7 +19,7 @@
             <div class="status-nuvem" id="status-nuvem">
                 <button type="button" id="btn-conectar-nuvem" class="btn-nuvem-toggle" onclick="alternarPainelNuvem()" aria-expanded="false" aria-controls="painel-nuvem">
                     <span class="status-indicador status-offline" id="status-nuvem-indicador"></span>
-                    <span id="status-nuvem-texto">Nuvem desconectada</span>
+                    <span id="status-nuvem-texto">Salvo neste aparelho</span>
                 </button>
             </div>
             <nav class="abas" aria-label="Navegacao principal">
@@ -209,14 +209,14 @@
 
         <div id="visao-livro" class="visao" style="display:none;">
             <div class="visao-header"><div><span>Coleção</span><h2>Livro de receitas</h2></div></div>
-            <p class="texto-ajuda">As mesmas receitas do planejamento, reunidas em fichas para consulta.</p>
+            <p class="texto-ajuda">Receitas cadastradas, organizadas para consulta rápida.</p>
             <div class="controles livro-controles">
-                <label>Buscar<input id="livro-busca" type="search" placeholder="Buscar em todas as propriedades" oninput="renderizarLivro()"></label>
-                <label>Filtrar por<select id="livro-propriedade" onchange="atualizarFiltroLivro()"></select></label>
-                <label>Valor<select id="livro-valor" onchange="renderizarLivro()"></select></label>
-                <label>Ordenar por<select id="livro-ordem" onchange="renderizarLivro()"></select></label>
-                <label>Direção<select id="livro-direcao" onchange="renderizarLivro()"><option value="asc">Crescente</option><option value="desc">Decrescente</option></select></label>
-                <button type="button" onclick="limparFiltrosLivro()">Limpar filtros</button>
+                <label>Buscar<input id="livro-busca" type="search" placeholder="Buscar receita" oninput="renderizarLivro()"></label>
+                <div class="livro-controles-acoes"><button type="button" onclick="limparFiltrosLivro()">Limpar busca</button></div>
+                <select id="livro-propriedade" aria-hidden="true" tabindex="-1"></select>
+                <select id="livro-valor" aria-hidden="true" tabindex="-1"></select>
+                <select id="livro-ordem" aria-hidden="true" tabindex="-1"></select>
+                <select id="livro-direcao" aria-hidden="true" tabindex="-1"><option value="asc">Crescente</option><option value="desc">Decrescente</option></select>
             </div>
             <p id="livro-contagem" class="texto-ajuda" aria-live="polite"></p>
             <div id="livro-lista" class="livro-lista"></div>
@@ -680,6 +680,6 @@
     <script src="js/supabase-config.js?v=20260803-supabase-url"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/app.js?v=20261103-registros"></script>
-    <script src="js/livro.js?v=20261021-editar"></script>
+    <script src="js/livro.js?v=20261103-lista-simples"></script>
 </body>
 </html>

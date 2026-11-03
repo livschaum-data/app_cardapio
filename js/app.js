@@ -85,6 +85,8 @@ const app = {
 async function inicializar() {
     console.log('Inicializando app de cardapio...');
 
+    // Os formularios devem funcionar mesmo se a nuvem estiver lenta ou indisponivel.
+    configurarEventosFormularios();
     configurarEventosNuvem();
     aplicarEstadoSidebar();
     configurarFechamentoSidebarMobile();
@@ -93,7 +95,6 @@ async function inicializar() {
     // Carregar dados locais primeiro; a nuvem entra depois se houver conta conectada.
     configurarSupabase();
     await carregarDados();
-    await inicializarSessaoNuvem();
 
     // Preencher selects com tipos de refeicao
     atualizarSelectTipos();
@@ -115,22 +116,6 @@ async function inicializar() {
     atualizarControlePlanejamentoAtivo();
     mostrarVisao('diaria');
 
-    // Configurar evento de envio de formulario
-    const formReceita = document.getElementById('form-receita');
-    if (formReceita) {
-        formReceita.addEventListener('submit', salvarReceita);
-    }
-
-    const formRegistro = document.getElementById('form-registro');
-    if (formRegistro) {
-        formRegistro.addEventListener('submit', salvarRegistro);
-    }
-
-    const formRefeicao = document.getElementById('form-refeicao');
-    if (formRefeicao) {
-        formRefeicao.addEventListener('submit', salvarRefeicao);
-    }
-
     const btnCategorias = document.getElementById('btn-categorias');
     if (btnCategorias) {
         btnCategorias.addEventListener('click', abrirCategorias);
@@ -141,7 +126,22 @@ async function inicializar() {
         btnTags.addEventListener('click', abrirTags);
     }
 
+    // A interface local ja esta pronta; a sincronizacao nao bloqueia o uso do app.
+    await inicializarSessaoNuvem();
     console.log('App inicializada!');
+}
+
+function configurarEventosFormularios() {
+    [
+        ['form-receita', salvarReceita],
+        ['form-registro', salvarRegistro],
+        ['form-refeicao', salvarRefeicao],
+    ].forEach(([id, acao]) => {
+        const formulario = document.getElementById(id);
+        if (!formulario || formulario.dataset.eventoConfigurado === 'true') return;
+        formulario.addEventListener('submit', acao);
+        formulario.dataset.eventoConfigurado = 'true';
+    });
 }
 
 /* ==================== ARMAZENAMENTO ====================
@@ -217,7 +217,7 @@ function configurarSupabase() {
     }
 
     app.supabase = window.supabase.createClient(supabaseUrl, config.anonKey);
-    atualizarStatusNuvem('offline', 'Entre na conta para sincronizar');
+    atualizarStatusNuvem('offline', 'Salvo neste aparelho');
     console.log('Supabase configurado.');
     return true;
 }
@@ -302,7 +302,7 @@ async function inicializarSessaoNuvem() {
     atualizarUINuvem(app.usuarioSupabase);
 
     if (!app.usuarioSupabase) {
-        atualizarStatusNuvem('offline', 'Entre na conta para sincronizar');
+        atualizarStatusNuvem('offline', 'Salvo neste aparelho');
         return false;
     }
 
@@ -462,7 +462,8 @@ async function baixarDadosSupabase({ silencioso = false } = {}) {
         if (!silencioso) atualizarStatusNuvem('online', 'Nuvem iniciada com os dados locais');
         return true;
     } catch (error) {
-        atualizarStatusNuvem('erro', 'Erro ao baixar da nuvem');
+        app.salvandoRemoto = false;
+        atualizarStatusNuvem('erro', 'Dados locais disponiveis; nuvem indisponivel');
         console.error('Erro ao baixar do Supabase:', error);
         return false;
     }
@@ -1718,8 +1719,7 @@ async function salvarDadosSupabase() {
     app.salvandoRemoto = false;
 
     if (error) {
-        app.supabaseOnline = false;
-        atualizarStatusNuvem('erro', 'Erro ao salvar na nuvem');
+        atualizarStatusNuvem('erro', 'Salvo neste aparelho; nuvem indisponivel');
         console.error('Erro ao salvar no Supabase:', error);
         return;
     }
@@ -1748,8 +1748,8 @@ function salvarDados() {
     }
 
     salvarDadosSupabase().catch(error => {
-        app.supabaseOnline = false;
-        atualizarStatusNuvem('erro', 'Erro ao salvar na nuvem');
+        app.salvandoRemoto = false;
+        atualizarStatusNuvem('erro', 'Salvo neste aparelho; nuvem indisponivel');
         console.error('Erro inesperado ao salvar no Supabase:', error);
     });
     console.log('Dados salvos localmente.');
@@ -3758,9 +3758,14 @@ function salvarReceita(e) {
     const id = document.getElementById('form-receita').dataset.receitaId || 'receita_' + Date.now();
     const existente = app.receitas.find(item => item.id === id);
     const agora = new Date().toISOString();
+    const nome = document.getElementById('nome-receita').value.trim();
+    if (!nome) {
+        document.getElementById('nome-receita').focus();
+        return;
+    }
     const receita = {
         id: id,
-        nome: document.getElementById('nome-receita').value,
+        nome,
         tipo: tiposSelecionados[0] || '',
         tipos: tiposSelecionados,
         categoria: document.getElementById('categoria-receita').value,
@@ -3795,6 +3800,7 @@ function salvarReceita(e) {
     renderizarTudoAposSync();
 
     console.log('Receita salva:', receita);
+    mostrarAvisoTemporario(existente ? 'Receita atualizada.' : 'Receita cadastrada com sucesso.');
     reabrirSelecaoPlanejamentoAposCadastro();
 }
 
@@ -6039,6 +6045,23 @@ function fecharModal(id) {
     if (modal) {
         modal.style.display = 'none';
     }
+}
+
+function mostrarAvisoTemporario(mensagem) {
+    let aviso = document.getElementById('aviso-app');
+    if (!aviso) {
+        aviso = document.createElement('div');
+        aviso.id = 'aviso-app';
+        aviso.className = 'aviso-app';
+        aviso.setAttribute('role', 'status');
+        aviso.setAttribute('aria-live', 'polite');
+        document.body.appendChild(aviso);
+    }
+
+    aviso.textContent = mensagem;
+    aviso.classList.add('visivel');
+    clearTimeout(mostrarAvisoTemporario.timeoutId);
+    mostrarAvisoTemporario.timeoutId = setTimeout(() => aviso.classList.remove('visivel'), 2800);
 }
 
 // Fechar modal clicando fora
