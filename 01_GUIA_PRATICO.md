@@ -68,7 +68,6 @@ Planejamento Semanal:
 
 Histórico:
 ☐ Clique "📊 Histórico"
-☐ Clique "✓ Consumida" em uma refeição
 ☐ Deve aparecer nas estatísticas
 
 Todos os testes passaram?
@@ -186,8 +185,6 @@ SEMANA 1
    - Última vez que comeu
    - Dias desde o último uso
 
-3. **Marcando como consumida:**
-   - Em "📊 Diária", clique "✓ Consumida"
    - Registro é adicionado automaticamente
    - Estatísticas atualizam
 

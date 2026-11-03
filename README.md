@@ -1,6 +1,6 @@
 # 🍽️ Planejador de Cardápio Inteligente
 
-Um aplicativo web completo para **planejar refeições, gerenciar receitas e acompanhar histórico de consumo** - 100% offline e sem dependências externas.
+Um aplicativo web completo para **planejar refeições e gerenciar receitas** - 100% offline e sem dependências externas.
 
 ---
 
@@ -52,13 +52,7 @@ Pronto! 🚀
 - Selecionar datas específicas
 - Atribuir receitas a datas
 
-#### **4. Histórico e Estatísticas**
-- Marcar refeição como "consumida"
-- Contar quantas vezes foi usada
-- Ver última data de uso
-- Tempo desde último uso
-
-#### **5. Visualizações**
+#### **4. Visualizações**
 - 📅 **Semanal** - Tabela com dias da semana
 - 📆 **Mensal** - Múltiplas semanas
 - 📊 **Diária** - Refeições do dia
@@ -106,11 +100,6 @@ Pronto! 🚀
 2. Escolha uma data
 3. Selecione receita
 4. Confirme
-
-### **Histórico**
-1. Veja receitas planejadas
-2. Marque como "consumida"
-3. Veja estatísticas
 
 ---
 
@@ -168,19 +157,6 @@ cardapio/
   refeicao: "Almoço"
 }
 ```
-
-### Histórico:
-```javascript
-{
-  id: "hist_001",
-  receitaId: "receita_001",
-  dataCriacao: "2024-01-01",
-  dataUltimo: "2024-01-15",
-  timesUsed: 5
-}
-```
-
----
 
 ## 🎯 Próximos Passos
 

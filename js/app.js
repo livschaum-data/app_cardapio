@@ -2212,28 +2212,6 @@ function buscarItemPlanejamento(plano) {
     return { tipo: itemTipo, item: buscarItemPorTipo(itemTipo, itemId) };
 }
 
-function planejamentoPermiteCheck(plano) {
-    return normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado';
-}
-
-function renderizarCheckPlanejamento() {
-    return '';
-}
-
-function alternarPlanoSeguido(id, seguido) {
-    const plano = app.planejamentos.find(item => item.id === id);
-    if (!plano || !planejamentoPermiteCheck(plano)) return;
-
-    plano.seguido = Boolean(seguido);
-    plano.dataAtualizacao = new Date().toISOString();
-    salvarDados();
-    renderizarSemanal();
-    renderizarMensal();
-    renderizarDiaria();
-    renderizarCalendario();
-    renderizarContagemAlimentos();
-}
-
 function renderizarResumoReceitaPlano(plano, compacto = false) {
     const { tipo, item } = buscarItemPlanejamento(plano);
 
@@ -2242,7 +2220,6 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
             <div class="celula-refeicao receita-removida">
                 <div class="conteudo-planejamento">
                     <div class="nome-refeicao">Item removido</div>
-                    ${renderizarCheckPlanejamento(plano)}
                 </div>
                 <button type="button" class="btn-menu-planejamento" aria-label="Acoes do item" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
                 <div class="acoes-planejamento-mini">
@@ -2263,7 +2240,6 @@ function renderizarResumoReceitaPlano(plano, compacto = false) {
         <div class="celula-refeicao ${tipo === 'alimento' ? 'celula-alimento' : tipo === 'refeicao' ? 'celula-refeicao-composta' : 'celula-receita'}" style="--categoria-cor:${gerarCorCategoria(item.categoria || tipo, tipo)};">
             <div class="conteudo-planejamento">
                 <div class="nome-refeicao">${escaparHtml(item.nome)}</div>
-                ${renderizarCheckPlanejamento(plano)}
             </div>
             <button type="button" class="btn-menu-planejamento" aria-label="Acoes de ${escaparHtml(item.nome)}" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
             <div class="acoes-planejamento-mini">
@@ -3007,7 +2983,6 @@ function renderizarItemPlanejamentoDiario(plano) {
             <div class="item-planejamento-diario">
                 <div class="conteudo-planejamento">
                     <p><strong>Item removido</strong></p>
-                    ${renderizarCheckPlanejamento(plano)}
                 </div>
                 <button type="button" class="btn-menu-planejamento" aria-label="Acoes do item" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
                 <div class="acoes-planejamento">
@@ -3022,12 +2997,10 @@ function renderizarItemPlanejamentoDiario(plano) {
         <div class="item-planejamento-diario" style="--categoria-cor:${gerarCorCategoria(item.categoria || tipoItem, tipoItem)};">
             <div class="conteudo-planejamento">
                 <p><strong>${escaparHtml(item.nome)}</strong></p>
-                ${renderizarCheckPlanejamento(plano)}
             </div>
             <button type="button" class="btn-menu-planejamento" aria-label="Acoes de ${escaparHtml(item.nome)}" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
             <div class="acoes-planejamento">
                 <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
-                ${tipoItem === 'receita' ? `<button onclick="marcarComoConsumida('${item.id}')">Consumida</button>` : ''}
                 <button onclick="removerPlanejamento('${plano.id}')" class="btn-acao-remover">Remover</button>
             </div>
         </div>
@@ -3427,7 +3400,6 @@ function atualizarDetalhesData(data) {
                         return `
                             <div class="linha-planejamento-data">
                                 <span>${item ? escaparHtml(item.nome) : 'Item removido'}</span>
-                                ${renderizarCheckPlanejamento(plano)}
                                 <button type="button" class="btn-menu-planejamento" aria-label="Acoes do item" title="Acoes do item" aria-expanded="false" onclick="event.stopPropagation(); alternarMenuPlanejamento(this)">&#8942;</button>
                                 <div class="acoes-planejamento">
                                     <button onclick="abrirEdicaoPlanejamento('${plano.id}')">Editar</button>
@@ -5778,75 +5750,6 @@ function renderizarAposAlterarTiposUso() {
     renderizarContagemAlimentos();
 }
 
-/* ==================== HISTORICO ====================
-   Acompanhar consumo de receitas */
-
-function abrirHistorico() {
-    abrirModal('modal-historico');
-    renderizarHistorico();
-}
-
-function marcarComoConsumida(receitaId) {
-    let item = app.historico.find(h => h.receitaId === receitaId);
-
-    if (!item) {
-        item = {
-            receitaId: receitaId,
-            dataCriacao: new Date().toISOString(),
-            dataUltimo: new Date().toISOString(),
-            timesUsed: 1,
-        };
-        app.historico.push(item);
-    } else {
-        item.dataUltimo = new Date().toISOString();
-        item.timesUsed++;
-    }
-
-    salvarDados();
-    console.log('Consumo registrado:', item);
-    alert('Refeição marcada como consumida!');
-}
-
-function renderizarHistorico() {
-    const container = document.getElementById('lista-historico');
-    container.innerHTML = '';
-
-    if (app.historico.length === 0) {
-        container.innerHTML = '<div class="sem-resultados">Nenhum historico registrado ainda.</div>';
-        return;
-    }
-
-    app.historico.forEach(item => {
-        const receita = buscarReceita(item.receitaId);
-        if (!receita) return;
-
-        const dataUltimo = new Date(item.dataUltimo);
-        const agora = new Date();
-        const diferenca = Math.floor((agora - dataUltimo) / (1000 * 60 * 60 * 24));
-
-        const div = document.createElement('div');
-        div.className = 'item-historico';
-        div.innerHTML = `
-            <h3>${receita.nome}</h3>
-            <div class="stat-historico">
-                <div class="stat-box">
-                    <div class="stat-numero">${item.timesUsed}</div>
-                    <div class="stat-label">Vezes Usada</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-numero">${diferenca}</div>
-                    <div class="stat-label">Dias desde o último uso</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">Última vez</div>
-                    <div class="stat-numero" style="font-size: 12px;">${dataUltimo.toLocaleDateString('pt-BR')}</div>
-                </div>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
 /* ==================== MODAIS ====================
    Abrir e fechar popups */
 
@@ -5960,7 +5863,6 @@ Object.assign(window, {
     renderizarAposAlterarTiposUso,
     moverItemConfiguravel,
     alterarCorConfiguravel,
-    abrirHistorico,
 });
 
 /* ==================== INICIAR ====================

@@ -438,29 +438,6 @@ body {
     text-align: center;
 }
 
-.check-planejamento {
-    align-items: center;
-    color: #5f4738;
-    cursor: pointer;
-    display: inline-flex;
-    font-size: 11px;
-    font-weight: 700;
-    gap: 4px;
-    justify-content: center;
-    line-height: 1;
-    margin-top: 6px;
-    min-height: 18px;
-    text-transform: uppercase;
-}
-
-.check-planejamento input {
-    accent-color: var(--cor-primaria);
-    cursor: pointer;
-    height: 14px;
-    margin: 0;
-    width: 14px;
-}
-
 .linha-notas-planejamento td {
     background: #fffaf4;
     vertical-align: top;
@@ -512,11 +489,6 @@ body {
     border-bottom: 1px solid var(--cor-borda);
     margin-bottom: 12px;
     padding-bottom: 12px;
-}
-
-.item-planejamento-diario .check-planejamento,
-.linha-planejamento-data .check-planejamento {
-    justify-content: flex-start;
 }
 
 .data-cabecalho {
@@ -785,10 +757,6 @@ body {
 
 .item-planejamento-diario .conteudo-planejamento {
     padding-right: 0;
-}
-
-#visao-diaria .check-planejamento {
-    display: none;
 }
 
 .item-planejamento-diario .acoes-planejamento,
@@ -1760,43 +1728,6 @@ body {
     display: inline-block;
     height: 18px;
     width: 18px;
-}
-
-/* ==================== HISTRICO ====================
-   Estatsticas de uso */
-
-.lista-historico {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.item-historico {
-    background: white;
-    border-left: 4px solid var(--cor-destaque);
-    padding: 15px;
-    border-radius: var(--radius);
-    border: 1px solid var(--cor-borda);
-}
-
-.item-historico h3 {
-    color: var(--cor-primaria);
-    margin-bottom: 10px;
-}
-
-.stat-historico {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.stat-box {
-    background: rgba(139, 69, 19, 0.05);
-    padding: 10px;
-    border-radius: 6px;
-    text-align: center;
-    font-size: 13px;
 }
 
 .stat-numero {
@@ -3399,8 +3330,7 @@ body {
 .form-secao,
 .filtros-avancados,
 .linha-selecao,
-.card-receita,
-.item-historico {
+.card-receita {
     border: 1px solid var(--cor-borda);
     box-shadow: none;
 }
@@ -3722,8 +3652,7 @@ body {
 }
 
 .card-receita,
-.linha-selecao,
-.item-historico {
+.linha-selecao {
     background: var(--cor-fundo-card);
     border-color: color-mix(in srgb, var(--cor-borda) 86%, white);
     box-shadow: 0 1px 4px rgba(48, 52, 50, 0.045);
