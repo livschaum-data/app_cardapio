@@ -4051,6 +4051,16 @@ body {
 }
 
 @media (max-width: 768px) {
+    #visao-semanal .card-semana-diaria {
+        overflow-x: visible;
+        padding: 12px;
+    }
+
+    #visao-semanal .card-semana-diaria .grade-semana-diaria {
+        grid-template-columns: 1fr;
+        min-width: 0;
+    }
+
     #visao-calendario .calendario-container {
         min-width: 0;
     }
