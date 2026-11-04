@@ -3446,10 +3446,13 @@ body {
 .linha-planejamento-data > span {
     align-items: center;
     color: #2d221b !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
+    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+    font-size: 14px !important;
+    font-synthesis: none;
+    font-weight: 400 !important;
     letter-spacing: normal;
-    line-height: 1.6 !important;
+    line-height: 1.3 !important;
+    -webkit-font-smoothing: antialiased;
 }
 
 .sem-planejamento-diario {
@@ -3462,13 +3465,13 @@ body {
 .item-planejamento-diario p strong {
     color: inherit;
     font-size: inherit;
-    font-weight: 500;
+    font-weight: 400;
     line-height: inherit;
 }
 
 .celula-refeicao .nome-refeicao,
 .item-planejamento-diario p {
-    gap: 3px;
+    gap: 2px;
 }
 
 .celula-refeicao .nome-refeicao::before,
@@ -3477,10 +3480,10 @@ body {
     background: var(--categoria-cor, var(--cor-destaque));
     border-radius: 3px;
     content: '';
-    flex: 0 0 4px;
-    height: 1.25em;
-    margin: 0 .25em 0 0;
-    width: 4px;
+    flex: 0 0 3px;
+    height: 1em;
+    margin: 0 .1em 0 0;
+    width: 3px;
 }
 
 .linha-planejamento-data > span {
