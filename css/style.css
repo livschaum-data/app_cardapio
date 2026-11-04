@@ -3288,13 +3288,32 @@ body {
 .btn-add-celula,
 .btn-adicionar-mini,
 .dia-calendario-geral > button {
-    bottom: 6px;
+    bottom: auto;
     position: absolute;
     right: 6px;
+    top: 6px;
+}
+
+/* Reserva espaco para que o + nao cubra itens ja planejados. */
+.tabela-semanal td:has(> .btn-adicionar-mini) {
+    padding: 8px 12px;
+}
+
+.grupo-diaria,
+.coluna-semana-diaria {
+    padding-bottom: 10px;
+}
+
+.dia-calendario-geral {
+    padding-bottom: 6px;
+}
+
+.faixa-semana-calendario {
+    padding-right: 46px;
 }
 
 .grupo-diaria > button,
-.coluna-semana-diaria > button { bottom: 8px; position: absolute; right: 8px; }
+.coluna-semana-diaria > button { bottom: auto; position: absolute; right: 8px; top: 8px; }
 .btn-add-celula,
 .btn-adicionar-mini { font-size: 0; }
 
@@ -3311,6 +3330,199 @@ body {
 
 .faixa-semana-calendario { align-items: start; }
 .faixa-semana-calendario > button { font-size: 0; position: absolute; right: 8px; top: 8px; }
+.faixa-semana-calendario > button span { display: none; }
+
+/* Calendario semanal: identificação em coluna própria, conteúdo ao lado. */
+.faixa-semana-calendario {
+    align-items: start;
+    grid-template-columns: 112px minmax(0, 1fr);
+}
+
+.faixa-semana-calendario .identificacao-semana-calendario {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    padding: 4px 8px 4px 2px;
+}
+
+.faixa-semana-calendario .itens-semana-calendario,
+.faixa-semana-calendario .nota-semana-calendario {
+    grid-column: 2;
+}
+
+.faixa-semana-calendario > button { right: 8px; }
+
+@media (max-width: 680px) {
+    .faixa-semana-calendario { grid-template-columns: 1fr; }
+    .faixa-semana-calendario .identificacao-semana-calendario,
+    .faixa-semana-calendario .itens-semana-calendario,
+    .faixa-semana-calendario .nota-semana-calendario { grid-column: 1; grid-row: auto; }
+    .faixa-semana-calendario .identificacao-semana-calendario { padding-right: 40px; }
+}
+
+/* Calendario semanal: semana e intervalo acima da grade de dias. */
+.calendario-modo-semana .semana-calendario {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.calendario-modo-semana .semana-calendario > .dias-semana-calendario {
+    grid-row: 2;
+}
+
+.calendario-modo-semana .semana-calendario > .faixa-semana-calendario {
+    display: contents;
+}
+
+.calendario-modo-semana .faixa-semana-calendario .identificacao-semana-calendario {
+    align-items: baseline;
+    display: flex;
+    gap: 12px;
+    grid-column: 1;
+    grid-row: 1;
+    padding: 10px 12px 6px;
+}
+
+.calendario-modo-semana .faixa-semana-calendario .identificacao-semana-calendario strong {
+    font-size: 14px;
+}
+
+.calendario-modo-semana .faixa-semana-calendario .identificacao-semana-calendario span {
+    font-size: 12px;
+}
+
+.calendario-modo-semana .faixa-semana-calendario .itens-semana-calendario {
+    grid-column: 1;
+    grid-row: 3;
+}
+
+.calendario-modo-semana .faixa-semana-calendario .nota-semana-calendario {
+    grid-column: 1;
+    grid-row: 4;
+}
+
+.calendario-modo-semana .faixa-semana-calendario > button {
+    grid-column: 1;
+    grid-row: 1;
+    right: 8px;
+    top: 7px;
+}
+
+.calendario-modo-semana .dias-semana-calendario .numero-dia-calendario {
+    display: none;
+}
+
+.calendario-modo-semana .semana-calendario {
+    border: 2px solid color-mix(in srgb, var(--cor-secundaria) 38%, var(--cor-borda));
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(58, 42, 31, .08);
+}
+
+.calendario-modo-semana .dias-semana-calendario {
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.calendario-modo-semana .semana-calendario {
+    position: relative;
+}
+
+.calendario-modo-semana .faixa-semana-calendario > button {
+    display: flex !important;
+    position: absolute !important;
+    right: 10px;
+    top: 9px;
+    z-index: 3;
+}
+
+.calendario-modo-semana .dias-semana-calendario .dia-calendario.hoje {
+    background: #fff4df;
+    box-shadow: inset 0 2px 0 var(--cor-primaria), inset 0 -1px 0 var(--cor-borda);
+    color: var(--cor-secundaria);
+    font-weight: 800;
+}
+
+/* Itens planejados: tipografia mais legível e marcador em barra colorida. */
+.celula-refeicao .nome-refeicao,
+.item-planejamento-diario p,
+.linha-planejamento-data > span {
+    align-items: center;
+    color: #2d221b !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    letter-spacing: normal;
+    line-height: 1.6 !important;
+}
+
+.sem-planejamento-diario {
+    color: var(--cor-texto-cinza);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.6;
+}
+
+.item-planejamento-diario p strong {
+    color: inherit;
+    font-size: inherit;
+    font-weight: 500;
+    line-height: inherit;
+}
+
+.celula-refeicao .nome-refeicao,
+.item-planejamento-diario p {
+    gap: 3px;
+}
+
+.celula-refeicao .nome-refeicao::before,
+.item-planejamento-diario p::before,
+.linha-planejamento-data > span::before {
+    background: var(--categoria-cor, var(--cor-destaque));
+    border-radius: 3px;
+    content: '';
+    flex: 0 0 4px;
+    height: 1.25em;
+    margin: 0 .25em 0 0;
+    width: 4px;
+}
+
+.linha-planejamento-data > span {
+    align-items: center;
+    display: inline-flex;
+}
+
+.calendario-modo-semana .dias-semana-calendario {
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.calendario-modo-semana .itens-semana-calendario .celula-refeicao {
+    border-bottom: 0;
+}
+
+.calendario-modo-semana .itens-semana-calendario .lista-planejamentos-refeicao {
+    gap: 0;
+}
+
+.tabela-semanal td:has(> .btn-adicionar-mini) { padding: 8px 12px; }
+.tabela-semanal .btn-adicionar-mini {
+    bottom: auto;
+    display: block !important;
+    float: right;
+    align-self: flex-end;
+    clear: both;
+    margin: 4px 0 0 auto;
+    position: relative !important;
+    top: auto;
+    width: 28px !important;
+}
+.tabela-semanal .lista-planejamentos-refeicao + .btn-adicionar-mini { display: flex; }
+.tabela-semanal .btn-adicionar-mini,
+.tabela-mensal-semanas .btn-adicionar-mini {
+    margin-right: -8px;
+}
+.dia-calendario-geral > button { bottom: 6px; top: auto; }
+.dia-calendario-geral > button { font-size: 0 !important; }
+.grupo-diaria > h4,
+.coluna-semana-diaria > .tipo-uso-semana-diaria,
+.grupo-diaria > .item-planejamento-diario,
+.coluna-semana-diaria > .planejamentos-semana-diaria { margin-right: 38px; }
 
 .btn-add-celula:hover,
 .btn-adicionar-mini:hover,
@@ -3321,6 +3533,45 @@ body {
     background: color-mix(in srgb, var(--cor-secundaria) 12%, transparent);
     border: 0;
     color: var(--cor-primaria);
+}
+
+.item-refeicao-data {
+    position: relative;
+    padding-right: 42px;
+}
+
+.btn-adicionar-canto {
+    align-items: center !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    color: var(--cor-secundaria) !important;
+    display: inline-flex !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    height: 26px !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    min-height: 26px !important;
+    padding: 0 !important;
+    position: absolute !important;
+    right: 8px !important;
+    top: 8px !important;
+    width: 28px !important;
+}
+
+.btn-adicionar-canto:hover {
+    background: color-mix(in srgb, var(--cor-secundaria) 12%, transparent) !important;
+    color: var(--cor-primaria) !important;
+}
+
+#detalhes-data {
+    position: relative;
+}
+
+#detalhes-data > h3,
+#detalhes-data > #data-selecionada {
+    padding-right: 48px;
 }
 
 /* Cadastros: linhas detalhadas compactas */
@@ -4004,6 +4255,11 @@ textarea {
 .linha-planejamento-data > span {
     color: var(--cor-texto);
     font-weight: 700;
+}
+
+/* Os nomes dos itens seguem exatamente o peso da mensagem vazia. */
+.item-planejamento-diario p strong {
+    font-weight: 400;
 }
 
 @media (max-width: 680px) {

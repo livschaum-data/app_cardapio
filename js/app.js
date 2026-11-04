@@ -3221,6 +3221,7 @@ function renderizarCalendario() {
     const container = document.getElementById('calendario');
     container.innerHTML = '';
     container.classList.toggle('calendario-modo-dia', modoCalendario === 'dia');
+    container.classList.toggle('calendario-modo-semana', modoCalendario === 'semana');
 
     document.querySelectorAll('[data-modo-calendario]').forEach(botao => {
         botao.classList.toggle('ativo', botao.dataset.modoCalendario === modoCalendario);
@@ -3494,15 +3495,12 @@ function atualizarDetalhesData(data) {
                         `;
                     }).join('')}
                 </div>
-                <button onclick="abrirModalPlanejarData('${dataStr}', '${tipo}')">Adicionar</button>
+                <button class="btn-adicionar-canto" type="button" onclick="abrirModalPlanejarData('${dataStr}', '${tipo}')" aria-label="Adicionar ${escaparAtributoJs(tipo)}" title="Adicionar">+</button>
             `;
         } else {
             div.innerHTML = `
                 <strong>${tipo}:</strong> (vazio)
-                <button onclick="abrirModalPlanejarData('${dataStr}', '${tipo}')"
-                        style="background: #8B4513; color: white; border: none; margin-left: 10px; padding: 2px 6px; cursor: pointer; border-radius: 3px;">
-                    Adicionar
-                </button>
+                <button class="btn-adicionar-canto" type="button" onclick="abrirModalPlanejarData('${dataStr}', '${tipo}')" aria-label="Adicionar ${escaparAtributoJs(tipo)}" title="Adicionar">+</button>
             `;
         }
 
