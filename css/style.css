@@ -3257,6 +3257,72 @@ body {
     .livro-linha-abrir { grid-column: 2; grid-row: 1 / span 2; }
 }
 
+/* Ajuste final dos controles de adicionar. */
+.tabela-semanal td.celula-vazia,
+.tabela-semanal td:has(> .btn-adicionar-mini),
+.grupo-diaria,
+.coluna-semana-diaria,
+.dia-calendario-geral,
+.faixa-semana-calendario { position: relative; }
+
+.btn-add-celula,
+.btn-adicionar-mini,
+.grupo-diaria > button,
+.coluna-semana-diaria > button,
+.dia-calendario-geral > button,
+.faixa-semana-calendario > button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    color: var(--cor-secundaria);
+    display: inline-flex;
+    height: 26px;
+    justify-content: center;
+    margin: 0;
+    min-height: 26px;
+    padding: 0;
+    width: 28px;
+}
+
+.btn-add-celula,
+.btn-adicionar-mini,
+.dia-calendario-geral > button {
+    bottom: 6px;
+    position: absolute;
+    right: 6px;
+}
+
+.grupo-diaria > button,
+.coluna-semana-diaria > button { bottom: 8px; position: absolute; right: 8px; }
+.btn-add-celula,
+.btn-adicionar-mini { font-size: 0; }
+
+.btn-add-celula::after,
+.btn-adicionar-mini::after,
+.grupo-diaria > button::after,
+.coluna-semana-diaria > button::after,
+.dia-calendario-geral > button::after,
+.faixa-semana-calendario > button::after {
+    content: '+';
+    font-size: 18px;
+    line-height: 1;
+}
+
+.faixa-semana-calendario { align-items: start; }
+.faixa-semana-calendario > button { font-size: 0; position: absolute; right: 8px; top: 8px; }
+
+.btn-add-celula:hover,
+.btn-adicionar-mini:hover,
+.grupo-diaria > button:hover,
+.coluna-semana-diaria > button:hover,
+.dia-calendario-geral > button:hover,
+.faixa-semana-calendario > button:hover {
+    background: color-mix(in srgb, var(--cor-secundaria) 12%, transparent);
+    border: 0;
+    color: var(--cor-primaria);
+}
+
 /* Cadastros: linhas detalhadas compactas */
 #lista-receitas,
 #lista-refeicoes,
