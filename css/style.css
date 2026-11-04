@@ -481,6 +481,24 @@ body {
     vertical-align: top;
 }
 
+.linha-nota-semana-planejamento td,
+.linha-notas-semanas-mensal td {
+    background: #fffaf4;
+    vertical-align: top;
+}
+
+.textarea-nota-semana {
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: var(--cor-texto);
+    font: inherit;
+    min-height: 58px;
+    padding: 8px;
+    resize: vertical;
+    width: 100%;
+}
+
 .nota-planejamento {
     display: grid;
     gap: 6px;

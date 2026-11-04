@@ -2375,6 +2375,18 @@ function renderizarSemanal() {
     }).join('');
     tbody.appendChild(trNotas);
 
+    const inicioSemanaStr = formatarDataChave(obterInicioSemana(app.semanaAtual, app.anoAtual));
+    const notaSemana = buscarNotaSemanaCalendario(inicioSemanaStr);
+    const trNotaSemana = document.createElement('tr');
+    trNotaSemana.className = 'linha-nota-semana-planejamento';
+    trNotaSemana.innerHTML = `
+        <td class="refeicao-nome">Nota da semana</td>
+        <td colspan="7">
+            <textarea class="textarea-nota-semana" aria-label="Nota da semana" placeholder="Nota para toda a semana" onblur="salvarNotaSemanaCalendario('${inicioSemanaStr}', this.value)">${escaparHtml(notaSemana?.nota || '')}</textarea>
+        </td>
+    `;
+    tbody.appendChild(trNotaSemana);
+
     const dataInicioSemana = obterDataSemanaDia(app.semanaAtual, 'segunda');
     document.querySelector('#visao-semanal .tabela-container')?.insertAdjacentHTML(
         'afterend',
@@ -2991,6 +3003,18 @@ function renderizarMensal() {
         tr.innerHTML = html;
         tbody.appendChild(tr);
     });
+
+    const trNotasSemanas = document.createElement('tr');
+    trNotasSemanas.className = 'linha-notas-semanas-mensal';
+    trNotasSemanas.innerHTML = `<td class="refeicao-nome">Notas da semana</td>` + semanas.map(semana => {
+        const inicioStr = formatarDataChave(semana.inicio);
+        const nota = buscarNotaSemanaCalendario(inicioStr);
+        const classeSemanaAtual = semana === semanaAtual ? 'coluna-hoje' : '';
+        return `<td class="${classeSemanaAtual}">
+            <textarea class="textarea-nota-semana" aria-label="Nota da semana ${semana.numero}" placeholder="Nota da semana" onblur="salvarNotaSemanaCalendario('${inicioStr}', this.value)">${escaparHtml(nota?.nota || '')}</textarea>
+        </td>`;
+    }).join('');
+    tbody.appendChild(trNotasSemanas);
 
     wrapper.appendChild(table);
     container.appendChild(wrapper);
