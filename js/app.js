@@ -167,21 +167,33 @@ function salvarDadosLegado() {
     console.log('Dados salvos!');
 }
 
+function lerJSONLocal(chave, fallback) {
+    const valor = localStorage.getItem(chave);
+    if (!valor) return fallback;
+
+    try {
+        return JSON.parse(valor);
+    } catch (error) {
+        console.error(`Dado local invalido em ${chave}. Usando valor seguro.`, error);
+        return fallback;
+    }
+}
+
 function carregarDadosLegado() {
-    app.alimentos = JSON.parse(localStorage.getItem('cardapio_alimentos')) || [];
-    app.receitas = JSON.parse(localStorage.getItem('cardapio_receitas')) || [];
-    app.refeicoes = JSON.parse(localStorage.getItem('cardapio_refeicoes')) || [];
-    app.planejamentos = JSON.parse(localStorage.getItem('cardapio_planejamentos')) || [];
-    app.historico = JSON.parse(localStorage.getItem('cardapio_historico')) || [];
-    app.tiposRefeicao = JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao;
-    app.tiposUso = JSON.parse(localStorage.getItem('cardapio_tipos_uso')) || app.tiposUso;
-    app.categorias = JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias;
-    app.categoriasRefeicoes = JSON.parse(localStorage.getItem('cardapio_categorias_refeicoes')) || app.categoriasRefeicoes;
-    app.categoriasAlimentos = JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos;
-    app.coresTiposCategorias = normalizarCoresTiposCategorias(JSON.parse(localStorage.getItem('cardapio_cores_tipos_categorias')), app.coresTiposCategorias);
+    app.alimentos = lerJSONLocal('cardapio_alimentos', []);
+    app.receitas = lerJSONLocal('cardapio_receitas', []);
+    app.refeicoes = lerJSONLocal('cardapio_refeicoes', []);
+    app.planejamentos = lerJSONLocal('cardapio_planejamentos', []);
+    app.historico = lerJSONLocal('cardapio_historico', []);
+    app.tiposRefeicao = lerJSONLocal('cardapio_tipos', app.tiposRefeicao);
+    app.tiposUso = lerJSONLocal('cardapio_tipos_uso', app.tiposUso);
+    app.categorias = lerJSONLocal('cardapio_categorias', app.categorias);
+    app.categoriasRefeicoes = lerJSONLocal('cardapio_categorias_refeicoes', app.categoriasRefeicoes);
+    app.categoriasAlimentos = lerJSONLocal('cardapio_categorias_alimentos', app.categoriasAlimentos);
+    app.coresTiposCategorias = normalizarCoresTiposCategorias(lerJSONLocal('cardapio_cores_tipos_categorias', null), app.coresTiposCategorias);
     app.configuracoesAtualizadasEm = localStorage.getItem('cardapio_configuracoes_atualizadas_em') || app.configuracoesAtualizadasEm;
-    app.tags = JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags;
-    app.syncMeta = JSON.parse(localStorage.getItem('cardapio_sync_meta')) || app.syncMeta;
+    app.tags = lerJSONLocal('cardapio_tags', app.tags);
+    app.syncMeta = lerJSONLocal('cardapio_sync_meta', app.syncMeta);
     app.atualizadoEm = localStorage.getItem('cardapio_atualizado_em') || app.atualizadoEm;
     console.log('Dados carregados!');
 }
@@ -1474,24 +1486,24 @@ function decodificarWindows1252ComoUtf8(texto) {
 
 function carregarDadosLocais() {
     return {
-        alimentos: JSON.parse(localStorage.getItem('cardapio_alimentos')) || [],
-        receitas: JSON.parse(localStorage.getItem('cardapio_receitas')) || [],
-        refeicoes: JSON.parse(localStorage.getItem('cardapio_refeicoes')) || [],
-        planejamentos: JSON.parse(localStorage.getItem('cardapio_planejamentos')) || [],
-        historico: JSON.parse(localStorage.getItem('cardapio_historico')) || [],
-        tiposRefeicao: JSON.parse(localStorage.getItem('cardapio_tipos')) || app.tiposRefeicao,
-        tiposUso: JSON.parse(localStorage.getItem('cardapio_tipos_uso')) || app.tiposUso,
-        categorias: JSON.parse(localStorage.getItem('cardapio_categorias')) || app.categorias,
-        categoriasRefeicoes: JSON.parse(localStorage.getItem('cardapio_categorias_refeicoes')) || app.categoriasRefeicoes,
-        categoriasAlimentos: JSON.parse(localStorage.getItem('cardapio_categorias_alimentos')) || app.categoriasAlimentos,
+        alimentos: lerJSONLocal('cardapio_alimentos', []),
+        receitas: lerJSONLocal('cardapio_receitas', []),
+        refeicoes: lerJSONLocal('cardapio_refeicoes', []),
+        planejamentos: lerJSONLocal('cardapio_planejamentos', []),
+        historico: lerJSONLocal('cardapio_historico', []),
+        tiposRefeicao: lerJSONLocal('cardapio_tipos', app.tiposRefeicao),
+        tiposUso: lerJSONLocal('cardapio_tipos_uso', app.tiposUso),
+        categorias: lerJSONLocal('cardapio_categorias', app.categorias),
+        categoriasRefeicoes: lerJSONLocal('cardapio_categorias_refeicoes', app.categoriasRefeicoes),
+        categoriasAlimentos: lerJSONLocal('cardapio_categorias_alimentos', app.categoriasAlimentos),
         coresTiposCategorias: normalizarCoresTiposCategorias(
-            JSON.parse(localStorage.getItem('cardapio_cores_tipos_categorias')),
+            lerJSONLocal('cardapio_cores_tipos_categorias', null),
             app.coresTiposCategorias
         ),
         configuracoesAtualizadasEm: localStorage.getItem('cardapio_configuracoes_atualizadas_em') || null,
-        tags: JSON.parse(localStorage.getItem('cardapio_tags')) || app.tags,
+        tags: lerJSONLocal('cardapio_tags', app.tags),
         atualizadoEm: localStorage.getItem('cardapio_atualizado_em') || null,
-        syncMeta: JSON.parse(localStorage.getItem('cardapio_sync_meta')) || app.syncMeta,
+        syncMeta: lerJSONLocal('cardapio_sync_meta', app.syncMeta),
     };
 }
 
@@ -6142,6 +6154,20 @@ Object.assign(window, {
 /* ==================== INICIAR ====================
    Quando pagina carrega */
 
-window.addEventListener('DOMContentLoaded', inicializar);
+window.addEventListener('DOMContentLoaded', () => {
+    inicializar().catch(error => {
+        console.error('Falha ao inicializar o aplicativo:', error);
+        atualizarStatusNuvem('erro', 'Falha ao carregar. Atualize a pagina.');
+
+        // Mantem a navegacao utilizavel e evita uma tela vazia sem explicacao.
+        try {
+            atualizarControlePlanejamentoAtivo();
+            mostrarVisao('diaria');
+            mostrarAvisoTemporario('Nao foi possivel carregar todos os dados. Atualize a pagina.');
+        } catch (erroInterface) {
+            console.error('Falha ao recuperar a interface:', erroInterface);
+        }
+    });
+});
 
 
