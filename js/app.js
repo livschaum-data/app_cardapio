@@ -3489,7 +3489,11 @@ function renderizarFaixaSemanaCalendario(inicioSemana) {
 
     return `
         <div class="faixa-semana-calendario">
-            <div class="identificacao-semana-calendario">
+            <div class="identificacao-semana-calendario cabecalho-semana-clicavel"
+                 role="button" tabindex="0"
+                 onclick="abrirSemanaNaVisaoSemanal('${inicioStr}')"
+                 onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); abrirSemanaNaVisaoSemanal('${inicioStr}'); }"
+                 title="Abrir esta semana na visão semanal">
                 <strong>Semana ${semana}</strong>
                 <span>${inicioSemana.getDate()}/${inicioSemana.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1}</span>
             </div>

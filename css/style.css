@@ -1296,6 +1296,17 @@ body {
     color: var(--cor-primaria);
 }
 
+.cabecalho-semana-clicavel {
+    cursor: pointer;
+}
+
+.cabecalho-semana-clicavel:hover,
+.cabecalho-semana-clicavel:focus-visible {
+    color: var(--cor-primaria);
+    outline: 2px solid color-mix(in srgb, var(--cor-destaque) 45%, transparent);
+    outline-offset: 2px;
+}
+
 .identificacao-semana-calendario span,
 .sem-itens-semana {
     color: var(--cor-texto-cinza);
