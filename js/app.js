@@ -6169,8 +6169,12 @@ Object.assign(window, {
 /* ==================== INICIAR ====================
    Quando pagina carrega */
 
-window.addEventListener('DOMContentLoaded', () => {
-    inicializar().catch(error => {
+let inicializacaoAppPromise = null;
+
+function iniciarAplicativo() {
+    if (inicializacaoAppPromise) return inicializacaoAppPromise;
+
+    inicializacaoAppPromise = inicializar().catch(error => {
         console.error('Falha ao inicializar o aplicativo:', error);
         atualizarStatusNuvem('erro', 'Falha ao carregar. Atualize a pagina.');
 
@@ -6183,6 +6187,14 @@ window.addEventListener('DOMContentLoaded', () => {
             console.error('Falha ao recuperar a interface:', erroInterface);
         }
     });
-});
+
+    return inicializacaoAppPromise;
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', iniciarAplicativo, { once: true });
+} else {
+    iniciarAplicativo();
+}
 
 
