@@ -410,6 +410,16 @@
                                     </select>
                                 </div>
                             </div>
+                            <div class="form-grid duas-colunas">
+                                <div class="form-grupo">
+                                    <label for="tempo-preparo-receita">Tempo de preparo</label>
+                                    <input type="text" id="tempo-preparo-receita" placeholder="Ex: 30 minutos">
+                                </div>
+                                <div class="form-grupo">
+                                    <label for="porcoes-receita">Quantidade de por&ccedil;&otilde;es</label>
+                                    <input type="number" id="porcoes-receita" min="1" step="1" inputmode="numeric" placeholder="Ex: 4">
+                                </div>
+                            </div>
                             <div class="form-grupo">
                                 <label>Tipo de Refei&ccedil;&atilde;o</label>
                                 <div id="tipo-refeicao" class="lista-checkboxes lista-checkboxes-compacta"></div>
@@ -679,7 +689,7 @@
 
     <script src="js/supabase-config.js?v=20260803-supabase-url"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/app.js?v=20261104-exportacoes-validas"></script>
+    <script src="js/app.js?v=20261104-tempo-porcoes"></script>
     <script src="js/livro.js?v=20261103-lista-simples"></script>
 </body>
 </html>

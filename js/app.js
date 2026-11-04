@@ -3796,6 +3796,8 @@ function salvarReceita(e) {
         tipo: tiposSelecionados[0] || '',
         tipos: tiposSelecionados,
         categoria: document.getElementById('categoria-receita').value,
+        tempoPreparo: document.getElementById('tempo-preparo-receita').value.trim(),
+        porcoes: document.getElementById('porcoes-receita').value,
         tags: obterTagsSelecionadasReceita(),
         ingredientes: obterIngredientesSelecionadosReceita(),
         ingredientesTexto: document.getElementById('ingredientes-texto-receita').value.trim(),
@@ -3864,6 +3866,8 @@ function editarReceita(id) {
     atualizarSelectCategorias(receita.categoria);
     atualizarSelectTags(obterTagsReceita(receita));
     document.getElementById('categoria-receita').value = receita.categoria;
+    document.getElementById('tempo-preparo-receita').value = receita.tempoPreparo || '';
+    document.getElementById('porcoes-receita').value = receita.porcoes || '';
     renderizarIngredientesReceita(receita.ingredientes || []);
     document.getElementById('ingredientes-texto-receita').value = receita.ingredientesTexto || '';
     document.getElementById('preparo-receita').value = receita.modoPreparo;
