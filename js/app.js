@@ -3214,6 +3214,12 @@ let modoCalendario = 'semana';
 
 function alterarModoCalendario(modo) {
     modoCalendario = modo === 'dia' ? 'dia' : 'semana';
+    if (modoCalendario === 'dia' && !dataSelecionada) {
+        const hoje = new Date();
+        dataSelecionada = hoje.getMonth() === mesCalendario && hoje.getFullYear() === anoCalendario
+            ? hoje
+            : new Date(anoCalendario, mesCalendario, 1);
+    }
     renderizarCalendario();
 }
 
@@ -3227,7 +3233,7 @@ function renderizarCalendario() {
         botao.classList.toggle('ativo', botao.dataset.modoCalendario === modoCalendario);
     });
     const detalhes = document.getElementById('detalhes-data');
-    if (detalhes) detalhes.style.display = modoCalendario === 'dia' ? 'none' : '';
+    if (detalhes) detalhes.style.display = '';
 
     document.getElementById('periodo-calendario').textContent =
         new Date(anoCalendario, mesCalendario, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -3299,6 +3305,7 @@ function criarDiaCalendario(data, exibirItensGerais = false) {
             </div>
             <button type="button" onclick="event.stopPropagation(); adicionarItemDiaCalendario('${dataStr}')" aria-label="Adicionar item em ${data.getDate()}">+</button>
         `;
+        div.onclick = () => selecionarDataCalendario(data);
     } else {
         div.textContent = data.getDate();
         div.onclick = () => selecionarDataCalendario(data);
@@ -3506,6 +3513,15 @@ function atualizarDetalhesData(data) {
 
         refeicoes.appendChild(div);
     });
+}
+
+function irParaDiaSelecionadoCalendario() {
+    if (!dataSelecionada) {
+        alert('Selecione uma data primeiro!');
+        return;
+    }
+
+    abrirDiaNaVisaoDiaria(formatarDataChave(dataSelecionada));
 }
 
 function adicionarRefeicaoData() {
@@ -6135,6 +6151,7 @@ Object.assign(window, {
     adicionarItemSemanaCalendario,
     alterarModoCalendario,
     adicionarItemDiaCalendario,
+    irParaDiaSelecionadoCalendario,
     renderizarContagemAlimentos,
     usarSemanaAtualContagem,
     usarMesAtualContagem,

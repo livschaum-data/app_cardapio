@@ -1067,6 +1067,11 @@ body {
     margin-bottom: 15px;
 }
 
+.detalhes-data .btn-ir-dia-selecionado {
+    margin: 0 0 16px;
+    width: auto;
+}
+
 .refeicoes-data {
     margin-bottom: 15px;
 }
