@@ -3370,23 +3370,12 @@ function buscarPlanejamentosGeraisCalendarioData(dataStr) {
     const tipoGeral = obterTipoUsoGeral();
     if (!tipoGeral) return [];
 
-    return app.planejamentos.filter(plano =>
-        normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado' &&
-        plano.tipo === 'calendario' &&
-        plano.data === dataStr &&
-        String(plano.refeicao || '').trim().toLowerCase() === tipoGeral.trim().toLowerCase()
-    );
+    return buscarPlanejamentosPorDataGrupo(dataStr, tipoGeral, 'simplificado')
+        .filter(plano => plano.tipo === 'mensal');
 }
 
 function buscarPlanejamentosGeraisCalendarioSemana(semana, tipoGeral) {
-    return app.planejamentos.filter(plano =>
-        normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado' &&
-        plano.tipo === 'calendario' &&
-        Number(plano.semana) === Number(semana) &&
-        String(plano.refeicao || '').trim().toLowerCase() === tipoGeral.trim().toLowerCase() &&
-        !String(plano.data || '').trim() &&
-        !String(plano.dia || '').trim()
-    );
+    return buscarPlanejamentosPorSemana(semana, tipoGeral);
 }
 
 function adicionarItemDiaCalendario(dataStr) {
