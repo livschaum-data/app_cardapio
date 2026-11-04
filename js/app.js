@@ -2316,6 +2316,24 @@ function renderizarSemanal() {
     atualizarCabecalhoSemanal();
     const hojeStr = formatarDataChave(new Date());
 
+    if (obterGrupoPlanejamentoAtivo() === 'simplificado' && obterTipoUsoGeral()) {
+        const trGeral = document.createElement('tr');
+        const tipoGeral = obterTipoUsoGeral();
+        trGeral.className = 'linha-planejamento-geral-semanal';
+        let geralHtml = '<td class="refeicao-nome refeicao-nome-colorida">Geral</td>';
+        DIAS_SEMANA.forEach(diaInfo => {
+            const dataStr = formatarDataChave(obterDataSemanaDia(app.semanaAtual, diaInfo.chave));
+            const planosGerais = buscarPlanejamentosGeraisCalendarioData(dataStr);
+            const classeHoje = dataStr === hojeStr ? ' coluna-hoje' : '';
+            geralHtml += `<td class="${classeHoje}">
+                ${planosGerais.length > 0 ? renderizarListaPlanejamentos(planosGerais) : ''}
+                <button class="btn-adicionar-mini" aria-label="Adicionar item geral" title="Adicionar item geral" onclick="adicionarItemDiaCalendario('${dataStr}')">+</button>
+            </td>`;
+        });
+        trGeral.innerHTML = geralHtml;
+        tbody.appendChild(trGeral);
+    }
+
     app.tiposRefeicao.forEach(tipo => {
         const tr = document.createElement('tr');
         const corTipo = gerarCorTipo(tipo, 'tiposRefeicao');
@@ -3341,7 +3359,9 @@ function buscarPlanejamentosGeraisCalendarioSemana(semana, tipoGeral) {
         normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado' &&
         plano.tipo === 'calendario' &&
         Number(plano.semana) === Number(semana) &&
-        String(plano.refeicao || '').trim().toLowerCase() === tipoGeral.trim().toLowerCase()
+        String(plano.refeicao || '').trim().toLowerCase() === tipoGeral.trim().toLowerCase() &&
+        !String(plano.data || '').trim() &&
+        !String(plano.dia || '').trim()
     );
 }
 
