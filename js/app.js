@@ -95,26 +95,31 @@ async function inicializar() {
     // Carregar dados locais primeiro; a nuvem entra depois se houver conta conectada.
     configurarSupabase();
     await carregarDados();
+    const sessaoNuvemPromise = inicializarSessaoNuvem().catch(error => {
+        console.error('Falha ao iniciar a nuvem em segundo plano:', error);
+        return false;
+    });
 
-    // Preencher selects com tipos de refeicao
-    atualizarSelectTipos();
-
-    // Preencher selects e filtros de categoria
-    normalizarCategorias();
-    atualizarSelectCategorias();
-    atualizarFiltroCategoria();
-    normalizarTiposUso();
-    normalizarCategoriasRefeicoes();
-    atualizarSelectCategoriasRefeicao();
-    atualizarFiltroCategoriaRefeicao();
-    normalizarTags();
-    atualizarSelectTags();
-    normalizarCategoriasAlimentos();
-    atualizarSelectCategoriasAlimentos();
-
-    // Renderizar visao inicial
+    // A tela principal vem antes dos filtros: uma falha secundaria nunca pode
+    // deixar o aplicativo vazio ate o usuario clicar no status da nuvem.
     atualizarControlePlanejamentoAtivo();
     mostrarVisao('diaria');
+
+    const etapasSecundarias = [
+        ['tipos de refeicao', atualizarSelectTipos],
+        ['categorias', normalizarCategorias],
+        ['seletor de categorias', atualizarSelectCategorias],
+        ['filtro de categorias', atualizarFiltroCategoria],
+        ['tipos de uso', normalizarTiposUso],
+        ['categorias de refeicoes', normalizarCategoriasRefeicoes],
+        ['seletor de refeicoes', atualizarSelectCategoriasRefeicao],
+        ['filtro de refeicoes', atualizarFiltroCategoriaRefeicao],
+        ['tags', normalizarTags],
+        ['seletor de tags', atualizarSelectTags],
+        ['categorias de alimentos', normalizarCategoriasAlimentos],
+        ['seletor de alimentos', atualizarSelectCategoriasAlimentos],
+    ];
+    etapasSecundarias.forEach(([nome, etapa]) => executarEtapaInicializacao(nome, etapa));
 
     const btnCategorias = document.getElementById('btn-categorias');
     if (btnCategorias) {
@@ -126,9 +131,19 @@ async function inicializar() {
         btnTags.addEventListener('click', abrirTags);
     }
 
-    // A interface local ja esta pronta; a sincronizacao nao bloqueia o uso do app.
-    await inicializarSessaoNuvem();
+    // A sincronizacao comecou em segundo plano e nao bloqueou a montagem da tela.
+    await sessaoNuvemPromise;
     console.log('App inicializada!');
+}
+
+function executarEtapaInicializacao(nome, etapa) {
+    try {
+        etapa();
+        return true;
+    } catch (error) {
+        console.error(`Falha ao preparar ${nome}:`, error);
+        return false;
+    }
 }
 
 function configurarEventosFormularios() {
