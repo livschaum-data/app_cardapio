@@ -6094,7 +6094,6 @@ Object.assign(window, {
     alternarMenuPlanejamento,
     fecharMenusPlanejamento,
     abrirCalendarioNavegacao,
-    alternarPlanoSeguido,
     alternarNovoItemPlanejamento,
     criarItemParaPlanejamento,
     ordenarModalSelecao,
