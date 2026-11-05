@@ -3151,7 +3151,9 @@ function renderizarResumoSemanaDiaria(data) {
     const intervalo = `${inicio.getDate()}/${inicio.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1}`;
     const colunas = app.tiposUso.map(tipo => {
         const corTipo = gerarCorTipo(tipo, 'tiposUso');
-        const planos = buscarPlanejamentosPorSemana(semana, tipo);
+        const planos = String(tipo).trim().toLowerCase() === String(obterTipoUsoGeral()).trim().toLowerCase()
+            ? buscarPlanejamentosGeraisCalendarioSemana(semana, tipo)
+            : buscarPlanejamentosPorSemana(semana, tipo);
         const tipoParam = encodeURIComponent(tipo);
         const itensHtml = planos.length > 0
             ? renderizarListaPlanejamentos(planos, true)
@@ -3400,12 +3402,15 @@ function buscarPlanejamentosGeraisCalendarioData(dataStr) {
             return false;
         }
 
+        const diaPlano = String(plano.dia || '').trim();
         const geralDoDiaNaSemana =
             plano.tipo === 'mensal' &&
+            Boolean(diaPlano) &&
             Number(plano.semana) === Number(semanaDia.semana) &&
-            normalizarDiaSemana(plano.dia) === semanaDia.dia;
+            normalizarDiaSemana(diaPlano) === semanaDia.dia;
         const geralDoCalendarioNaData =
             plano.tipo === 'calendario' &&
+            Boolean(diaPlano) &&
             plano.data === dataStr;
 
         return geralDoDiaNaSemana || geralDoCalendarioNaData;
