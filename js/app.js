@@ -2327,7 +2327,7 @@ function renderizarSemanal() {
             const classeHoje = dataStr === hojeStr ? ' coluna-hoje' : '';
             geralHtml += `<td class="${classeHoje}">
                 ${planosGerais.length > 0 ? renderizarListaPlanejamentos(planosGerais) : ''}
-                <button class="btn-adicionar-mini" aria-label="Adicionar item geral" title="Adicionar item geral" onclick="adicionarItemDiaCalendario('${dataStr}')">+</button>
+                <button class="btn-adicionar-mini" aria-label="Adicionar item geral" title="Adicionar item geral" onclick="abrirModalPlanejarGeralDia('${app.semanaAtual}', '${diaInfo.chave}')">+</button>
             </td>`;
         });
         trGeral.innerHTML = geralHtml;
@@ -2468,6 +2468,21 @@ function abrirModalPlanejarSemana(semana, tipo) {
         dia: '',
         data: '',
         refeicao: tipo,
+        planejamentoId: null,
+    };
+
+    renderizarReceitasModalSelecao();
+    abrirModal('modal-selecionar-receita');
+}
+
+function abrirModalPlanejarGeralDia(semana, dia) {
+    window.contextoPlanejar = {
+        modo: 'mensal',
+        grupo: 'simplificado',
+        semana,
+        dia: normalizarDiaSemana(dia),
+        data: '',
+        refeicao: obterTipoUsoGeral(),
         planejamentoId: null,
     };
 
@@ -6186,6 +6201,7 @@ Object.assign(window, {
     salvarNotaPlanejamentoData,
     salvarNotaSemanaCalendario,
     adicionarItemSemanaCalendario,
+    abrirModalPlanejarGeralDia,
     alterarModoCalendario,
     adicionarItemDiaCalendario,
     irParaDiaSelecionadoCalendario,
