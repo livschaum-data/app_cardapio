@@ -2999,7 +2999,10 @@ function renderizarMensal() {
         let html = `<td class="refeicao-nome refeicao-nome-colorida" style="--tipo-cor:${corTipo};--tipo-texto:${corTextoParaFundo(corTipo)};">${escaparHtml(tipo)}</td>`;
 
         semanas.forEach(semana => {
-            const planos = buscarPlanejamentosPorSemana(semana.numero, tipo);
+            let planos = buscarPlanejamentosPorSemana(semana.numero, tipo);
+            if (String(tipo).trim().toLowerCase() === String(obterTipoUsoGeral()).trim().toLowerCase()) {
+                planos = planos.filter(plano => !String(plano.dia || '').trim());
+            }
             const tipoParam = encodeURIComponent(tipo);
             const classeSemanaAtual = semana === semanaAtual ? 'coluna-hoje' : '';
 
@@ -3391,12 +3394,33 @@ function buscarPlanejamentosGeraisCalendarioData(dataStr) {
     const tipoGeral = obterTipoUsoGeral();
     if (!tipoGeral) return [];
 
-    return buscarPlanejamentosPorDataGrupo(dataStr, tipoGeral, 'simplificado')
-        .filter(plano => plano.tipo === 'mensal');
+    const data = criarDataLocal(dataStr);
+    const semanaDia = obterSemanaDiaPorData(data);
+    const tipoNormalizado = tipoGeral.trim().toLowerCase();
+
+    return app.planejamentos.filter(plano => {
+        if (
+            normalizarGrupoPlanejamento(plano?.grupo) !== 'simplificado' ||
+            String(plano.refeicao || '').trim().toLowerCase() !== tipoNormalizado
+        ) {
+            return false;
+        }
+
+        const geralDoDiaNaSemana =
+            plano.tipo === 'mensal' &&
+            Number(plano.semana) === Number(semanaDia.semana) &&
+            normalizarDiaSemana(plano.dia) === semanaDia.dia;
+        const geralDoCalendarioNaData =
+            plano.tipo === 'calendario' &&
+            plano.data === dataStr;
+
+        return geralDoDiaNaSemana || geralDoCalendarioNaData;
+    });
 }
 
 function buscarPlanejamentosGeraisCalendarioSemana(semana, tipoGeral) {
-    return buscarPlanejamentosPorSemana(semana, tipoGeral);
+    return buscarPlanejamentosPorSemana(semana, tipoGeral)
+        .filter(plano => !String(plano.dia || '').trim());
 }
 
 function adicionarItemDiaCalendario(dataStr) {
@@ -3409,11 +3433,11 @@ function adicionarItemDiaCalendario(dataStr) {
     const data = criarDataLocal(dataStr);
     const semanaDia = obterSemanaDiaPorData(data);
     window.contextoPlanejar = {
-        modo: 'calendario',
+        modo: 'mensal',
         grupo: 'simplificado',
         semana: semanaDia.semana,
         dia: semanaDia.dia,
-        data: dataStr,
+        data: '',
         refeicao: tipoGeral,
         planejamentoId: null,
     };
