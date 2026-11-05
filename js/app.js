@@ -3001,7 +3001,7 @@ function renderizarMensal() {
         semanas.forEach(semana => {
             let planos = buscarPlanejamentosPorSemana(semana.numero, tipo);
             if (String(tipo).trim().toLowerCase() === String(obterTipoUsoGeral()).trim().toLowerCase()) {
-                planos = planos.filter(plano => !String(plano.dia || '').trim());
+                planos = buscarPlanejamentosGeraisCalendarioSemana(semana.numero, tipo);
             }
             const tipoParam = encodeURIComponent(tipo);
             const classeSemanaAtual = semana === semanaAtual ? 'coluna-hoje' : '';
@@ -3419,8 +3419,14 @@ function buscarPlanejamentosGeraisCalendarioData(dataStr) {
 }
 
 function buscarPlanejamentosGeraisCalendarioSemana(semana, tipoGeral) {
-    return buscarPlanejamentosPorSemana(semana, tipoGeral)
-        .filter(plano => !String(plano.dia || '').trim());
+    const tipoNormalizado = String(tipoGeral || '').trim().toLowerCase();
+    return app.planejamentos.filter(plano =>
+        normalizarGrupoPlanejamento(plano?.grupo) === 'simplificado' &&
+        ['mensal', 'calendario'].includes(plano.tipo) &&
+        Number(plano.semana) === Number(semana) &&
+        String(plano.refeicao || '').trim().toLowerCase() === tipoNormalizado &&
+        !String(plano.dia || '').trim()
+    );
 }
 
 function adicionarItemDiaCalendario(dataStr) {
@@ -3496,7 +3502,7 @@ function adicionarItemSemanaCalendario(semana) {
         return;
     }
     window.contextoPlanejar = {
-        modo: 'calendario',
+        modo: 'mensal',
         grupo: 'simplificado',
         semana,
         dia: '',
