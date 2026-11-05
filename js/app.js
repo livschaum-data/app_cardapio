@@ -2323,7 +2323,13 @@ function renderizarSemanal() {
         let geralHtml = '<td class="refeicao-nome refeicao-nome-colorida">Geral</td>';
         DIAS_SEMANA.forEach(diaInfo => {
             const dataStr = formatarDataChave(obterDataSemanaDia(app.semanaAtual, diaInfo.chave));
-            const planosGerais = buscarPlanejamentosGeraisCalendarioData(dataStr);
+            let planosGerais = buscarPlanejamentosGeraisCalendarioData(dataStr);
+            if (diaInfo.chave === 'segunda') {
+                const ids = new Set(planosGerais.map(plano => plano.id));
+                const planosSemDia = buscarPlanejamentosPorSemana(app.semanaAtual, tipoGeral)
+                    .filter(plano => !String(plano.dia || '').trim() && !ids.has(plano.id));
+                planosGerais = planosGerais.concat(planosSemDia);
+            }
             const classeHoje = dataStr === hojeStr ? ' coluna-hoje' : '';
             geralHtml += `<td class="${classeHoje}">
                 ${planosGerais.length > 0 ? renderizarListaPlanejamentos(planosGerais) : ''}
@@ -2825,7 +2831,7 @@ function selecionarItemParaPlano(itemTipo, itemId) {
             tipo: isCalendario ? 'calendario' : isMensal ? 'mensal' : 'semanal',
             data: isMensal ? '' : ctx.data,
             semana: ctx.semana,
-            dia: isMensal ? '' : ctx.dia,
+            dia: ctx.dia || '',
             dataCriacao: agora,
             dataAtualizacao: agora,
         };
