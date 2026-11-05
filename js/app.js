@@ -2323,13 +2323,7 @@ function renderizarSemanal() {
         let geralHtml = '<td class="refeicao-nome refeicao-nome-colorida">Geral</td>';
         DIAS_SEMANA.forEach(diaInfo => {
             const dataStr = formatarDataChave(obterDataSemanaDia(app.semanaAtual, diaInfo.chave));
-            let planosGerais = buscarPlanejamentosGeraisCalendarioData(dataStr);
-            if (diaInfo.chave === 'segunda') {
-                const ids = new Set(planosGerais.map(plano => plano.id));
-                const planosSemDia = buscarPlanejamentosPorSemana(app.semanaAtual, tipoGeral)
-                    .filter(plano => !String(plano.dia || '').trim() && !ids.has(plano.id));
-                planosGerais = planosGerais.concat(planosSemDia);
-            }
+            const planosGerais = buscarPlanejamentosGeraisCalendarioData(dataStr);
             const classeHoje = dataStr === hojeStr ? ' coluna-hoje' : '';
             geralHtml += `<td class="${classeHoje}">
                 ${planosGerais.length > 0 ? renderizarListaPlanejamentos(planosGerais) : ''}
