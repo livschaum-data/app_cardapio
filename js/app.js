@@ -73,6 +73,9 @@ const app = {
     supabaseMensagem: 'Nuvem desconectada',
     salvandoRemoto: false,
     salvarRemotoPendente: false,
+    canalSupabase: null,
+    sincronizacaoAgendada: null,
+    recebendoAtualizacaoRemota: false,
     atualizadoEm: null,
     syncMeta: {
         deletados: {},
@@ -334,6 +337,7 @@ async function inicializarSessaoNuvem() {
     }
 
     await baixarDadosSupabase({ silencioso: true });
+    iniciarAssinaturaSupabase();
     atualizarStatusNuvem('online', 'Nuvem conectada');
     return true;
 }
@@ -399,6 +403,7 @@ async function entrarNuvem() {
     app.supabaseOnline = Boolean(app.usuarioSupabase);
     atualizarUINuvem(app.usuarioSupabase);
     await baixarDadosSupabase();
+    iniciarAssinaturaSupabase();
     return true;
 }
 
@@ -431,6 +436,7 @@ async function criarContaNuvem() {
     app.supabaseOnline = true;
     atualizarUINuvem(app.usuarioSupabase);
     await enviarDadosSupabase({ silencioso: true });
+    iniciarAssinaturaSupabase();
     atualizarStatusNuvem('online', 'Conta criada e sincronizada');
     return true;
 }
@@ -438,6 +444,7 @@ async function criarContaNuvem() {
 async function sairNuvem() {
     if (!app.supabase) return;
 
+    encerrarAssinaturaSupabase();
     await app.supabase.auth.signOut();
     app.usuarioSupabase = null;
     app.supabaseOnline = false;
@@ -955,6 +962,63 @@ async function enviarDadosSupabase({ silencioso = false, mesclarAntes = false } 
     }
 
     return false;
+}
+
+function iniciarAssinaturaSupabase() {
+    if (!app.supabase || !app.usuarioSupabase || app.canalSupabase) return;
+
+    const config = window.CARDAPIO_SUPABASE;
+    app.canalSupabase = app.supabase
+        .channel(`cardapio-${app.usuarioSupabase.id}-${config.recordId}`)
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: config.table,
+            filter: `user_id=eq.${app.usuarioSupabase.id}`,
+        }, async (evento) => {
+            const registro = evento.new;
+            if (!registro || registro.id !== config.recordId || app.recebendoAtualizacaoRemota) return;
+
+            try {
+                app.recebendoAtualizacaoRemota = true;
+                const dadosRemotos = converterRegistroSupabase(registro);
+                const dadosMesclados = mesclarDadosCardapio(obterSnapshotDadosApp(), dadosRemotos);
+                aplicarDados(dadosMesclados);
+                salvarDadosLocais();
+                renderizarTudoAposSync();
+                atualizarStatusNuvem('online', 'Atualizado pela nuvem');
+            } catch (error) {
+                console.error('Erro ao receber atualizacao da nuvem:', error);
+            } finally {
+                app.recebendoAtualizacaoRemota = false;
+            }
+        })
+        .subscribe((status) => {
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                console.warn('Atualizacao em tempo real indisponivel:', status);
+            }
+        });
+}
+
+function encerrarAssinaturaSupabase() {
+    if (!app.supabase || !app.canalSupabase) return;
+    app.supabase.removeChannel(app.canalSupabase);
+    app.canalSupabase = null;
+}
+
+function agendarSincronizacaoAposAlteracao() {
+    if (!app.supabaseOnline || !app.usuarioSupabase || app.recebendoAtualizacaoRemota) return;
+
+    clearTimeout(app.sincronizacaoAgendada);
+    app.sincronizacaoAgendada = setTimeout(() => {
+        app.sincronizacaoAgendada = null;
+        // Primeiro incorpora qualquer mudanca feita em outro aparelho. So entao
+        // envia o resultado, evitando substituir a copia remota por dados antigos.
+        enviarDadosSupabase({ silencioso: true, mesclarAntes: true }).catch(error => {
+            atualizarStatusNuvem('erro', 'Salvo neste aparelho; nuvem indisponivel');
+            console.error('Erro ao sincronizar alteracao:', error);
+        });
+    }, 500);
 }
 
 function renderizarTudoAposSync() {
@@ -1612,6 +1676,12 @@ async function carregarDadosSupabase() {
     if (error) throw error;
     if (!data) return null;
 
+    return converterRegistroSupabase(data);
+}
+
+function converterRegistroSupabase(data) {
+    if (!data) return null;
+
     return {
         alimentos: data.alimentos,
         receitas: data.receitas,
@@ -1755,7 +1825,7 @@ async function salvarDadosSupabase() {
     console.log('Dados salvos no Supabase.');
 
     if (app.salvarRemotoPendente) {
-        salvarDadosSupabase();
+        agendarSincronizacaoAposAlteracao();
     }
 }
 
@@ -1774,11 +1844,7 @@ function salvarDados() {
         }
     }
 
-    salvarDadosSupabase().catch(error => {
-        app.salvandoRemoto = false;
-        atualizarStatusNuvem('erro', 'Salvo neste aparelho; nuvem indisponivel');
-        console.error('Erro inesperado ao salvar no Supabase:', error);
-    });
+    agendarSincronizacaoAposAlteracao();
     console.log('Dados salvos localmente.');
 }
 

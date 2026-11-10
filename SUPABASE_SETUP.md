@@ -78,6 +78,14 @@ using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
 grant select, insert, update on public.cardapio_dados to authenticated;
+
+-- Necessario para que uma alteracao feita em outro aparelho apareca sem recarregar a pagina.
+do $$
+begin
+  alter publication supabase_realtime add table public.cardapio_dados;
+exception
+  when duplicate_object then null;
+end $$;
 ```
 
 Se voce criou a tabela antiga com `id text primary key`, o caminho mais simples e apagar essa tabela se ela ainda nao tem dados importantes:
@@ -139,7 +147,8 @@ Use a chave `anon`/`public`. Nunca coloque a `service_role` no navegador.
 - Voce pode criar conta ou entrar com email e senha.
 - Ao entrar, o app baixa os dados da nuvem.
 - Se a nuvem ainda estiver vazia, o app envia os dados locais.
-- Ao salvar alimentos, receitas, refeicoes, planejamentos, historico, tipos, tipos de uso, categorias de receitas, categorias de refeicoes, categorias de alimentos ou tags, o app salva localmente e tenta enviar para a nuvem quando houver conta conectada.
+- Ao salvar alimentos, receitas, refeicoes, planejamentos, historico, tipos, tipos de uso, categorias de receitas, categorias de refeicoes, categorias de alimentos ou tags, o app salva localmente, incorpora antes as mudancas mais recentes da nuvem e envia o resultado.
+- Com a tabela adicionada a publicacao `supabase_realtime`, mudancas feitas em outro aparelho aparecem automaticamente nos aparelhos que estiverem abertos.
 - Exclusoes e renomeacoes tambem geram metadados de sincronizacao em `sync_meta`, evitando que itens removidos em um dispositivo voltem ao mesclar com dados antigos de outro dispositivo.
 - Os botoes `Sincronizar agora`, `Baixar da nuvem` e `Enviar para nuvem` permitem controle manual.
 
