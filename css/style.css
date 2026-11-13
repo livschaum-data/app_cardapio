@@ -227,6 +227,22 @@ body {
     flex: 1 1 140px;
 }
 
+.btn-link-nuvem {
+    background: none;
+    border: 0;
+    color: var(--cor-destaque);
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    padding: 2px 0;
+    text-align: left;
+    text-decoration: underline;
+}
+
+.btn-link-nuvem:hover {
+    color: var(--cor-primaria);
+}
+
 .texto-ajuda {
     color: var(--cor-texto-cinza);
     font-size: 13px;

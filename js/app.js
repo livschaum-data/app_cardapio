@@ -76,6 +76,9 @@ const app = {
     canalSupabase: null,
     sincronizacaoAgendada: null,
     recebendoAtualizacaoRemota: false,
+    modoRecuperacaoSenha: false,
+    eventosAuthRegistrados: false,
+    tokensRecuperacao: null,
     atualizadoEm: null,
     syncMeta: {
         deletados: {},
@@ -246,8 +249,16 @@ function configurarSupabase() {
         return true;
     }
 
-    app.supabase = window.supabase.createClient(supabaseUrl, config.anonKey);
+    app.supabase = window.supabase.createClient(supabaseUrl, config.anonKey, {
+        auth: {
+            detectSessionInUrl: true,
+            persistSession: true,
+            autoRefreshToken: true,
+        },
+    });
+    registrarEventosAutenticacaoSupabase();
     atualizarStatusNuvem('offline', 'Salvo neste aparelho');
+    detectarRecuperacaoSenhaNaUrl();
     console.log('Supabase configurado.');
     return true;
 }
@@ -257,6 +268,269 @@ function limparUrlSupabase(url) {
         .trim()
         .replace(/\/rest\/v1\/?$/i, '')
         .replace(/\/+$/, '');
+}
+
+/* ==================== RECUPERACAO DE SENHA ====================
+   O link enviado pelo Supabase ja autentica o usuario (o token vem no
+   hash da URL). Por isso precisamos detectar `type=recovery` e abrir a
+   tela de nova senha em vez de tratar como um login comum. */
+
+function lerParametrosAuthDaUrl() {
+    const hash = window.location.hash || '';
+    if (hash.length < 2) return null;
+
+    try {
+        return new URLSearchParams(hash.replace(/^#/, ''));
+    } catch (erro) {
+        return null;
+    }
+}
+
+function limparParametrosAuthDaUrl() {
+    if (!window.location.hash) return;
+
+    // Usa href em vez de origin+pathname para tambem funcionar quando o app
+    // e aberto direto do disco (file://), onde location.origin e "null".
+    const urlLimpa = window.location.href.split('#')[0];
+    window.history.replaceState({}, document.title, urlLimpa);
+}
+
+function registrarEventosAutenticacaoSupabase() {
+    if (!app.supabase || app.eventosAuthRegistrados) return;
+    app.eventosAuthRegistrados = true;
+
+    // Precisa ser registrado antes de qualquer getSession() para nao perder
+    // o evento disparado ao abrir o link de recuperacao.
+    app.supabase.auth.onAuthStateChange((evento, sessao) => {
+        if (evento === 'PASSWORD_RECOVERY') {
+            if (sessao?.access_token && sessao?.refresh_token) {
+                app.tokensRecuperacao = {
+                    access_token: sessao.access_token,
+                    refresh_token: sessao.refresh_token,
+                };
+            }
+            ativarModoRecuperacaoSenha(sessao?.user || null);
+        }
+    });
+}
+
+function detectarRecuperacaoSenhaNaUrl() {
+    const params = lerParametrosAuthDaUrl();
+    if (!params) return false;
+
+    const mensagemErro = params.get('error_description') || params.get('error_code') || params.get('error');
+    if (mensagemErro) {
+        atualizarStatusNuvem('erro', decodificarMensagemUrl(mensagemErro));
+        limparParametrosAuthDaUrl();
+        return false;
+    }
+
+    if (params.get('type') !== 'recovery') return false;
+
+    // Guarda os tokens antes que o SDK limpe o hash da URL. Se o SDK nao
+    // conseguir montar a sessao sozinho, ainda podemos usar setSession().
+    app.tokensRecuperacao = {
+        access_token: params.get('access_token') || '',
+        refresh_token: params.get('refresh_token') || '',
+    };
+
+    ativarModoRecuperacaoSenha(null);
+    return true;
+}
+
+function decodificarMensagemUrl(valor) {
+    const texto = String(valor || '').replace(/\+/g, ' ');
+    try {
+        return decodeURIComponent(texto);
+    } catch (erro) {
+        return texto;
+    }
+}
+
+async function garantirSessaoRecuperacao() {
+    if (!app.supabase) return null;
+
+    const resultado = await comTimeout(app.supabase.auth.getSession(), 10000);
+    if (resultado?.data?.session) return resultado.data.session;
+
+    const tokens = app.tokensRecuperacao;
+    if (!tokens?.access_token || !tokens?.refresh_token) return null;
+
+    // Alguns cenarios (aba reaberta, bloqueio de storage, falha ao validar o
+    // token na primeira carga) deixam o SDK sem sessao. Recuperamos direto
+    // com os tokens do link.
+    const dadosSessao = await comTimeout(app.supabase.auth.setSession({
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+    }), 10000);
+
+    if (!dadosSessao || dadosSessao.error || !dadosSessao.data?.session) {
+        console.warn('Nao foi possivel restabelecer a sessao de recuperacao:', dadosSessao?.error?.message || 'sem sessao');
+        return null;
+    }
+
+    return dadosSessao.data.session;
+}
+
+function comTimeout(promessa, milissegundos) {
+    return Promise.race([
+        promessa.catch((erro) => ({ error: erro })),
+        new Promise((resolver) => setTimeout(() => resolver(null), milissegundos)),
+    ]);
+}
+
+function encerrarModoRecuperacaoPorLinkInvalido() {
+    app.modoRecuperacaoSenha = false;
+    app.tokensRecuperacao = null;
+    app.usuarioSupabase = null;
+    app.supabaseOnline = false;
+    atualizarUINuvem(null);
+    atualizarStatusNuvem('erro', 'Link de recuperacao expirado ou invalido. Informe seu email e clique em "Esqueci minha senha" para receber outro.');
+}
+
+function ativarModoRecuperacaoSenha(usuario = null) {
+    const jaEstavaEmRecuperacao = app.modoRecuperacaoSenha;
+    app.modoRecuperacaoSenha = true;
+    if (usuario) app.usuarioSupabase = usuario;
+
+    const email = app.usuarioSupabase?.email || '';
+    const info = document.getElementById('nuvem-recuperacao-info');
+    if (info) {
+        info.textContent = email
+            ? `Defina uma nova senha para ${email}.`
+            : 'Defina sua nova senha para concluir a recuperacao.';
+    }
+
+    atualizarUINuvem(app.usuarioSupabase);
+    atualizarStatusNuvem('conectando', 'Defina uma nova senha para concluir a recuperacao');
+
+    const painel = document.getElementById('painel-nuvem');
+    if (painel) painel.style.display = 'grid';
+    document.getElementById('btn-conectar-nuvem')?.setAttribute('aria-expanded', 'true');
+
+    const campoSenha = document.getElementById('nuvem-nova-senha');
+    const campoConfirmacao = document.getElementById('nuvem-confirmar-senha');
+
+    // Nao apaga o que o usuario ja digitou se o modo apenas for revalidado.
+    if (campoSenha && !jaEstavaEmRecuperacao) {
+        campoSenha.value = '';
+        if (campoConfirmacao) campoConfirmacao.value = '';
+        campoSenha.focus();
+    }
+}
+
+async function solicitarRecuperacaoSenha() {
+    if (!configurarSupabase()) return false;
+
+    const email = document.getElementById('nuvem-email')?.value?.trim();
+    if (!email) {
+        atualizarStatusNuvem('erro', 'Informe o email para receber o link de recuperacao.');
+        document.getElementById('nuvem-email')?.focus();
+        return false;
+    }
+
+    atualizarStatusNuvem('conectando', 'Enviando link de recuperacao...');
+    const opcoes = {};
+    const urlRedirect = obterUrlRedirectNuvem();
+    if (urlRedirect) opcoes.redirectTo = urlRedirect;
+
+    const { error } = await app.supabase.auth.resetPasswordForEmail(email, opcoes);
+
+    if (error) {
+        atualizarStatusNuvem('erro', error.message);
+        return false;
+    }
+
+    atualizarStatusNuvem('online', 'Link enviado. Confira seu email para definir a nova senha.');
+    mostrarAvisoTemporario('Link de recuperacao enviado para o seu email.');
+    return true;
+}
+
+async function salvarNovaSenhaNuvem() {
+    if (!configurarSupabase()) return false;
+
+    const senha = document.getElementById('nuvem-nova-senha')?.value || '';
+    const confirmacao = document.getElementById('nuvem-confirmar-senha')?.value || '';
+
+    if (senha.length < 6) {
+        atualizarStatusNuvem('erro', 'A senha precisa ter pelo menos 6 caracteres.');
+        document.getElementById('nuvem-nova-senha')?.focus();
+        return false;
+    }
+
+    if (senha !== confirmacao) {
+        atualizarStatusNuvem('erro', 'As senhas nao coincidem.');
+        document.getElementById('nuvem-confirmar-senha')?.focus();
+        return false;
+    }
+
+    atualizarStatusNuvem('salvando', 'Salvando nova senha...');
+
+    const sessao = await garantirSessaoRecuperacao();
+    if (!sessao) {
+        encerrarModoRecuperacaoPorLinkInvalido();
+        return false;
+    }
+
+    const resultado = await comTimeout(app.supabase.auth.updateUser({ password: senha }), 20000);
+
+    if (!resultado) {
+        atualizarStatusNuvem('erro', 'Tempo esgotado ao salvar a senha. Tente novamente.');
+        return false;
+    }
+
+    const { error } = resultado;
+
+    if (error) {
+        if (/session/i.test(error.message)) {
+            encerrarModoRecuperacaoPorLinkInvalido();
+            return false;
+        }
+        atualizarStatusNuvem('erro', error.message);
+        return false;
+    }
+
+    app.modoRecuperacaoSenha = false;
+    app.tokensRecuperacao = null;
+    document.getElementById('nuvem-nova-senha').value = '';
+    document.getElementById('nuvem-confirmar-senha').value = '';
+    limparParametrosAuthDaUrl();
+
+    app.usuarioSupabase = resultado.data?.user || sessao.user || app.usuarioSupabase;
+    app.supabaseOnline = Boolean(app.usuarioSupabase);
+    atualizarUINuvem(app.usuarioSupabase);
+
+    if (app.usuarioSupabase) {
+        await baixarDadosSupabase({ silencioso: true });
+        iniciarAssinaturaSupabase();
+    }
+
+    atualizarStatusNuvem('online', 'Senha atualizada. Voce ja esta conectado.');
+    mostrarAvisoTemporario('Senha atualizada com sucesso!');
+    return true;
+}
+
+async function cancelarRecuperacaoSenha() {
+    app.modoRecuperacaoSenha = false;
+    app.tokensRecuperacao = null;
+    document.getElementById('nuvem-nova-senha').value = '';
+    document.getElementById('nuvem-confirmar-senha').value = '';
+    limparParametrosAuthDaUrl();
+
+    // Nao encerra a sessao aqui: se o usuario ja estava conectado antes do
+    // link, ele continua conectado (antes o "Cancelar" deslogava a conta).
+    const resultado = await comTimeout(app.supabase.auth.getSession(), 8000);
+    app.usuarioSupabase = resultado?.data?.session?.user || null;
+    app.supabaseOnline = Boolean(app.usuarioSupabase);
+    atualizarUINuvem(app.usuarioSupabase);
+
+    if (app.usuarioSupabase) {
+        iniciarAssinaturaSupabase();
+        atualizarStatusNuvem('online', 'Recuperacao cancelada. Voce continua conectado.');
+        return;
+    }
+
+    atualizarStatusNuvem('offline', 'Recuperacao cancelada. Entre com sua senha.');
 }
 
 function atualizarStatusNuvem(status = app.supabaseStatus, mensagem = app.supabaseMensagem) {
@@ -296,6 +570,9 @@ function configurarEventosNuvem() {
     const eventos = [
         ['nuvem-entrar', entrarNuvem],
         ['nuvem-criar-conta', criarContaNuvem],
+        ['nuvem-esqueci-senha', solicitarRecuperacaoSenha],
+        ['nuvem-salvar-senha', salvarNovaSenhaNuvem],
+        ['nuvem-cancelar-recuperacao', cancelarRecuperacaoSenha],
         ['nuvem-sair', sairNuvem],
         ['nuvem-sincronizar', sincronizarSupabase],
         ['nuvem-baixar', () => baixarDadosSupabase()],
@@ -308,11 +585,38 @@ function configurarEventosNuvem() {
         botao.addEventListener('click', acao);
         botao.dataset.eventoConfigurado = 'true';
     });
+
+    ['nuvem-nova-senha', 'nuvem-confirmar-senha'].forEach((id) => {
+        const campo = document.getElementById(id);
+        if (!campo || campo.dataset.eventoConfigurado === 'true') return;
+        campo.addEventListener('keydown', (evento) => {
+            if (evento.key === 'Enter') salvarNovaSenhaNuvem();
+        });
+        campo.dataset.eventoConfigurado = 'true';
+    });
 }
 
 async function inicializarSessaoNuvem() {
     if (!app.supabase) {
         atualizarUINuvem(null);
+        return false;
+    }
+
+    // O link de recuperacao cria uma sessao valida. Nesse caso NAO tratamos
+    // como login: apenas mantemos a sessao para permitir updateUser().
+    if (app.modoRecuperacaoSenha) {
+        atualizarStatusNuvem('conectando', 'Validando link de recuperacao...');
+        const sessao = await garantirSessaoRecuperacao();
+        app.usuarioSupabase = sessao?.user || null;
+        limparParametrosAuthDaUrl();
+
+        if (!sessao) {
+            encerrarModoRecuperacaoPorLinkInvalido();
+            return false;
+        }
+
+        app.supabaseOnline = false;
+        ativarModoRecuperacaoSenha(app.usuarioSupabase);
         return false;
     }
 
@@ -345,10 +649,13 @@ async function inicializarSessaoNuvem() {
 function atualizarUINuvem(usuario) {
     const login = document.getElementById('nuvem-login');
     const logado = document.getElementById('nuvem-logado');
+    const recuperacao = document.getElementById('nuvem-recuperacao');
     const usuarioEl = document.getElementById('nuvem-usuario');
+    const emRecuperacao = Boolean(app.modoRecuperacaoSenha);
 
-    if (login) login.style.display = usuario ? 'none' : 'grid';
-    if (logado) logado.style.display = usuario ? 'grid' : 'none';
+    if (login) login.style.display = emRecuperacao || usuario ? 'none' : 'grid';
+    if (logado) logado.style.display = !emRecuperacao && usuario ? 'grid' : 'none';
+    if (recuperacao) recuperacao.style.display = emRecuperacao ? 'grid' : 'none';
     if (usuarioEl) usuarioEl.textContent = usuario ? `Conectado como ${usuario.email}` : '';
 }
 
@@ -382,7 +689,13 @@ function obterCredenciaisNuvem() {
 }
 
 function obterUrlRedirectNuvem() {
-    return window.location.origin + window.location.pathname;
+    // O Supabase so aceita redirecionamentos http/https. Quando o app e aberto
+    // direto do disco (file://), deixamos o Supabase usar a Site URL do projeto.
+    if (window.location.protocol === 'file:') return undefined;
+
+    // Sempre o endereco atual, sem hash nem query: e esse valor que precisa
+    // estar em Authentication > URL Configuration > Redirect URLs.
+    return window.location.href.split('#')[0].split('?')[0];
 }
 
 async function entrarNuvem() {
@@ -401,6 +714,7 @@ async function entrarNuvem() {
 
     app.usuarioSupabase = data.session?.user || data.user;
     app.supabaseOnline = Boolean(app.usuarioSupabase);
+    app.modoRecuperacaoSenha = false;
     atualizarUINuvem(app.usuarioSupabase);
     await baixarDadosSupabase();
     iniciarAssinaturaSupabase();
@@ -446,6 +760,7 @@ async function sairNuvem() {
 
     encerrarAssinaturaSupabase();
     await app.supabase.auth.signOut();
+    app.modoRecuperacaoSenha = false;
     app.usuarioSupabase = null;
     app.supabaseOnline = false;
     atualizarUINuvem(null);

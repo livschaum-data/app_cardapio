@@ -152,6 +152,19 @@ Use a chave `anon`/`public`. Nunca coloque a `service_role` no navegador.
 - Exclusoes e renomeacoes tambem geram metadados de sincronizacao em `sync_meta`, evitando que itens removidos em um dispositivo voltem ao mesclar com dados antigos de outro dispositivo.
 - Os botoes `Sincronizar agora`, `Baixar da nuvem` e `Enviar para nuvem` permitem controle manual.
 
+### Recuperacao de senha
+
+- No painel da nuvem, o link `Esqueci minha senha` envia o email de recuperacao para o endereco digitado no campo de email.
+- O link do email abre o proprio app e mostra a tela `Defina sua nova senha` (o app detecta `type=recovery` na URL). Sem esse tratamento, o Supabase autenticaria o usuario direto, porque o link ja contem uma sessao valida.
+- Ao salvar, o app chama `updateUser` para trocar a senha e limpa o token da barra de enderecos.
+
+Para o link funcionar, cadastre os enderecos do app em `Authentication > URL Configuration > Redirect URLs`, por exemplo:
+
+- `http://127.0.0.1:8765/index.html` (teste local)
+- `https://SEU_USUARIO.github.io/SEU_REPOSITORIO/` (GitHub Pages)
+
+O endereco enviado como `redirectTo` e o endereco atual do app, sem hash nem query. Se ele nao estiver na lista de Redirect URLs, o Supabase usa a `Site URL` do projeto. Quando o app e aberto direto do disco (`file://`), o `redirectTo` nao e enviado.
+
 ## 5. GitHub Pages
 
 Depois de publicar no GitHub Pages, abra o app pelo endereco do GitHub e entre na nuvem pelo painel. Como a configuracao usa a chave `anon`, ela pode ficar no navegador desde que as politicas RLS acima estejam ativas.
