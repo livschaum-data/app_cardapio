@@ -6309,6 +6309,16 @@ function obterRegistros() {
     );
 }
 
+function obterRegistrosDoAno(ano) {
+    const prefixo = `${ano}-`;
+    return obterRegistros().filter(registro => String(registro.data).startsWith(prefixo));
+}
+
+function obterRegistrosDoMes(ano, mes) {
+    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}`;
+    return obterRegistros().filter(registro => String(registro.data).startsWith(prefixo));
+}
+
 function formatarDataRegistro(dataStr, opcoes = {}) {
     if (!dataStr) return '';
     return criarDataLocal(dataStr).toLocaleDateString('pt-BR', opcoes);
@@ -6325,15 +6335,19 @@ function classeTipoRegistro(tipo) {
 function atualizarSelectsRegistro() {
     const refeicao = document.getElementById('registro-refeicao');
     const receita = document.getElementById('registro-receita');
+    const refeicaoSelecionada = refeicao?.value || '';
+    const receitaSelecionada = receita?.value || '';
     if (refeicao) {
         refeicao.innerHTML = app.refeicoes.length
             ? app.refeicoes.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(item => `<option value="${escaparHtml(item.id)}">${escaparHtml(item.nome)}</option>`).join('')
             : '<option value="">Nenhuma refeição cadastrada</option>';
+        if (refeicaoSelecionada) refeicao.value = refeicaoSelecionada;
     }
     if (receita) {
         receita.innerHTML = app.receitas.length
             ? app.receitas.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(item => `<option value="${escaparHtml(item.id)}">${escaparHtml(item.nome)}</option>`).join('')
             : '<option value="">Nenhuma receita cadastrada</option>';
+        if (receitaSelecionada) receita.value = receitaSelecionada;
     }
 }
 
@@ -6366,6 +6380,13 @@ function abrirModalRegistro(id = '') {
     abrirModal('modal-registro');
 }
 
+function abrirModalRegistroComData(data) {
+    if (!data) return;
+    abrirModalRegistro();
+    const campoData = document.getElementById('registro-data');
+    if (campoData) campoData.value = data;
+}
+
 function salvarRegistro(evento) {
     evento.preventDefault();
     const tipo = document.getElementById('registro-tipo').value;
@@ -6386,6 +6407,9 @@ function salvarRegistro(evento) {
         return;
     }
     const id = document.getElementById('registro-id').value || gerarIdRegistro();
+    const indice = app.historico.findIndex(item => item.id === id);
+    const registroExistente = indice >= 0 ? app.historico[indice] : null;
+    const agora = new Date().toISOString();
     const registro = {
         id,
         data,
@@ -6393,9 +6417,9 @@ function salvarRegistro(evento) {
         itemId,
         nome,
         observacao: document.getElementById('registro-observacao').value.trim(),
-        criadoEm: new Date().toISOString(),
+        criadoEm: registroExistente?.criadoEm || agora,
+        atualizadoEm: agora,
     };
-    const indice = app.historico.findIndex(item => item.id === id);
     if (indice >= 0) app.historico[indice] = { ...app.historico[indice], ...registro };
     else app.historico.push(registro);
     removerExclusao('historico', chaveHistorico(registro));
@@ -6403,8 +6427,11 @@ function salvarRegistro(evento) {
     fecharModal('modal-registro');
     app.registrosAno = criarDataLocal(data).getFullYear();
     app.registrosMes = criarDataLocal(data).getMonth();
-    app.registrosModo = 'tabela';
+    if (app.registroItemAtual) {
+        app.registroItemAtual = { tipo, itemId, nome };
+    }
     renderizarRegistros();
+    mostrarAvisoTemporario(registroExistente ? 'Registro atualizado.' : 'Registro salvo.');
 }
 
 function alternarModoRegistros(modo) {
@@ -6451,12 +6478,22 @@ function excluirRegistro(id) {
     registrarExclusao('historico', chaveHistorico(registro));
     app.historico = app.historico.filter(item => item.id !== id);
     salvarDados();
+    if (app.registroItemAtual) {
+        const atual = app.registroItemAtual;
+        const restantes = obterRegistros().filter(item =>
+            item.tipo === atual.tipo &&
+            (atual.tipo === 'especial' ? item.nome === atual.nome : item.itemId === atual.itemId)
+        );
+        if (!restantes.length) app.registroItemAtual = null;
+    }
     renderizarRegistros();
+    mostrarAvisoTemporario('Registro excluído.');
 }
 
 function renderizarRegistros() {
     const container = document.getElementById('registros-conteudo');
     if (!container) return;
+    fecharMenuAcoesRegistro(false);
     atualizarSelectsRegistro();
     document.querySelectorAll('[data-modo-registros]').forEach(botao => botao.classList.toggle('ativo', botao.dataset.modoRegistros === app.registrosModo));
     const titulo = document.getElementById('titulo-periodo-registros');
@@ -6465,6 +6502,19 @@ function renderizarRegistros() {
         : app.registrosModo === 'calendario'
             ? new Date(app.registrosAno, app.registrosMes, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
             : String(app.registrosAno);
+    const resumo = document.getElementById('registros-resumo');
+    if (resumo) {
+        let textoResumo = '';
+        if (!app.registroItemAtual) {
+            const total = app.registrosModo === 'calendario'
+                ? obterRegistrosDoMes(app.registrosAno, app.registrosMes).length
+                : obterRegistrosDoAno(app.registrosAno).length;
+            const periodo = titulo?.textContent || '';
+            textoResumo = `${total} ${total === 1 ? 'registro' : 'registros'}${periodo ? ` em ${periodo}` : ''}`;
+        }
+        resumo.textContent = textoResumo;
+        resumo.hidden = !textoResumo;
+    }
     if (app.registroItemAtual) {
         renderizarDetalhesRegistroItem(container);
     } else if (app.registrosModo === 'calendario') {
@@ -6479,28 +6529,143 @@ function criarAcoesRegistro(registro) {
 }
 
 function renderizarTabelaRegistros(container) {
-    const registros = obterRegistros().sort((a, b) => b.data.localeCompare(a.data) || String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')));
+    const ano = app.registrosAno;
+    const registros = obterRegistrosDoAno(ano).sort((a, b) => b.data.localeCompare(a.data) || String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')));
     if (!registros.length) {
-        container.innerHTML = '<div class="sem-resultados registros-vazio">Nenhum registro ainda. Adicione o primeiro acontecimento.</div>';
+        container.innerHTML = `<div class="sem-resultados registros-vazio">Nenhum registro em ${escaparHtml(String(ano))}. Adicione um acontecimento ou navegue para outro ano.</div>`;
         return;
     }
-    container.innerHTML = `<div class="registros-tabela-wrapper"><table class="registros-tabela"><thead><tr><th>Item</th><th>Tipo</th><th>Data</th><th>Ações</th></tr></thead><tbody>${registros.map(registro => `<tr><td><button type="button" class="registro-item-link" onclick="abrirDetalhesRegistroItem('${escaparAtributoJs(registro.tipo)}','${escaparAtributoJs(registro.itemId || '')}','${escaparAtributoJs(registro.nome)}')">${escaparHtml(registro.nome)}</button>${registro.observacao ? `<small>${escaparHtml(registro.observacao)}</small>` : ''}</td><td><span class="badge-tipo-registro ${classeTipoRegistro(registro.tipo)}">${rotuloTipoRegistro(registro.tipo)}</span></td><td>${formatarDataRegistro(registro.data)}</td><td>${criarAcoesRegistro(registro)}</td></tr>`).join('')}</tbody></table></div>`;
+    container.innerHTML = `<div class="registros-tabela-wrapper"><table class="registros-tabela" aria-label="Registros de ${escaparHtml(String(ano))}"><thead><tr><th scope="col">Item</th><th scope="col">Tipo</th><th scope="col">Data</th><th scope="col">Ações</th></tr></thead><tbody>${registros.map(registro => `<tr><td><button type="button" class="registro-item-link" onclick="abrirDetalhesRegistroItem('${escaparAtributoJs(registro.tipo)}','${escaparAtributoJs(registro.itemId || '')}','${escaparAtributoJs(registro.nome)}')">${escaparHtml(registro.nome)}</button>${registro.observacao ? `<small>${escaparHtml(registro.observacao)}</small>` : ''}</td><td><span class="badge-tipo-registro ${classeTipoRegistro(registro.tipo)}">${rotuloTipoRegistro(registro.tipo)}</span></td><td>${formatarDataRegistro(registro.data)}</td><td>${criarAcoesRegistro(registro)}</td></tr>`).join('')}</tbody></table></div>`;
 }
+
+const LIMITE_EVENTOS_CALENDARIO = 3;
+let menuAcoesRegistroAberto = null;
+
+function renderizarEventoCalendario(item, oculto = false) {
+    const nome = escaparHtml(item.nome);
+    return `<div class="evento-registro-calendario ${classeTipoRegistro(item.tipo)}${oculto ? ' evento-oculto' : ''}">
+        <button type="button" class="evento-registro-conteudo" title="${nome} - ${rotuloTipoRegistro(item.tipo)}" onclick="abrirDetalhesRegistroItem('${escaparAtributoJs(item.tipo)}','${escaparAtributoJs(item.itemId || '')}','${escaparAtributoJs(item.nome)}')">
+            <strong>${nome}</strong>
+            <small>${rotuloTipoRegistro(item.tipo)}</small>
+        </button>
+        <button type="button" class="evento-registro-menu-btn" onclick="abrirMenuAcoesRegistro(this, '${escaparAtributoJs(item.id || '')}')" aria-haspopup="menu" aria-controls="menu-acoes-registro" aria-expanded="false" aria-label="Ações de ${nome}" title="Ações">&#8943;</button>
+    </div>`;
+}
+
+function alternarEventosDiaCalendario(botao) {
+    const celula = botao.closest('.registro-dia-calendario');
+    if (!celula) return;
+    const expandido = celula.classList.toggle('expandido');
+    const total = Number(botao.dataset.total) || 0;
+    botao.textContent = expandido ? 'Mostrar menos' : `+${total} mais`;
+    botao.setAttribute('aria-expanded', String(expandido));
+}
+
+function abrirMenuAcoesRegistro(gatilho, id) {
+    const menu = document.getElementById('menu-acoes-registro');
+    const registro = app.historico.find(item => item.id === id);
+    if (!menu || !registro) return;
+
+    if (menuAcoesRegistroAberto?.gatilho === gatilho) {
+        fecharMenuAcoesRegistro();
+        return;
+    }
+
+    fecharMenuAcoesRegistro(false);
+    menu.innerHTML = `<button type="button" role="menuitem" onclick="fecharMenuAcoesRegistro(true); editarRegistro('${escaparAtributoJs(id)}')">Editar</button><button type="button" role="menuitem" class="menu-acao-excluir" onclick="fecharMenuAcoesRegistro(true); excluirRegistro('${escaparAtributoJs(id)}')">Excluir</button>`;
+    menu.hidden = false;
+    menu.style.visibility = 'hidden';
+    menu.style.top = '0px';
+    menu.style.left = '0px';
+
+    const rect = gatilho.getBoundingClientRect();
+    const margem = 8;
+    const largura = menu.offsetWidth;
+    const altura = menu.offsetHeight;
+    let esquerda = rect.right - largura;
+    let topo = rect.bottom + 4;
+    if (esquerda < margem) esquerda = margem;
+    if (esquerda + largura > window.innerWidth - margem) esquerda = window.innerWidth - largura - margem;
+    if (topo + altura > window.innerHeight - margem) topo = rect.top - altura - 4;
+    menu.style.left = `${Math.max(margem, esquerda)}px`;
+    menu.style.top = `${Math.max(margem, topo)}px`;
+    menu.style.visibility = '';
+
+    menuAcoesRegistroAberto = { id, gatilho };
+    gatilho.setAttribute('aria-expanded', 'true');
+    menu.querySelector('button')?.focus({ preventScroll: true });
+}
+
+function fecharMenuAcoesRegistro(restaurarFoco = true) {
+    const menu = document.getElementById('menu-acoes-registro');
+    if (!menu) return;
+    const estado = menuAcoesRegistroAberto;
+    menu.hidden = true;
+    menu.innerHTML = '';
+    if (estado?.gatilho) estado.gatilho.setAttribute('aria-expanded', 'false');
+    menuAcoesRegistroAberto = null;
+    if (!restaurarFoco && menu.contains(document.activeElement)) document.activeElement.blur();
+    if (restaurarFoco && estado?.gatilho && document.contains(estado.gatilho) && estado.gatilho.getClientRects().length > 0) {
+        estado.gatilho.focus({ preventScroll: true });
+    }
+}
+
+document.getElementById('menu-acoes-registro')?.addEventListener('keydown', (evento) => {
+    const menu = evento.currentTarget;
+    const botoes = Array.from(menu.querySelectorAll('button'));
+    const indice = botoes.indexOf(document.activeElement);
+    if (evento.key === 'ArrowDown' || evento.key === 'ArrowUp') {
+        evento.preventDefault();
+        const passo = evento.key === 'ArrowDown' ? 1 : -1;
+        botoes[(indice + passo + botoes.length) % botoes.length]?.focus();
+        return;
+    }
+    if (evento.key !== 'Tab') return;
+    if (evento.shiftKey && indice <= 0) {
+        evento.preventDefault();
+        fecharMenuAcoesRegistro();
+    } else if (!evento.shiftKey && indice >= botoes.length - 1) {
+        evento.preventDefault();
+        fecharMenuAcoesRegistro();
+    }
+});
+
+window.addEventListener('resize', () => fecharMenuAcoesRegistro(false));
+document.addEventListener('scroll', () => fecharMenuAcoesRegistro(false), true);
 
 function renderizarCalendarioRegistros(container) {
     const inicio = new Date(app.registrosAno, app.registrosMes, 1);
     const primeiro = new Date(inicio);
     primeiro.setDate(1 - obterIndiceSemanaSegunda(inicio));
     const registros = obterRegistros();
+    const hojeStr = formatarDataChave(new Date());
     const nomesDias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
-    let html = `<div class="registros-calendario"><div class="registros-calendario-cabecalho">${nomesDias.map(nome => `<span>${nome}</span>`).join('')}</div><div class="registros-calendario-grade">`;
+    const legenda = `<div class="registros-legenda" role="group" aria-label="Legenda de tipos de registro">
+        <span><i class="legenda-cor registro-tipo-refeicao" aria-hidden="true"></i>Refeição</span>
+        <span><i class="legenda-cor registro-tipo-receita" aria-hidden="true"></i>Receita</span>
+        <span><i class="legenda-cor registro-tipo-especial" aria-hidden="true"></i>Especial</span>
+    </div>`;
+    let html = `${legenda}<div class="registros-calendario"><div class="registros-calendario-cabecalho">${nomesDias.map(nome => `<span>${nome}</span>`).join('')}</div><div class="registros-calendario-grade">`;
     for (let indice = 0; indice < 42; indice++) {
         const data = new Date(primeiro);
         data.setDate(primeiro.getDate() + indice);
         const dataStr = formatarDataChave(data);
         const doMes = data.getMonth() === app.registrosMes;
-        const doDia = registros.filter(item => item.data === dataStr);
-        html += `<div class="registro-dia-calendario ${doMes ? '' : 'fora-mes'} ${dataStr === formatarDataChave(new Date()) ? 'dia-hoje' : ''}"><span class="numero-dia">${data.getDate()}</span>${doDia.map(item => `<button type="button" class="evento-registro-calendario ${classeTipoRegistro(item.tipo)}" onclick="abrirDetalhesRegistroItem('${escaparAtributoJs(item.tipo)}','${escaparAtributoJs(item.itemId || '')}','${escaparAtributoJs(item.nome)}')"><strong>${escaparHtml(item.nome)}</strong><small>${rotuloTipoRegistro(item.tipo)}</small></button>`).join('')}</div>`;
+        const ehHoje = dataStr === hojeStr;
+        const doDia = registros
+            .filter(item => item.data === dataStr)
+            .sort((a, b) => String(a.criadoEm || '').localeCompare(String(b.criadoEm || '')));
+        const eventos = doDia.map((item, posicao) => renderizarEventoCalendario(item, posicao >= LIMITE_EVENTOS_CALENDARIO)).join('');
+        const ocultos = Math.max(0, doDia.length - LIMITE_EVENTOS_CALENDARIO);
+        const botaoMais = ocultos
+            ? `<button type="button" class="evento-mais" data-total="${ocultos}" aria-expanded="false" onclick="alternarEventosDiaCalendario(this)">+${ocultos} mais</button>`
+            : '';
+        const rotuloDia = data.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const rotuloAcessivel = `${ehHoje ? 'Hoje, ' : ''}${rotuloDia}. Adicionar registro`;
+        html += `<div class="registro-dia-calendario ${doMes ? '' : 'fora-mes'} ${ehHoje ? 'dia-hoje' : ''}">
+            <button type="button" class="numero-dia" onclick="abrirModalRegistroComData('${dataStr}')" aria-label="${escaparHtml(rotuloAcessivel)}" title="${escaparHtml(rotuloAcessivel)}"${ehHoje ? ' aria-current="date"' : ''}>${data.getDate()}</button>
+            ${eventos}${botaoMais}
+        </div>`;
     }
     html += '</div></div>';
     container.innerHTML = html;
@@ -6512,17 +6677,54 @@ function renderizarDetalhesRegistroItem(container) {
     container.innerHTML = `<div class="registro-detalhe-item"><button type="button" class="btn-voltar-registros" onclick="fecharDetalhesRegistroItem()">&lsaquo; Voltar para registros</button><div class="registro-detalhe-cabecalho"><span class="badge-tipo-registro ${classeTipoRegistro(atual.tipo)}">${rotuloTipoRegistro(atual.tipo)}</span><h3>${escaparHtml(atual.nome)}</h3><p>${ocorrencias.length} ocorrência${ocorrencias.length === 1 ? '' : 's'}</p></div><div class="registro-ocorrencias">${ocorrencias.map(item => `<article><div><strong>${formatarDataRegistro(item.data, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><small>${formatarDataRegistro(item.data, { weekday: 'long' })}</small></div><div><span>${rotuloTipoRegistro(item.tipo)} registrado</span>${item.observacao ? `<p>${escaparHtml(item.observacao)}</p>` : ''}</div>${criarAcoesRegistro(item)}</article>`).join('')}</div></div>`;
 }
 
+const focoAnteriorModal = new WeakMap();
+
+function obterModalAberto() {
+    const modais = Array.from(document.querySelectorAll('.modal'));
+    return modais.reverse().find(modal => modal.style.display === 'flex' || modal.style.display === 'block') || null;
+}
+
+function obterElementosFocaveisModal(modal) {
+    return Array.from(modal.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(elemento =>
+        elemento.getClientRects().length > 0 &&
+        elemento.getAttribute('aria-hidden') !== 'true'
+    );
+}
+
+function focarPrimeiroElementoModal(modal) {
+    const alvo = modal.querySelector('[autofocus]')
+        || modal.querySelector('input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])')
+        || modal.querySelector('.modal-content button:not([disabled]):not(.btn-fechar)')
+        || modal.querySelector('.btn-fechar:not([disabled])')
+        || modal.querySelector('.modal-content');
+    if (!alvo) return;
+    if (!alvo.hasAttribute('tabindex') && !['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A'].includes(alvo.tagName)) {
+        alvo.setAttribute('tabindex', '-1');
+    }
+    alvo.focus({ preventScroll: true });
+}
+
 function abrirModal(id) {
     const modal = document.getElementById(id);
-    if (modal) {
-        modal.style.display = 'flex';
+    if (!modal) return;
+    if (modal.style.display !== 'flex') {
+        focoAnteriorModal.set(modal, document.activeElement);
     }
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    focarPrimeiroElementoModal(modal);
 }
 
 function fecharModal(id) {
     const modal = document.getElementById(id);
-    if (modal) {
-        modal.style.display = 'none';
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    const focoAnterior = focoAnteriorModal.get(modal);
+    if (focoAnterior && document.contains(focoAnterior) && focoAnterior.getClientRects().length > 0) {
+        focoAnterior.focus({ preventScroll: true });
     }
 }
 
@@ -6551,11 +6753,53 @@ document.addEventListener('click', (e) => {
     }
 
     if (e.target.classList.contains('modal')) {
-        e.target.style.display = 'none';
+        fecharModal(e.target.id);
+    }
+
+    if (menuAcoesRegistroAberto && !e.target.closest('#menu-acoes-registro, .evento-registro-menu-btn')) {
+        const alvoInterativo = e.target.closest('button, a, input, select, textarea, [role="button"]');
+        fecharMenuAcoesRegistro(!alvoInterativo);
     }
 });
 
 document.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Escape' && menuAcoesRegistroAberto) {
+        evento.preventDefault();
+        fecharMenuAcoesRegistro();
+        return;
+    }
+
+    const modal = obterModalAberto();
+    if (modal) {
+        if (evento.key === 'Escape') {
+            if (modal.id !== 'modal-ficha-livro') {
+                evento.preventDefault();
+                const botaoFechar = modal.querySelector('.btn-fechar');
+                if (botaoFechar && !botaoFechar.disabled) botaoFechar.click();
+                else fecharModal(modal.id);
+            }
+            return;
+        }
+        if (evento.key === 'Tab' && modal.id !== 'modal-ficha-livro') {
+            const focaveis = obterElementosFocaveisModal(modal);
+            if (!focaveis.length) {
+                evento.preventDefault();
+                return;
+            }
+            const primeiro = focaveis[0];
+            const ultimo = focaveis[focaveis.length - 1];
+            const focoDentroDoModal = modal.contains(document.activeElement);
+            if (evento.shiftKey && (!focoDentroDoModal || document.activeElement === primeiro)) {
+                evento.preventDefault();
+                ultimo.focus();
+            } else if (!evento.shiftKey && (!focoDentroDoModal || document.activeElement === ultimo)) {
+                evento.preventDefault();
+                primeiro.focus();
+            }
+            return;
+        }
+        return;
+    }
     if (evento.key === 'Escape') fecharMenusPlanejamento();
 });
 
@@ -6641,6 +6885,10 @@ Object.assign(window, {
     moverItemConfiguravel,
     alterarCorConfiguravel,
     abrirModalRegistro,
+    abrirModalRegistroComData,
+    abrirMenuAcoesRegistro,
+    fecharMenuAcoesRegistro,
+    alternarEventosDiaCalendario,
     salvarRegistro,
     atualizarCamposRegistro,
     alternarModoRegistros,

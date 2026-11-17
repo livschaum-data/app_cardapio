@@ -4900,6 +4900,10 @@ body {
     margin: -8px 0 18px;
 }
 
+.registros-resumo {
+    margin: -6px 0 14px;
+}
+
 .registros-toolbar {
     display: flex;
     align-items: center;
@@ -5073,26 +5077,196 @@ body {
 }
 
 .numero-dia {
-    display: block;
-    margin-bottom: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    margin: -2px 0 6px -3px;
+    border: 0;
+    border-radius: 6px;
+    padding: 0 4px;
+    background: transparent;
     color: var(--cor-texto-suave, #7b7469);
+    font: inherit;
     font-size: .78rem;
     font-weight: 600;
+    cursor: pointer;
+}
+
+.numero-dia:hover,
+.numero-dia:focus-visible {
+    background: color-mix(in srgb, var(--cor-destaque, #e59b62) 16%, transparent);
+    color: var(--cor-destaque-escuro, #a85e2c);
+}
+
+.registro-dia-calendario.dia-hoje .numero-dia {
+    background: color-mix(in srgb, var(--cor-destaque, #e59b62) 18%, transparent);
+    color: var(--cor-destaque-escuro, #a85e2c);
+    font-weight: 700;
+}
+
+.registros-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 0 0 12px;
+    color: var(--cor-texto-suave, #7b7469);
+    font-size: .8rem;
+}
+
+.registros-legenda span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legenda-cor {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
 }
 
 .evento-registro-calendario {
-    display: block;
+    display: flex;
+    align-items: stretch;
     width: 100%;
     margin: 4px 0;
     overflow: hidden;
-    border: 0;
     border-left: 3px solid;
     border-radius: 4px;
-    padding: 5px 6px;
     background: color-mix(in srgb, var(--cor-fundo, #f4efe7) 88%, var(--cor-texto, #2f2b25));
     color: var(--cor-texto, #2f2b25);
+}
+
+.evento-registro-conteudo {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 5px 6px;
+    background: transparent;
+    color: inherit;
     text-align: left;
     cursor: pointer;
+}
+
+.evento-registro-conteudo:hover,
+.evento-registro-conteudo:focus-visible {
+    background: color-mix(in srgb, var(--cor-destaque, #e59b62) 10%, transparent);
+}
+
+.evento-registro-menu-btn {
+    display: flex;
+    flex: 0 0 22px;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    border: 0;
+    border-radius: 0 4px 4px 0;
+    padding: 0;
+    background: transparent;
+    color: var(--cor-texto-suave, #7b7469);
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: .45;
+    transition: opacity .15s ease, background .15s ease;
+}
+
+.evento-registro-calendario:hover .evento-registro-menu-btn,
+.evento-registro-calendario:focus-within .evento-registro-menu-btn,
+.evento-registro-menu-btn:focus-visible {
+    opacity: 1;
+}
+
+.evento-registro-menu-btn:hover,
+.evento-registro-menu-btn:focus-visible {
+    background: color-mix(in srgb, var(--cor-destaque, #e59b62) 14%, transparent);
+    color: var(--cor-destaque-escuro, #a85e2c);
+}
+
+.evento-mais {
+    display: block;
+    width: 100%;
+    margin: 2px 0 0;
+    border: 0;
+    border-radius: 5px;
+    padding: 4px 6px;
+    background: transparent;
+    color: var(--cor-destaque-escuro, #a85e2c);
+    font: inherit;
+    font-size: .7rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.evento-mais:hover,
+.evento-mais:focus-visible {
+    background: color-mix(in srgb, var(--cor-destaque, #e59b62) 12%, transparent);
+}
+
+.registro-dia-calendario .evento-oculto {
+    display: none;
+}
+
+.registro-dia-calendario.expandido .evento-oculto {
+    display: flex;
+}
+
+.menu-acoes-registro {
+    position: fixed;
+    z-index: 1200;
+    min-width: 132px;
+    padding: 5px;
+    border: 1px solid var(--cor-borda, #ddd5c8);
+    border-radius: 10px;
+    background: var(--cor-superficie, #fffaf3);
+    box-shadow: 0 12px 30px rgba(47, 43, 37, .18);
+}
+
+.menu-acoes-registro[hidden] {
+    display: none;
+}
+
+.menu-acoes-registro button {
+    display: block;
+    width: 100%;
+    border: 0;
+    border-radius: 7px;
+    padding: 8px 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.menu-acoes-registro button:hover,
+.menu-acoes-registro button:focus-visible {
+    background: color-mix(in srgb, var(--cor-destaque, #e59b62) 14%, transparent);
+}
+
+.menu-acoes-registro .menu-acao-excluir {
+    color: var(--cor-alerta, #B83E49);
+}
+
+@media (hover: none) {
+    .evento-registro-menu-btn {
+        flex-basis: 28px;
+        width: 28px;
+        opacity: 1;
+    }
+}
+
+@media (max-width: 760px) {
+    .numero-dia {
+        min-width: 28px;
+        height: 28px;
+    }
 }
 
 .evento-registro-calendario strong,
